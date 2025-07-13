@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Alt Season Scanner - Professional cryptocurrency opportunity finder tracking top altcoins with advanced momentum scoring">
+    <meta name="keywords" content="cryptocurrency, altcoins, bitcoin, trading, scanner, binance, momentum">
+    <meta name="author" content="Alt Season Scanner">
+    <meta property="og:title" content="Alt Season Scanner - Smart Crypto Opportunity Finder">
+    <meta property="og:description"
+        content="Track top performing altcoins with advanced momentum scoring and risk analysis">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="https://altseasonscanner.com">
+
+    <title>Alt Season Scanner - Smart Crypto Opportunity Finder</title>
+
+    <style>
+        /* CSS Variables for Bitcoin Theme */
+        :root {
+            --bitcoin-gold: #f7931a;
+            --bitcoin-gold-light: #ffa500;
+            --bitcoin-gold-dark: #d87a00;
+            --black: #000000;
+            --dark-gray: #0d0d0d;
+            --medium-gray: #1a1a1a;
+            --light-gray: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8b8;
+            --success: #00d395;
+            --danger: #ff3860;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--black);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Background with gradient */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, var(--bitcoin-gold-dark) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, var(--bitcoin-gold-dark) 0%, transparent 50%),
+                var(--black);
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--bitcoin-gold-light), var(--bitcoin-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--bitcoin-gold);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--bitcoin-gold-light), var(--bitcoin-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Market Status */
+        .market-status {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        .status-card {
+            text-align: center;
+        }
+
+        .status-card h3 {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--bitcoin-gold);
+        }
+
+        .status-card .change {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .positive {
+            color: var(--success);
+        }
+
+        .negative {
+            color: var(--danger);
+        }
+
+        /* Coins Table */
+        .coins-section {
+            margin-bottom: 4rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            color: var(--bitcoin-gold);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .filter-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--bitcoin-gold);
+            color: var(--black);
+            border-color: var(--bitcoin-gold);
+        }
+
+        /* Coin Cards Grid */
+        .coins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .coin-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .coin-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--bitcoin-gold) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .coin-card:hover::before {
+            opacity: 0.05;
+        }
+
+        .coin-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--bitcoin-gold);
+        }
+
+        .coin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .coin-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .coin-rank {
+            background: var(--bitcoin-gold);
+            color: var(--black);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+
+        .coin-name h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.125rem;
+        }
+
+        .coin-name span {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .momentum-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--bitcoin-gold);
+        }
+
+        .coin-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value {
+            font-size: 1.125rem;
+            font-weight: bold;
+            margin-top: 0.25rem;
+        }
+
+        .coin-signals {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .signal {
+            display: inline-block;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            margin: 0.25rem 0.25rem 0.25rem 0;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--glass-border);
+            border-top-color: var(--bitcoin-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--glass-bg);
+            border-top: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* Animations */
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .filter-buttons {
+                flex-wrap: wrap;
+            }
+
+            .coin-metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* No JavaScript Fallback */
+        .no-js-message {
+            display: none;
+            background: var(--glass-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+
+        .no-js .no-js-message {
+            display: block;
+        }
+
+        .no-js .coins-grid {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">₿ Alt Season Scanner</div>
+            <ul class="nav-links">
+                <li><a href="#dashboard">Dashboard</a></li>
+                <li><a href="/charts">Charts</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#settings">Settings</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Smart Crypto Opportunity Finder</h1>
+            <p>Track top performing altcoins with advanced momentum scoring</p>
+        </section>
+
+        <section class="market-status" id="market-status">
+            <div class="status-card">
+                <h3>BTC Dominance</h3>
+                <div class="value" id="btc-dominance">--</div>
+                <div class="change" id="dominance-change">--</div>
+            </div>
+            <div class="status-card">
+                <h3>Market Condition</h3>
+                <div class="value" id="market-condition">--</div>
+                <div class="change" id="condition-advice">--</div>
+            </div>
+            <div class="status-card">
+                <h3>Active Opportunities</h3>
+                <div class="value" id="opportunities">--</div>
+                <div class="change positive">Coins above 50 score</div>
+            </div>
+            <div class="status-card">
+                <h3>Last Update</h3>
+                <div class="value" id="last-update">--</div>
+                <div class="change">Auto-refresh: ON</div>
+            </div>
+        </section>
+
+        <section class="coins-section">
+            <div class="section-header">
+                <h2>Top Opportunities</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="hot">🔥 Hot</button>
+                    <button class="filter-btn" data-filter="safe">💎 Safe</button>
+                    <button class="filter-btn" data-filter="value">💰 Value</button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading latest data...</p>
+            </div>
+
+            <div class="coins-grid" id="coins-grid">
+                <!-- Coins will be loaded here -->
+            </div>
+
+            <noscript>
+                <div class="no-js-message">
+                    <p>JavaScript is required for real-time updates. Please enable JavaScript to see live cryptocurrency
+                        data.</p>
+                </div>
+            </noscript>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 Alt Season Scanner. Not financial advice. Always DYOR.</p>
+        </div>
+    </footer>
+
+    <script>
+        // App State
+        let coinsData = [];
+        let currentFilter = 'all';
+
+        // DOM Elements
+        const elements = {
+            btcDominance: document.getElementById('btc-dominance'),
+            dominanceChange: document.getElementById('dominance-change'),
+            marketCondition: document.getElementById('market-condition'),
+            conditionAdvice: document.getElementById('condition-advice'),
+            opportunities: document.getElementById('opportunities'),
+            lastUpdate: document.getElementById('last-update'),
+            coinsGrid: document.getElementById('coins-grid'),
+            loading: document.getElementById('loading'),
+            filterButtons: document.querySelectorAll('.filter-btn')
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            setupEventListeners();
+            // Auto refresh every 5 minutes
+            setInterval(loadData, 5 * 60 * 1000);
+        });
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            elements.filterButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    currentFilter = e.target.dataset.filter;
+                    elements.filterButtons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderCoins();
+                });
+            });
+        }
+
+        // Load Data
+        async function loadData() {
+            try {
+                elements.loading.style.display = 'block';
+                elements.coinsGrid.style.display = 'none';
+
+                // In production, this would fetch from your API
+                // For now, using mock data
+                const response = await fetch('/api/scanner-results');
+                const data = await response.json();
+
+                coinsData = data.coins;
+                updateMarketStatus(data.marketStatus);
+                renderCoins();
+
+                elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Use mock data for demo
+                useMockData();
+            } finally {
+                elements.loading.style.display = 'none';
+                elements.coinsGrid.style.display = 'grid';
+            }
+        }
+
+        // Update Market Status
+        function updateMarketStatus(status) {
+            elements.btcDominance.textContent = status.btcDominance + '%';
+            elements.dominanceChange.textContent = status.dominanceChange;
+            elements.dominanceChange.className = status.dominanceChange.startsWith('+') ? 'change positive' : 'change negative';
+
+            elements.marketCondition.textContent = status.condition;
+            elements.conditionAdvice.textContent = status.advice;
+
+            const hotCoins = coinsData.filter(c => c.momentum.score >= 50).length;
+            elements.opportunities.textContent = hotCoins;
+        }
+
+        // Render Coins
+        function renderCoins() {
+            const filteredCoins = filterCoins(coinsData);
+            elements.coinsGrid.innerHTML = filteredCoins.map(coin => createCoinCard(coin)).join('');
+        }
+
+        // Filter Coins
+        function filterCoins(coins) {
+            switch (currentFilter) {
+                case 'hot':
+                    return coins.filter(c => c.momentum.score >= 60);
+                case 'safe':
+                    return coins.filter(c => c.momentum.risk < 40);
+                case 'value':
+                    return coins.filter(c => c.price < 1);
+                default:
+                    return coins;
+            }
+        }
+
+        // Create Coin Card
+        function createCoinCard(coin) {
+            const priceChange = coin.priceChange7d >= 0 ? 'positive' : 'negative';
+            const signals = coin.momentum.signals || [];
+
+            return `
+                <div class="coin-card" style="animation-delay: ${Math.random() * 0.3}s">
+                    <div class="coin-header">
+                        <div class="coin-info">
+                            <div class="coin-rank">${coin.rank}</div>
+                            <div class="coin-name">
+                                <h3>${coin.symbol}</h3>
+                                <span>${coin.name}</span>
+                            </div>
+                        </div>
+                        <div class="momentum-score">${coin.momentum.score}</div>
+                    </div>
+                    
+                    <div class="coin-metrics">
+                        <div class="metric">
+                            <div class="metric-label">Price</div>
+                            <div class="metric-value">$${coin.price.toFixed(4)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">7D Change</div>
+                            <div class="metric-value ${priceChange}">${coin.priceChange7d >= 0 ? '+' : ''}${coin.priceChange7d.toFixed(2)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Volume/MCap</div>
+                            <div class="metric-value">${(coin.volumeToMcap * 100).toFixed(2)}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Risk Score</div>
+                            <div class="metric-value">${coin.momentum.risk}/100</div>
+                        </div>
+                    </div>
+                    
+                    ${signals.length > 0 ? `
+                        <div class="coin-signals">
+                            ${signals.slice(0, 3).map(signal => `<span class="signal">${signal}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Add to the loadData function after updating market status:
+        function createDominanceGauge(dominance) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+
+            // Draw arc gauge
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height - 20;
+            const radius = 70;
+
+            // Background arc
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI, false);
+            ctx.lineWidth = 15;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.stroke();
+
+            // Dominance arc
+            const angle = Math.PI + (dominance / 100) * Math.PI;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, Math.PI, angle, false);
+            ctx.lineWidth = 15;
+
+            // Color based on dominance
+            if (dominance > 65) {
+                ctx.strokeStyle = '#ff3860'; // Red - Bitcoin Season
+            } else if (dominance > 55) {
+                ctx.strokeStyle = '#f7931a'; // Orange - Transitioning
+            } else {
+                ctx.strokeStyle = '#00d395'; // Green - Alt Friendly
+            }
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(dominance + '%', centerX, centerY - 10);
+
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#b8b8b8';
+            ctx.fillText('BTC Dominance', centerX, centerY + 20);
+
+            return canvas.toDataURL();
+        }
+
+        // Add this CSS for the dominance widget:
+        const dominanceWidgetCSS = `
+.dominance-widget {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.dominance-widget::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, var(--bitcoin-gold) 0%, transparent 70%);
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+.dominance-gauge {
+    margin: 1rem auto;
+}
+
+.dominance-phases {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.phase-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    border: 1px solid var(--glass-border);
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.phase-indicator.active {
+    opacity: 1;
+    border-color: var(--bitcoin-gold);
+    background: var(--glass-bg);
+}
+
+.phase-indicator.alt-friendly {
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.phase-indicator.btc-favored {
+    border-color: var(--bitcoin-gold);
+    color: var(--bitcoin-gold);
+}
+
+.phase-indicator.btc-season {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+`;
+
+        // Add this HTML structure after the market-status section:
+        const dominanceWidgetHTML = `
+<section class="dominance-widget">
+    <h2>Bitcoin Dominance Tracker</h2>
+    <div class="dominance-gauge" id="dominance-gauge">
+        <!-- Canvas gauge will be inserted here -->
+    </div>
+    <div class="dominance-phases">
+        <span class="phase-indicator alt-friendly" data-phase="alt">
+            🚀 Alt Season <50%
+        </span>
+        <span class="phase-indicator" data-phase="balanced">
+            ⚖️ Balanced 50-60%
+        </span>
+        <span class="phase-indicator btc-favored" data-phase="btc-favored">
+            🟠 BTC Favored 60-65%
+        </span>
+        <span class="phase-indicator btc-season" data-phase="btc-season">
+            🟡 BTC Season >65%
+        </span>
+    </div>
+</section>
+`;
+        // Mock Data for Demo
+        function useMockData() {
+            const mockData = {
+                marketStatus: {
+                    btcDominance: 62.5,
+                    dominanceChange: '-0.8%',
+                    condition: 'BTC FAVORED',
+                    advice: 'Challenging for alts - be selective'
+                },
+                coins: [
+                    {
+                        rank: 1,
+                        symbol: 'PENGU',
+                        name: 'Pudgy Penguins',
+                        price: 0.0231,
+                        priceChange7d: 48.25,
+                        volumeToMcap: 0.8497,
+                        momentum: {
+                            score: 54,
+                            risk: 25,
+                            signals: ['🔥 Extreme volume', '💹 Very liquid', '✅ Low risk']
+                        }
+                    },
+                    {
+                        rank: 2,
+                        symbol: 'XLM',
+                        name: 'Stellar',
+                        price: 0.3835,
+                        priceChange7d: 62.08,
+                        volumeToMcap: 0.1922,
+                        momentum: {
+                            score: 47,
+                            risk: 35,
+                            signals: ['⚠️ Extended rally', '📈 High interest']
+                        }
+                    },
+                    {
+                        rank: 3,
+                        symbol: 'ENA',
+                        name: 'Ethena',
+                        price: 0.3222,
+                        priceChange7d: 27.57,
+                        volumeToMcap: 0.2216,
+                        momentum: {
+                            score: 40,
+                            risk: 20,
+                            signals: ['⚡ Dip opportunity', '✅ Low risk']
+                        }
+                    }
+                ]
+            };
+
+            coinsData = mockData.coins;
+            updateMarketStatus(mockData.marketStatus);
+            renderCoins();
+            elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+        }
+    </script>
+</body>
+
+</html>
