@@ -483,6 +483,11 @@
                 <div class="change" id="dominance-change">--</div>
             </div>
             <div class="status-card">
+                <h3>Fear & Greed Index</h3>
+                <div class="value" id="fng-value">--</div>
+                <div class="change" id="fng-classification">--</div>
+            </div>
+            <div class="status-card">
                 <h3>Market Condition</h3>
                 <div class="value" id="market-condition">--</div>
                 <div class="change" id="condition-advice">--</div>
@@ -543,6 +548,8 @@
         const elements = {
             btcDominance: document.getElementById('btc-dominance'),
             dominanceChange: document.getElementById('dominance-change'),
+            fngValue: document.getElementById('fng-value'),
+            fngClassification: document.getElementById('fng-classification'),
             marketCondition: document.getElementById('market-condition'),
             conditionAdvice: document.getElementById('condition-advice'),
             opportunities: document.getElementById('opportunities'),
@@ -603,6 +610,19 @@
             elements.btcDominance.textContent = status.btcDominance + '%';
             elements.dominanceChange.textContent = status.dominanceChange;
             elements.dominanceChange.className = status.dominanceChange.startsWith('+') ? 'change positive' : 'change negative';
+
+    if (status.fearAndGreed) {
+        elements.fngValue.textContent = status.fearAndGreed.value;
+        elements.fngClassification.textContent = status.fearAndGreed.classification;
+
+        if (status.fearAndGreed.value < 30) {
+            elements.fngValue.className = 'value negative'; 
+        } else if (status.fearAndGreed.value > 70) {
+            elements.fngValue.className = 'value positive'; 
+        } else {
+            elements.fngValue.className = 'value';
+        }
+    }
 
             elements.marketCondition.textContent = status.condition;
             elements.conditionAdvice.textContent = status.advice;

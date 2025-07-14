@@ -1,8 +1,9 @@
 require('dotenv').config();
+const { getFearAndGreedIndex } = require('./apis/fearAndGreed');
 const { getTop100, getBTCDominance } = require('./apis/coingecko');
 const { filterAndSort } = require('./utils/filters');
 const { checkMultipleCoins } = require('./apis/binance');
-const { rankByMomentum, getTopByCategory } = require('./utils/momentum');
+const { rankByMomentum } = require('./utils/momentum');
 
 // ASCII Art Banner
 console.log(`
@@ -30,7 +31,8 @@ async function main() {
 		console.log('═'.repeat(50));
 
 		const btcDominance = await getBTCDominance();
-		displayMarketConditions(btcDominance);
+		const fearAndGreed = await getFearAndGreedIndex();
+		displayMarketConditions(btcDominance, fearAndGreed);
 
 		// Step 2: Fetch and filter data
 		console.log('\n📡 DATA COLLECTION');
@@ -94,9 +96,20 @@ async function main() {
 	}
 }
 
-function displayMarketConditions(btcDominance) {
+function displayMarketConditions(btcDominance, fearAndGreed) {
 	console.log(`\nBitcoin Dominance: ${btcDominance.toFixed(2)}%`);
 
+	if (fearAndGreed) {
+		let emoji = '😐';
+		if (fearAndGreed.value > 75) emoji = '🤑';
+		else if (fearAndGreed.value > 55) emoji = '🙂';
+		else if (fearAndGreed.value < 25) emoji = '😨';
+		else if (fearAndGreed.value < 45) emoji = '😟';
+
+		console.log(
+			`Fear & Greed Index: ${fearAndGreed.value} (${emoji} ${fearAndGreed.classification})`
+		);
+	}
 	let condition, emoji, advice;
 
 	if (btcDominance > 65) {
