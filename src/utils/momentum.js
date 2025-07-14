@@ -224,41 +224,41 @@ function generateSignals(coin, scores) {
 
 	// Price momentum signals
 	if (coin.priceChange7d > 50) {
-		signals.push('⚠️ Extended rally - consider waiting for pullback');
+		signals.push('⚠️ Przedłużony wzrost - rozważ poczekanie na korektę');
 	} else if (coin.priceChange7d > 30 && coin.priceChange24h > 5) {
-		signals.push('✅ Strong momentum continuation');
+		signals.push('✅ Silna kontynuacja momentum');
 	} else if (coin.priceChange7d > 10 && coin.priceChange24h < -5) {
-		signals.push('⚡ Potential dip buying opportunity');
+		signals.push('⚡ Potencjalna okazja do kupna w dołku');
 	}
 
 	// Volume signals
 	if (scores.volumeScore > 70) {
-		signals.push('🔥 Extreme volume - something is happening');
+		signals.push('🔥 Ekstremalny wolumen - coś się dzieje');
 	} else if (scores.volumeScore > 50) {
-		signals.push('📈 High interest from traders');
+		signals.push('📈 Duże zainteresowanie traderów');
 	}
 
 	// Position signals
 	if (coin.nearRoundNumber && coin.price < coin.nearRoundNumber) {
 		signals.push(
-			`🎯 Approaching psychological level: $${coin.nearRoundNumber}`
+			`🎯 Zbliża się do psychologicznego poziomu: $${coin.nearRoundNumber}`
 		);
 	}
 
 	if (coin.price < 0.01) {
-		signals.push('💎 Penny coin - high risk/high reward');
+		signals.push('💎 Groszowa moneta - wysokie ryzyko/wysoka nagroda');
 	}
 
 	// Risk signals
 	if (scores.riskScore > 60) {
-		signals.push('🚨 High risk - trade with caution');
+		signals.push('🚨 Wysokie ryzyko - handluj ostrożnie');
 	} else if (scores.riskScore < 30) {
-		signals.push('✅ Relatively low risk profile');
+		signals.push('✅ Stosunkowo niski profil ryzyka');
 	}
 
 	// Binance specific
 	if (coin.binance && coin.binance.binanceTrades24h > 1000000) {
-		signals.push('💹 Very liquid on Binance');
+		signals.push('💹 Duża płynność na Binance');
 	}
 
 	return signals;

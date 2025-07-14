@@ -3,12 +3,17 @@ const path = require('path');
 const fs = require('fs').promises; //async fs
 
 // Imports logic
-const { getFearAndGreedIndex } = require('./apis/fearAndGreed');
 const { getTop100, getBTCDominance } = require('./apis/coingecko');
 const { filterAndSort } = require('./utils/filters');
 const { checkMultipleCoins } = require('./apis/binance');
 const { rankByMomentum } = require('./utils/momentum');
-const { loadHistory } = require('./apis/btcDominance');
+const { getFearAndGreedIndex } = require('./apis/fearAndGreed');
+
+const {
+	loadHistory,
+	analyzeTrend,
+	saveToHistory,
+} = require('./apis/btcDominance');
 
 const PORT = process.env.PORT || 3000;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 min
@@ -121,19 +126,32 @@ async function runScanner() {
 	const btcDominance = await getBTCDominance();
 	const fearAndGreed = await getFearAndGreedIndex();
 
+	// We save the current reading to history so that we have the most recent data
+	await saveToHistory({
+		btc: btcDominance,
+		timestamp: new Date().toISOString(),
+	});
+
+	// Read the history and analyse the trend
+	const history = await loadHistory();
+	const trendAnalysis = analyzeTrend(history);
+
+	// We extract the dynamically calculated 24h change
+	const dominanceChange24h = trendAnalysis.changes['24h'];
+
 	let condition, advice;
 	if (btcDominance > 65) {
-		condition = 'BITCOIN SEASON';
-		advice = 'Alts are bleeding - good for accumulation';
+		condition = 'SEZON BITCOINA';
+		advice = 'Alty krwawią - dobre dla akumulacji';
 	} else if (btcDominance > 60) {
-		condition = 'BTC FAVORED';
-		advice = 'Challenging for alts - be selective';
+		condition = 'BTC FAWORYZOWANY';
+		advice = 'Wyzwanie dla alt - bądź selektywny';
 	} else if (btcDominance > 55) {
-		condition = 'TRANSITIONING';
-		advice = 'Market shifting - watch for breakouts';
+		condition = 'PRZEJŚCIE';
+		advice = 'Zmiany na rynku - wypatruj wybić';
 	} else {
-		condition = 'ALT FRIENDLY';
-		advice = 'Good conditions for alt trades';
+		condition = 'PRZYJAZNY DLA ALTÓW';
+		advice = 'Dobre warunki dla transakcji altami';
 	}
 
 	const data = await getTop100();
@@ -185,7 +203,7 @@ async function runScanner() {
 	return {
 		marketStatus: {
 			btcDominance: btcDominance.toFixed(2),
-			dominanceChange: '-0.5%',
+			dominanceChange: `${dominanceChange24h}%`,
 			condition,
 			advice,
 			fearAndGreed: fearAndGreed
