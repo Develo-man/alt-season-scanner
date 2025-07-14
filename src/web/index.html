@@ -345,6 +345,51 @@
             margin: 0.25rem 0.25rem 0.25rem 0;
         }
 
+        .sector-analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .sector-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .sector-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--bitcoin-gold);
+        }
+
+        .sector-card .sector-name {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--bitcoin-gold);
+        }
+
+        .sector-card .avg-score {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .sector-card .top-coin {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .sector-card .top-coin span {
+            font-weight: bold;
+            color: var(--success);
+        }
+
         /* Loading State */
         .loading {
             text-align: center;
@@ -471,6 +516,16 @@
     </header>
 
     <main class="container">
+        <section class="sector-analysis-section">
+            <div class="section-header">
+                <h2>Analiza Sektorów</h2>
+            </div>
+            <div id="sector-analysis-grid">
+            </div>
+        </section>
+
+        <section class="coins-section">
+        </section>
         <section class="hero">
             <h1>Smart Crypto Opportunity Finder</h1>
             <p>Track top performing altcoins with advanced momentum scoring</p>
@@ -553,6 +608,7 @@
             marketCondition: document.getElementById('market-condition'),
             conditionAdvice: document.getElementById('condition-advice'),
             opportunities: document.getElementById('opportunities'),
+            sectorAnalysisGrid: document.getElementById('sector-analysis-grid'),
             lastUpdate: document.getElementById('last-update'),
             coinsGrid: document.getElementById('coins-grid'),
             loading: document.getElementById('loading'),
@@ -592,6 +648,7 @@
 
                 coinsData = data.coins;
                 updateMarketStatus(data.marketStatus);
+                renderSectorAnalysis(data.sectorAnalysis);
                 renderCoins();
 
                 elements.lastUpdate.textContent = new Date().toLocaleTimeString();
@@ -603,6 +660,28 @@
                 elements.loading.style.display = 'none';
                 elements.coinsGrid.style.display = 'grid';
             }
+        }
+        // rendering selectors
+        function renderSectorAnalysis(sectorData) {
+            if (!sectorData || sectorData.length === 0) {
+                elements.sectorAnalysisGrid.innerHTML = '<p>Brak danych do analizy sektorów.</p>';
+                return;
+            }
+
+            elements.sectorAnalysisGrid.innerHTML = sectorData
+                .slice(0, 8) // Pokaż do 8 najgorętszych sektorów
+                .map(sector => `
+                    <div class="sector-card">
+                        <div>
+                            <h3 class="sector-name">${sector.name}</h3>
+                            <p class="avg-score">Śr. wynik: ${sector.averageScore.toFixed(2)}</p>
+                        </div>
+                        <p class="top-coin">
+                            Lider: ${sector.topCoin.symbol}
+                            <span>(${parseFloat(sector.topCoin.momentum.totalScore).toFixed(0)})</span>
+                        </p>
+                    </div>
+                `).join('');
         }
 
         // Update Market Status

@@ -8,6 +8,8 @@ const { filterAndSort } = require('./utils/filters');
 const { checkMultipleCoins } = require('./apis/binance');
 const { rankByMomentum } = require('./utils/momentum');
 const { getFearAndGreedIndex } = require('./apis/fearAndGreed');
+const { getSector } = require('./utils/sectors');
+const { analyzeSectors } = require('./utils/analysis');
 
 const {
 	loadHistory,
@@ -121,10 +123,18 @@ Naciśnij Ctrl+C, aby zatrzymać serwer.
     `);
 });
 
-// Scanner logic and other support functions (bez większych zmian)
 async function runScanner() {
 	const btcDominance = await getBTCDominance();
 	const fearAndGreed = await getFearAndGreedIndex();
+	const data = await getTop100();
+
+	const coinsWithSectors = data.coins.map((coin) => {
+		const sector = coin.symbol ? getSector(coin.symbol) : 'Unknown';
+		return {
+			...coin,
+			sector: sector,
+		};
+	});
 
 	// We save the current reading to history so that we have the most recent data
 	await saveToHistory({
@@ -154,7 +164,6 @@ async function runScanner() {
 		advice = 'Dobre warunki dla transakcji altami';
 	}
 
-	const data = await getTop100();
 	const criteria = {
 		maxPrice: parseFloat(process.env.MAX_PRICE) || 3,
 		maxRank: 100,
@@ -164,21 +173,22 @@ async function runScanner() {
 	};
 
 	const candidates = filterAndSort(data.coins, criteria, 'momentum', 50);
+
 	const symbols = candidates.map((coin) => coin.symbol);
 	const binanceData = await checkMultipleCoins(symbols);
-
 	const coinsWithFullData = candidates
 		.map((coin) => {
 			const binance = binanceData[coin.symbol.toUpperCase()];
 			return {
 				...coin,
-				binance: binance,
-				isOnBinance: binance && binance.isListed,
+				binance: binanceData[coin.symbol.toUpperCase()],
+				isOnBinance: binanceData[coin.symbol.toUpperCase()]?.isListed,
 			};
 		})
 		.filter((coin) => coin.isOnBinance);
 
 	const rankedCoins = rankByMomentum(coinsWithFullData);
+	const sectorAnalysis = analyzeSectors(rankedCoins);
 
 	const formattedCoins = rankedCoins.slice(0, 20).map((coin) => ({
 		rank: coin.rank,
@@ -188,6 +198,7 @@ async function runScanner() {
 		priceChange24h: coin.priceChange24h,
 		priceChange7d: coin.priceChange7d,
 		volumeToMcap: coin.volumeToMcap,
+		sector: coin.sector,
 		momentum: {
 			score: parseFloat(coin.momentum.totalScore),
 			risk: coin.momentum.riskScore,
@@ -213,6 +224,7 @@ async function runScanner() {
 				  }
 				: null,
 		},
+		sectorAnalysis: sectorAnalysis,
 		coins: formattedCoins,
 		lastUpdate: new Date().toISOString(),
 		totalAnalyzed: data.count,
