@@ -2,7 +2,7 @@
 // Run with: node test-coingecko.js
 
 require('dotenv').config();
-const { test } = require('./src/apis/coingecko');
+const { test } = require('../src/apis/coingecko');
 
 console.log('🔧 Testing CoinGecko Integration...\n');
 

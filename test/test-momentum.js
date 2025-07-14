@@ -1,7 +1,7 @@
 // Test script for momentum calculator
 // Run with: node test-momentum.js
 
-const { calculateMomentumScore } = require('./src/utils/momentum');
+const { calculateMomentumScore } = require('../src/utils/momentum');
 
 console.log('🧪 Testing Momentum Calculator...\n');
 
@@ -93,8 +93,6 @@ testCoins.forEach((coin) => {
 // Volume Activity (Aktywność wolumenu) – jak dużo się handluje danym aktywem; duży wolumen = większe zainteresowanie.
 // Market Position (Pozycja na rynku) – miejsce danej kryptowaluty względem innych (np. top 10, ogólna dominacja itp.).
 // Risk Factor (Współczynnik ryzyka) – jak bardzo ryzykowna jest inwestycja według danych analitycznych.
-
-
 
 // Test coin not on Binance
 console.log('Testing coin not on Binance:');

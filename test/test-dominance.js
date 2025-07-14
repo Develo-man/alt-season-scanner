@@ -8,7 +8,7 @@ const {
 	analyzeTrend,
 	generateDominanceReport,
 	displayReport,
-} = require('./src/apis/btcDominance');
+} = require('../src/apis/btcDominance');
 
 console.log('🧪 Testing BTC Dominance Tracker...\n');
 

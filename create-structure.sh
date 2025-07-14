@@ -1,90 +1,144 @@
 #!/bin/bash
 
-# Create Alt Season Scanner project structure
+# Zatrzymaj wykonywanie skryptu, jeśli wystąpi błąd
+set -e
 
-echo "🚀 Creating Alt Season Scanner project structure..."
+PROJECT_NAME="alt-season-scanner"
 
-# Create main directories
-mkdir -p src/{apis,utils,web}
-mkdir -p data/historical
-mkdir -p docs
-mkdir -p logs
-mkdir -p test
+# Sprawdź, czy folder projektu już istnieje
+if [ -d "$PROJECT_NAME" ]; then
+  echo "⚠️  Folder '$PROJECT_NAME' już istnieje. Anulowano."
+  exit 1
+fi
 
-# Create placeholder files
+echo "🚀 Tworzenie struktury projektu '$PROJECT_NAME'..."
+
+# Utwórz główny folder i przejdź do niego
+mkdir $PROJECT_NAME
+cd $PROJECT_NAME
+
+# Utwórz podfoldery
+mkdir -p src/{apis,utils,web} data/dominance logs results
+
+# Utwórz pliki w strukturze
 touch src/scanner.js
 touch src/server.js
-touch src/test.js
-
-# API integrations
 touch src/apis/coingecko.js
 touch src/apis/binance.js
 touch src/apis/btcDominance.js
-
-# Utilities
 touch src/utils/filters.js
 touch src/utils/momentum.js
-touch src/utils/storage.js
-touch src/utils/report.js
-touch src/utils/alerts.js
-
-# Web interface
 touch src/web/index.html
-touch src/web/dashboard.js
-touch src/web/styles.css
-touch src/web/portfolio.js
+touch src/web/charts.html
+touch src/web/charts.js
+touch dominance-monitor.js
+touch run-scanner.js
+touch README.md
 
-# Documentation
-touch docs/API_GUIDE.md
-touch docs/ARCHITECTURE.md
-touch docs/DECISIONS.md
+# Utwórz plik .gitignore na podstawie istniejącego w projekcie
+cat > .gitignore << 'EOF'
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Create initial scanner.js with basic structure
-cat > src/scanner.js << 'EOF'
-require('dotenv').config();
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
 
-console.log('🚀 Alt Season Scanner v1.0.0');
-console.log('📊 Starting scan...\n');
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
 
-// TODO: Import modules
-// const { getTop100 } = require('./apis/coingecko');
-// const { filterByPrice } = require('./utils/filters');
-// const { checkIfListed } = require('./apis/binance');
+# Data & Logs
+data/
+logs/
+*.log
+results/
+output/
 
-async function main() {
-    try {
-        console.log('✅ Scanner initialized successfully!');
-        console.log('📝 Next step: Implement CoinGecko API integration');
-        
-        // TODO: Implement scanning logic
-        
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-        process.exit(1);
-    }
-}
+# Test coverage
+coverage/
+.nyc_output/
 
-// Run scanner
-main();
+# Build files
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# API keys backup (just in case)
+*api_keys*
+*secret*
+*private*
+
+# Scanner output
+scanner-results-*.json
+daily-reports/
+
+# OS files
+Thumbs.db
 EOF
 
-echo "✅ Project structure created successfully!"
+# Utwórz plik .env.example
+cat > .env.example << 'EOF'
+# CoinGecko API Key (darmowy klucz wystarczy na początek)
+COINGECKO_API_KEY=
+
+# Opcjonalne: Ustawienia skanera
+MAX_PRICE=3
+TOP_N_COINS=100
+
+# Opcjonalne: Interwał skanowania w godzinach
+SCAN_INTERVAL_HOURS=6
+DOMINANCE_CHECK_HOURS=1
+EOF
+
+# Utwórz plik package.json
+cat > package.json << 'EOF'
+{
+	"name": "alt-season-scanner",
+	"version": "1.0.0",
+	"description": "Personal cryptocurrency scanner",
+	"main": "src/scanner.js",
+	"scripts": {
+		"scan": "node src/scanner.js",
+        "start": "node src/server.js",
+		"dev": "nodemon src/server.js"
+	},
+	"keywords": [
+		"cryptocurrency",
+		"altcoins",
+		"scanner"
+	],
+	"author": "Your Name",
+	"license": "MIT",
+	"dependencies": {
+		"axios": "^1.6.0",
+		"dotenv": "^16.3.1",
+		"node-cron": "^3.0.3"
+	},
+	"devDependencies": {
+		"nodemon": "^3.0.1"
+	}
+}
+EOF
+
+
 echo ""
-echo "📁 Directory structure:"
-echo "crypto-alt-scanner/"
-echo "├── src/"
-echo "│   ├── apis/         # API integrations"
-echo "│   ├── utils/        # Helper functions"
-echo "│   ├── web/          # Frontend files"
-echo "│   ├── scanner.js    # Main scanner"
-echo "│   ├── server.js     # Web server"
-echo "│   └── test.js       # Tests"
-echo "├── data/             # Data storage"
-echo "├── docs/             # Documentation"
-echo "├── logs/             # Log files"
-echo "└── test/             # Test files"
+echo "✅ Struktura projektu '$PROJECT_NAME' została utworzona pomyślnie!"
 echo ""
-echo "🎯 Next steps:"
-echo "1. Run: npm install"
-echo "2. Copy .env.example to .env and add your API keys"
-echo "3. Test: npm run scan"
+echo "🎯 Co dalej?"
+echo "1. Wejdź do folderu projektu: cd $PROJECT_NAME"
+echo "2. Zainstaluj zależności: npm install"
+echo "3. Skopiuj .env.example do .env i uzupełnij klucz API: cp .env.example .env"
+echo "4. Uruchom skaner: npm run scan"
