@@ -611,18 +611,18 @@
             elements.dominanceChange.textContent = status.dominanceChange;
             elements.dominanceChange.className = status.dominanceChange.startsWith('+') ? 'change positive' : 'change negative';
 
-    if (status.fearAndGreed) {
-        elements.fngValue.textContent = status.fearAndGreed.value;
-        elements.fngClassification.textContent = status.fearAndGreed.classification;
+            if (status.fearAndGreed) {
+                elements.fngValue.textContent = status.fearAndGreed.value;
+                elements.fngClassification.textContent = status.fearAndGreed.classification;
 
-        if (status.fearAndGreed.value < 30) {
-            elements.fngValue.className = 'value negative'; 
-        } else if (status.fearAndGreed.value > 70) {
-            elements.fngValue.className = 'value positive'; 
-        } else {
-            elements.fngValue.className = 'value';
-        }
-    }
+                if (status.fearAndGreed.value < 30) {
+                    elements.fngValue.className = 'value negative';
+                } else if (status.fearAndGreed.value > 70) {
+                    elements.fngValue.className = 'value positive';
+                } else {
+                    elements.fngValue.className = 'value';
+                }
+            }
 
             elements.marketCondition.textContent = status.condition;
             elements.conditionAdvice.textContent = status.advice;

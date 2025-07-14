@@ -4,6 +4,7 @@ const { getTop100, getBTCDominance } = require('./apis/coingecko');
 const { filterAndSort } = require('./utils/filters');
 const { checkMultipleCoins } = require('./apis/binance');
 const { rankByMomentum } = require('./utils/momentum');
+const { getSector } = require('./utils/sectors');
 
 // ASCII Art Banner
 console.log(`
@@ -68,6 +69,7 @@ async function main() {
 					...coin,
 					binance: binance,
 					isOnBinance: binance && binance.isListed,
+					sector: getSector(coin.symbol),
 				};
 			})
 			.filter((coin) => coin.isOnBinance);
@@ -79,6 +81,12 @@ async function main() {
 		console.log('═'.repeat(50));
 
 		const rankedCoins = rankByMomentum(coinsWithFullData);
+
+		// Step 5: Sector Analysis
+		console.log('\n📈 SECTOR ANALYSIS');
+		console.log('═'.repeat(50));
+		const sectorAnalysis = analyzeSectors(rankedCoins);
+		displaySectorAnalysis(sectorAnalysis);
 
 		// Display results
 		displayTopOpportunities(rankedCoins);
@@ -94,6 +102,71 @@ async function main() {
 		console.error('Please check your internet connection and API keys');
 		process.exit(1);
 	}
+}
+
+/**
+ * Analyses and groups coins by sector, calculating key metrics.
+ * @param {Array} rankedCoins - Sorted coin array with momentum data.
+ * @returns {Array} - An array of analysed sectors, sorted by score.
+ */
+function analyzeSectors(rankedCoins) {
+	const sectors = {};
+
+	for (const coin of rankedCoins) {
+		if (coin.sector === 'Unknown') continue;
+
+		if (!sectors[coin.sector]) {
+			sectors[coin.sector] = {
+				coins: [],
+				totalScore: 0,
+				hotCoins: 0, //  Coins with score > 60
+			};
+		}
+
+		sectors[coin.sector].coins.push(coin);
+		sectors[coin.sector].totalScore += parseFloat(coin.momentum.totalScore);
+		if (parseFloat(coin.momentum.totalScore) >= 60) {
+			sectors[coin.sector].hotCoins++;
+		}
+	}
+
+	const sectorArray = Object.entries(sectors).map(([name, data]) => {
+		const coinCount = data.coins.length;
+		const averageScore = data.totalScore / coinCount;
+		return {
+			name,
+			coinCount,
+			averageScore,
+			hotCoins: data.hotCoins,
+			topCoin: data.coins[0], // First coin is best in sector
+		};
+	});
+
+	// Sort sectors by average score
+	return sectorArray.sort((a, b) => b.averageScore - a.averageScore);
+}
+
+/**
+ * Displays the results of the sector analysis in the console.
+ * @param {Array} sectorAnalysis - Table of analysed sectors.
+ */
+function displaySectorAnalysis(sectorAnalysis) {
+	console.log('Sector            | Avg Score | Coins | Hot | Top Performer');
+	console.log('─'.repeat(70));
+
+	sectorAnalysis.forEach((sector) => {
+		const name = sector.name.padEnd(17);
+		const avgScore = sector.averageScore.toFixed(2).padEnd(9);
+		const coinCount = String(sector.coinCount).padEnd(5);
+		const hotCoins = String(sector.hotCoins).padEnd(3);
+		const topPerformer = `${sector.topCoin.symbol} (${parseFloat(
+			sector.topCoin.momentum.totalScore
+		).toFixed(0)})`;
+
+		console.log(
+			`${name} | ${avgScore} | ${coinCount} | ${hotCoins} | ${topPerformer}`
+		);
+	});
 }
 
 function displayMarketConditions(btcDominance, fearAndGreed) {
