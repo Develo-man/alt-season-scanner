@@ -390,6 +390,58 @@ async function batchProcess(items, batchSize, delayMs, processFn) {
 	return results;
 }
 
+/**
+ * Oblicza presję kupna/sprzedaży na podstawie transakcji z zadanego okresu.
+ * @param {string} symbol - Para handlowa, np. 'BTCUSDT'
+ * @param {number} durationMinutes - Okres analizy w minutach (np. 60 dla ostatniej godziny)
+ * @returns {Promise<Object|null>}
+ */
+async function getBuySellPressure(symbol, durationMinutes = 60) {
+    try {
+        const endTime = Date.now();
+        const startTime = endTime - durationMinutes * 60 * 1000;
+
+        const response = await api.get('/api/v3/aggTrades', {
+            params: { symbol, startTime, endTime, limit: 1000 }
+        });
+
+        if (!response.data || response.data.length === 0) return null;
+
+        let buyVolume = 0;
+        let sellVolume = 0;
+
+        for (const trade of response.data) {
+            const price = parseFloat(trade.p);
+            const quantity = parseFloat(trade.q);
+            const volume = price * quantity;
+
+            if (trade.m) { // `m` is true if the buyer is the maker (traktowane jako sell-side pressure)
+                sellVolume += volume;
+            } else {
+                buyVolume += volume;
+            }
+        }
+        
+        const totalVolume = buyVolume + sellVolume;
+        if (totalVolume === 0) return null;
+
+        const buyPressure = (buyVolume / totalVolume) * 100;
+
+        return {
+            buyVolume: buyVolume,
+            sellVolume: sellVolume,
+            totalVolume: totalVolume,
+            buyPressure: buyPressure.toFixed(1),
+            tradesCount: response.data.length
+        };
+
+    } catch (error) {
+        console.warn(`⚠️  Nie udało się pobrać danych o presji dla ${symbol}`);
+        return null;
+    }
+}
+
+
 module.exports = {
 	getExchangeInfo,
 	checkIfListed,
@@ -400,6 +452,8 @@ module.exports = {
 	test,
 	getKlines,
 	getWhaleActivity,
+	batchProcess,
+	getBuySellPressure
 };
 
 // Run test if this file is executed directly

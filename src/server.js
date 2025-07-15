@@ -192,6 +192,23 @@ async function runScanner() {
 		}
 	});
 
+	console.log('📊 Analizuję presję kupna/sprzedaży...');
+	for (const coin of candidates.slice(0, 20)) {
+		if (coin.binance && coin.binance.mainPair) {
+			const pressureData = await getBuySellPressure(coin.binance.mainPair, 60); // Ostatnie 60 minut
+			if (pressureData) {
+				coin.pressureData = pressureData;
+				console.log(
+					`✅ [${coin.symbol}] Presja kupna: ${pressureData.buyPressure}%`
+				);
+			} else {
+				console.log(
+					`⚪️ [${coin.symbol}] Brak danych o presji w ostatniej godzinie.`
+				);
+			}
+		}
+	}
+
 	const symbols = candidates.map((coin) => coin.symbol);
 	const binanceData = await checkMultipleCoins(symbols);
 	const coinsWithFullData = candidates
@@ -223,6 +240,7 @@ async function runScanner() {
 		volumeToMcap: coin.volumeToMcap,
 		sector: coin.sector,
 		developerData: coin.developerData || null,
+		pressureData: coin.pressureData || null,
 		momentum: {
 			score: parseFloat(coin.momentum.totalScore),
 			risk: coin.momentum.riskScore,
