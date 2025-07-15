@@ -5,6 +5,45 @@
 const { calculateAccumulationScore } = require('./accumulation');
 
 /**
+ * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
+ * @param {Object} marketConditions - Obiekt zawierający dane o rynku.
+ * @param {number} [marketConditions.btcDominance] - Dominacja BTC.
+ * @param {Object} [marketConditions.fearAndGreed] - Wskaźnik Fear & Greed.
+ * @returns {Object} Obiekt z wagami dla poszczególnych składników oceny.
+ */
+function getDynamicWeights(marketConditions) {
+	const baseWeights = { price: 0.35, volume: 0.35, position: 0.3, risk: 0.25 };
+
+	if (
+		!marketConditions ||
+		!marketConditions.btcDominance ||
+		!marketConditions.fearAndGreed
+	) {
+		return baseWeights;
+	}
+
+	const { btcDominance, fearAndGreed } = marketConditions;
+
+	// Warunek 1: Hossa na altach (niska dominacja BTC, wysoka chciwość)
+	if (btcDominance < 55 && fearAndGreed.value > 65) {
+		return { price: 0.45, volume: 0.3, position: 0.25, risk: 0.25 };
+	}
+
+	// Warunek 2: Sezon Bitcoina (wysoka dominacja BTC, strach)
+	if (btcDominance > 60 && fearAndGreed.value < 40) {
+		return { price: 0.25, volume: 0.45, position: 0.3, risk: 0.25 };
+	}
+
+	// Warunek 3: Rynek neutralny/boczny
+	if (btcDominance >= 55 && btcDominance <= 60) {
+		return { price: 0.3, volume: 0.4, position: 0.3, risk: 0.25 };
+	}
+
+	// Domyślne wagi, jeśli żaden warunek nie jest spełniony
+	return baseWeights;
+}
+
+/**
  * Calculate momentum score based on price performance
  * @param {Object} coin - Coin data
  * @returns {number} Momentum score (0-100)
@@ -141,10 +180,15 @@ function calculateRiskScore(coin) {
 /**
  * Calculate comprehensive momentum score
  * @param {Object} coin - Complete coin data with Binance info
+ * @param {Object} [marketConditions={}] - Optional market conditions data
  * @param {Object} [additionalData={}] - Optional data for accumulation
  * @returns {Object} Detailed scoring breakdown
  */
-function calculateMomentumScore(coin, additionalData = {}) {
+function calculateMomentumScore(
+	coin,
+	marketConditions = {},
+	additionalData = {}
+) {
 	// Skip if not on Binance
 	if (!coin.binance || !coin.binance.isListed) {
 		return {
@@ -159,9 +203,12 @@ function calculateMomentumScore(coin, additionalData = {}) {
 	const positionScore = calculatePositionScore(coin);
 	const riskScore = calculateRiskScore(coin);
 
+	// Get dynamic weights
+	const weights = getDynamicWeights(marketConditions);
+
 	// Calculate accumulation if data provided
 	let accumulationData = null;
-	if (additionalData  && additionalData.klines && additionalData.whaleData) {
+	if (additionalData && additionalData.klines && additionalData.whaleData) {
 		accumulationData = calculateAccumulationScore(
 			coin,
 			additionalData.klines,
@@ -172,10 +219,10 @@ function calculateMomentumScore(coin, additionalData = {}) {
 	// Calculate weighted total (risk reduces score)
 	const totalScore = Math.max(
 		0,
-		priceScore * 0.35 +
-			volumeScore * 0.35 +
-			positionScore * 0.3 -
-			riskScore * 0.25
+		priceScore * weights.price +
+			volumeScore * weights.volume +
+			positionScore * weights.position -
+			riskScore * weights.risk
 	);
 
 	// Determine category
@@ -210,11 +257,10 @@ function calculateMomentumScore(coin, additionalData = {}) {
 		riskScore,
 	});
 
-		// Add accumulation signals if available
+	// Add accumulation signals if available
 	if (accumulationData && accumulationData.signals.length > 0) {
 		signals.push(...accumulationData.signals.slice(0, 2));
 	}
-
 
 	return {
 		totalScore: totalScore.toFixed(2),
@@ -232,12 +278,7 @@ function calculateMomentumScore(coin, additionalData = {}) {
 			riskFactor: `${riskScore}/100`,
 			accumulation: accumulationData ? `${accumulationData.score}/100` : 'N/A',
 		},
-		signals: generateSignals(coin, {
-			priceScore,
-			volumeScore,
-			positionScore,
-			riskScore,
-		}),
+		signals: signals,
 	};
 }
 
@@ -295,13 +336,14 @@ function generateSignals(coin, scores) {
 /**
  * Rank coins by momentum score
  * @param {Array} coins - Array of coins with scores
+ * @param {Object} marketConditions - Object with market data
  * @returns {Array} Sorted array
  */
-function rankByMomentum(coins) {
+function rankByMomentum(coins, marketConditions) {
 	return coins
 		.map((coin) => ({
 			...coin,
-			momentum: calculateMomentumScore(coin),
+			momentum: calculateMomentumScore(coin, marketConditions),
 		}))
 		.filter((coin) => !coin.momentum.notListed)
 		.sort(
@@ -318,7 +360,7 @@ function rankByMomentum(coins) {
  * @returns {Array} Filtered and sorted coins
  */
 function getTopByCategory(coins, category, limit = 5) {
-	const ranked = rankByMomentum(coins);
+	const ranked = rankByMomentum(coins); // Note: this will use default market conditions
 
 	switch (category) {
 		case 'safest':

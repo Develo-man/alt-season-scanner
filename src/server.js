@@ -127,6 +127,11 @@ async function runScanner() {
 	const btcDominance = await getBTCDominance();
 	const fearAndGreed = await getFearAndGreedIndex();
 	const data = await getTop100();
+	
+	 const marketConditions = {
+        btcDominance,
+        fearAndGreed
+    };
 
 	const coinsWithSectors = data.coins.map((coin) => {
 		const sector = coin.symbol ? getSector(coin.symbol) : 'Unknown';
@@ -187,7 +192,7 @@ async function runScanner() {
 		})
 		.filter((coin) => coin.isOnBinance);
 
-	const rankedCoins = rankByMomentum(coinsWithFullData);
+	const rankedCoins = rankByMomentum(coinsWithFullData, marketConditions);
 	const sectorAnalysis = analyzeSectors(rankedCoins);
 
 	const formattedCoins = rankedCoins.slice(0, 20).map((coin) => ({

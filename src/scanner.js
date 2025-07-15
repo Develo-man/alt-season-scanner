@@ -38,6 +38,11 @@ async function main() {
 		const fearAndGreed = await getFearAndGreedIndex();
 		displayMarketConditions(btcDominance, fearAndGreed);
 
+		  const marketConditions = {
+            btcDominance,
+            fearAndGreed
+        };
+
 		// Step 2: Fetch and filter data
 		console.log('\n📡 DATA COLLECTION');
 		console.log('═'.repeat(50));
@@ -105,7 +110,7 @@ async function main() {
 					]);
 
 					// Calculate momentum with accumulation data
-					const momentumWithAccumulation = calculateMomentumScore(coin, {
+					const momentumWithAccumulation = calculateMomentumScore(coin, marketConditions, {
 						klines,
 						whaleData,
 					});
@@ -142,7 +147,7 @@ async function main() {
 		// Rank all coins (rest without accumulation data for performance)
 		const remainingCoins = coinsWithFullData.slice(10).map((coin) => ({
 			...coin,
-			momentum: calculateMomentumScore(coin),
+			momentum: calculateMomentumScore(coin, marketConditions),
 		}));
 
 		const rankedCoins = [...topCoinsWithAccumulation, ...remainingCoins].sort(
