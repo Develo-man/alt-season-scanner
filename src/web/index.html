@@ -401,6 +401,33 @@
             font-size: 0.875rem;
         }
 
+        .coin-dev-activity {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            padding: 0.75rem 0.5rem;
+            margin-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .dev-metric {
+            text-align: center;
+        }
+
+        .dev-label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .dev-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
         /* Loading State */
         .loading {
             text-align: center;
@@ -753,6 +780,24 @@
             ${coin.momentum.accumulation.emoji} Accumulation: ${coin.momentum.accumulation.score}
         </div>` : '';
 
+            const devData = coin.developerData;
+            const devActivityHTML = devData ? `
+        <div class="coin-dev-activity">
+            <div class="dev-metric">
+                <span class="dev-label">Commits (4w)</span>
+                <span class="dev-value">${devData.commit_count_4_weeks}</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-label">Contributors</span>
+                <span class="dev-value">${devData.pull_request_contributors}</span>
+            </div>
+            <div class="dev-metric">
+                <span class="dev-label">Stars</span>
+                <span class="dev-value">${devData.stars}</span>
+            </div>
+        </div>
+    ` : '';
+
             return `
                 <div class="coin-card" style="animation-delay: ${Math.random() * 0.3}s">
                     <div class="coin-header">
@@ -787,7 +832,9 @@
                         </div>
                     </div>
                     
-         ${signals.length > 0 ? `
+                    ${devActivityHTML}
+
+                      ${signals.length > 0 ? `
                 <div class="coin-signals">
                     ${signals.slice(0, 3).map(signal => `<span class="signal">${signal}</span>`).join('')}
                 </div>

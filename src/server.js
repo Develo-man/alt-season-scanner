@@ -3,7 +3,11 @@ const path = require('path');
 const fs = require('fs').promises; //async fs
 
 // Imports logic
-const { getTop100, getBTCDominance } = require('./apis/coingecko');
+const {
+	getTop100,
+	getBTCDominance,
+	getCoinDeveloperData,
+} = require('./apis/coingecko');
 const { filterAndSort } = require('./utils/filters');
 const { checkMultipleCoins } = require('./apis/binance');
 const { rankByMomentum } = require('./utils/momentum');
@@ -127,11 +131,6 @@ async function runScanner() {
 	const btcDominance = await getBTCDominance();
 	const fearAndGreed = await getFearAndGreedIndex();
 	const data = await getTop100();
-	
-	 const marketConditions = {
-        btcDominance,
-        fearAndGreed
-    };
 
 	const coinsWithSectors = data.coins.map((coin) => {
 		const sector = coin.symbol ? getSector(coin.symbol) : 'Unknown';
@@ -160,7 +159,7 @@ async function runScanner() {
 		advice = 'Alty krwawią - dobre dla akumulacji';
 	} else if (btcDominance > 60) {
 		condition = 'BTC FAWORYZOWANY';
-		advice = 'Wyzwanie dla alt - bądź selektywny';
+		advice = 'Wyzwanie dla altów - wybieraj mądrze';
 	} else if (btcDominance > 55) {
 		condition = 'PRZEJŚCIE';
 		advice = 'Zmiany na rynku - wypatruj wybić';
@@ -179,6 +178,20 @@ async function runScanner() {
 
 	const candidates = filterAndSort(data.coins, criteria, 'momentum', 50);
 
+	console.log(
+		`💻 Wzbogacam dane o aktywność deweloperską dla ${candidates.length} monet...`
+	);
+	const devDataPromises = candidates.map((coin) =>
+		getCoinDeveloperData(coin.id)
+	);
+	const devDataResults = await Promise.all(devDataPromises);
+
+	candidates.forEach((coin, index) => {
+		if (devDataResults[index]) {
+			coin.developerData = devDataResults[index];
+		}
+	});
+
 	const symbols = candidates.map((coin) => coin.symbol);
 	const binanceData = await checkMultipleCoins(symbols);
 	const coinsWithFullData = candidates
@@ -192,6 +205,11 @@ async function runScanner() {
 		})
 		.filter((coin) => coin.isOnBinance);
 
+	const marketConditions = {
+		btcDominance,
+		fearAndGreed,
+	};
+
 	const rankedCoins = rankByMomentum(coinsWithFullData, marketConditions);
 	const sectorAnalysis = analyzeSectors(rankedCoins);
 
@@ -204,9 +222,11 @@ async function runScanner() {
 		priceChange7d: coin.priceChange7d,
 		volumeToMcap: coin.volumeToMcap,
 		sector: coin.sector,
+		developerData: coin.developerData || null,
 		momentum: {
 			score: parseFloat(coin.momentum.totalScore),
 			risk: coin.momentum.riskScore,
+			devScore: coin.momentum.devScore,
 			category: coin.momentum.category,
 			signals: coin.momentum.signals.slice(0, 3),
 		},

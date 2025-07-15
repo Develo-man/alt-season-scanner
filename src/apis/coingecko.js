@@ -167,6 +167,45 @@ async function getTop100() {
 	}
 }
 
+/**
+ * Pobiera dane deweloperskie dla pojedynczej monety.
+ * @param {string} coinId - ID monety z CoinGecko
+ * @returns {Promise<Object|null>} Obiekt z danymi deweloperskimi lub null w przypadku błędu.
+ */
+async function getCoinDeveloperData(coinId) {
+	try {
+		const response = await rateLimitedCall(() =>
+			api.get(`/coins/${coinId}`, {
+				params: {
+					localization: false,
+					tickers: false,
+					market_data: false,
+					community_data: false,
+					developer_data: true, // Kluczowy parametr!
+					sparkline: false,
+				},
+			})
+		);
+
+		if (response.data && response.data.developer_data) {
+			return {
+				forks: response.data.developer_data.forks,
+				stars: response.data.developer_data.stars,
+				subscribers: response.data.developer_data.subscribers,
+				pull_request_contributors:
+					response.data.developer_data.pull_request_contributors,
+				commit_count_4_weeks: response.data.developer_data.commit_count_4_weeks,
+			};
+		}
+		return null;
+	} catch (error) {
+		console.warn(
+			`⚠️ Nie udało się pobrać danych deweloperskich dla ${coinId}: ${error.message}`
+		);
+		return null;
+	}
+}
+
 // Test function
 async function test() {
 	console.log('🧪 Testing CoinGecko API...\n');
@@ -204,6 +243,7 @@ module.exports = {
 	formatCoinData,
 	getTop100,
 	test,
+	getCoinDeveloperData,
 };
 
 // Run test if this file is executed directly

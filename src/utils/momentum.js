@@ -178,6 +178,41 @@ function calculateRiskScore(coin) {
 }
 
 /**
+ * Oblicza wynik aktywności deweloperskiej.
+ * @param {Object} coin - Obiekt monety z polem `developerData`.
+ * @returns {number} Wynik od 0 do 100.
+ */
+function calculateDeveloperScore(coin) {
+	if (!coin.developerData) {
+		return 0;
+	}
+
+	let score = 0;
+	const { commit_count_4_weeks, pull_request_contributors, stars } =
+		coin.developerData;
+
+	// Punkty za commity w ostatnich 4 tygodniach (waga: 60%)
+	if (commit_count_4_weeks > 50) score += 60;
+	else if (commit_count_4_weeks > 20) score += 40;
+	else if (commit_count_4_weeks > 5) score += 20;
+	else if (commit_count_4_weeks > 0) score += 10;
+
+	// Punkty za liczbę współtwórców (waga: 20%)
+	if (pull_request_contributors > 50) score += 20;
+	else if (pull_request_contributors > 10) score += 15;
+	else if (pull_request_contributors > 1) score += 10;
+	else if (pull_request_contributors === 1) score += 5;
+
+	// Punkty za gwiazdki na GitHubie (waga: 20%)
+	if (stars > 10000) score += 20;
+	else if (stars > 2000) score += 15;
+	else if (stars > 500) score += 10;
+	else if (stars > 100) score += 5;
+
+	return Math.min(score, 100);
+}
+
+/**
  * Calculate comprehensive momentum score
  * @param {Object} coin - Complete coin data with Binance info
  * @param {Object} [marketConditions={}] - Optional market conditions data
@@ -202,6 +237,7 @@ function calculateMomentumScore(
 	const volumeScore = calculateVolumeScore(coin);
 	const positionScore = calculatePositionScore(coin);
 	const riskScore = calculateRiskScore(coin);
+	const devScore = calculateDeveloperScore(coin);
 
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
@@ -219,9 +255,10 @@ function calculateMomentumScore(
 	// Calculate weighted total (risk reduces score)
 	const totalScore = Math.max(
 		0,
-		priceScore * weights.price +
-			volumeScore * weights.volume +
-			positionScore * weights.position -
+		priceScore * (weights.price * 0.85) +
+			volumeScore * (weights.volume * 0.85) +
+			positionScore * (weights.position * 0.85) +
+			devScore * 0.15 -
 			riskScore * weights.risk
 	);
 
@@ -267,6 +304,7 @@ function calculateMomentumScore(
 		priceScore,
 		volumeScore,
 		positionScore,
+		devScore,
 		riskScore,
 		accumulation: accumulationData,
 		category,
