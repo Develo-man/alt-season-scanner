@@ -584,7 +584,7 @@
     <main class="container">
         <section class="sector-analysis-section">
             <div class="section-header">
-                <h2>Analiza Sektorów</h2>
+                <h2>Analiza Sektorów (Najgorętszych)</h2>
             </div>
             <div id="sector-analysis-grid">
             </div>
@@ -743,7 +743,7 @@
                             <p class="avg-score">Śr. wynik: ${sector.averageScore.toFixed(2)}</p>
                         </div>
                         <p class="top-coin">
-                            Lider: ${sector.topCoin.symbol}
+                            Lider: ${sector.topCoin.binance.symbol}
                             <span>(${parseFloat(sector.topCoin.momentum.totalScore).toFixed(0)})</span>
                         </p>
                     </div>
@@ -871,7 +871,7 @@
                     </div>
                     
                     ${devActivityHTML}
-               xxx      ${pressureHTML} console.log(pressureHTML)
+                    ${pressureHTML} 
                       ${signals.length > 0 ? `
                 <div class="coin-signals">
                     ${signals.slice(0, 3).map(signal => `<span class="signal">${signal}</span>`).join('')}

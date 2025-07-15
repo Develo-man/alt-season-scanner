@@ -51,12 +51,11 @@ async function getExchangeInfo() {
 /**
  * Check if a coin is listed on Binance
  * @param {string} symbol - Coin symbol (e.g., 'BTC', 'ETH')
+ * @param {Object} exchangeInfo - Pre-fetched exchange info
  * @returns {Promise<Object>} Listing info or null if not found
  */
-async function checkIfListed(symbol) {
+async function checkIfListed(symbol, exchangeInfo) {
 	try {
-		const exchangeInfo = await getExchangeInfo();
-
 		// Find all pairs for this symbol
 		const pairs = exchangeInfo.symbols.filter(
 			(s) =>
@@ -123,11 +122,12 @@ async function get24hrTicker(tradingPair) {
 /**
  * Get Binance-specific data for a coin
  * @param {string} symbol - Coin symbol
+ * @param {Object} exchangeInfo - Pre-fetched exchange info
  * @returns {Promise<Object>} Binance data including volume
  */
-async function getBinanceData(symbol) {
+async function getBinanceData(symbol, exchangeInfo) {
 	try {
-		const listing = await checkIfListed(symbol);
+		const listing = await checkIfListed(symbol, exchangeInfo);
 
 		if (!listing || !listing.isListed) {
 			return {
@@ -188,13 +188,16 @@ async function getBinanceData(symbol) {
 async function checkMultipleCoins(symbols) {
 	console.log(`🔍 Checking ${symbols.length} coins on Binance...`);
 
+	// Pobieramy dane o giełdzie
+	 const exchangeInfo = await getExchangeInfo();
+
 	const results = {};
 	const batchSize = 10; // Process 10 at a time to avoid rate limits
 
 	for (let i = 0; i < symbols.length; i += batchSize) {
 		const batch = symbols.slice(i, i + batchSize);
 		const promises = batch.map((symbol) =>
-			getBinanceData(symbol)
+			getBinanceData(symbol, exchangeInfo)
 				.then((data) => {
 					results[symbol.toUpperCase()] = data;
 				})

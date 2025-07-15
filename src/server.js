@@ -23,6 +23,10 @@ const {
 
 const PORT = process.env.PORT || 3000;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 min
+
+const DEV_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 godziny
+const devDataCache = {};
+
 // Express application initialisation
 const app = express();
 
@@ -181,16 +185,24 @@ async function runScanner() {
 	console.log(
 		`💻 Wzbogacam dane o aktywność deweloperską dla ${candidates.length} monet...`
 	);
-	const devDataPromises = candidates.map((coin) =>
-		getCoinDeveloperData(coin.id)
-	);
-	const devDataResults = await Promise.all(devDataPromises);
 
-	candidates.forEach((coin, index) => {
-		if (devDataResults[index]) {
-			coin.developerData = devDataResults[index];
+	for (const coin of candidates) {
+		const now = Date.now();
+		const cacheEntry = devDataCache[coin.id];
+
+		if (cacheEntry && now - cacheEntry.timestamp < DEV_CACHE_DURATION) {
+			coin.developerData = cacheEntry.data;
+		} else {
+			// Pobierz nowe dane i zaktualizuj cache
+			const devData = await getCoinDeveloperData(coin.id);
+			coin.developerData = devData;
+			devDataCache[coin.id] = {
+				data: devData,
+				timestamp: now,
+			};
+			await new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5 sekundy opóźnienia
 		}
-	});
+	}
 
 	console.log('📊 Analizuję presję kupna/sprzedaży...');
 	for (const coin of candidates.slice(0, 20)) {
@@ -215,7 +227,7 @@ async function runScanner() {
 		.map((coin) => {
 			const binance = binanceData[coin.symbol.toUpperCase()];
 			return {
-				...coin,
+				sector: getSector(coin.symbol),
 				binance: binanceData[coin.symbol.toUpperCase()],
 				isOnBinance: binanceData[coin.symbol.toUpperCase()]?.isListed,
 			};
