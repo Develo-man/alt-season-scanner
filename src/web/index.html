@@ -798,6 +798,7 @@
 
         // Create Coin Card
         function createCoinCard(coin) {
+            const priceChange7dValue = coin.priceChange7d ?? 0;
             const priceChange = coin.priceChange7d >= 0 ? 'positive' : 'negative';
             const signals = coin.momentum.signals || [];
 
@@ -812,16 +813,16 @@
             const devActivityHTML = devData ? `
         <div class="coin-dev-activity">
             <div class="dev-metric">
-                <span class="dev-label">Commits (4w)</span>
-                <span class="dev-value">${devData.commit_count_4_weeks}</span>
+                <span class="dev-label">Commits (4 week)</span>
+                <span class="dev-value">${devData.commit_count_4_weeks ?? 'brak'}</span>
             </div>
             <div class="dev-metric">
                 <span class="dev-label">Contributors</span>
-                <span class="dev-value">${devData.pull_request_contributors}</span>
+                <span class="dev-value">${devData.pull_request_contributors ?? 'brak'}</span>
             </div>
             <div class="dev-metric">
                 <span class="dev-label">Stars</span>
-                <span class="dev-value">${devData.stars}</span>
+                <span class="dev-value">${devData.stars ?? 'brak'}</span>
             </div>
         </div>
     ` : '';
@@ -858,15 +859,15 @@
                         </div>
                         <div class="metric">
                             <div class="metric-label">7D Change</div>
-                            <div class="metric-value ${priceChange}">${coin.priceChange7d >= 0 ? '+' : ''}${coin.priceChange7d.toFixed(2)}%</div>
+                            <div class="metric-value ${priceChange}">${priceChange7dValue >= 0 ? '+' : ''}${priceChange7dValue.toFixed(2)}%</div>
                         </div>
                         <div class="metric">
                             <div class="metric-label">Volume/MCap</div>
-                            <div class="metric-value">${(coin.volumeToMcap * 100).toFixed(2)}%</div>
+                            <div class="metric-value">${((coin.volumeToMcap ?? 0) * 100).toFixed(2)}%</div>
                         </div>
                         <div class="metric">
                             <div class="metric-label">Risk Score</div>
-                            <div class="metric-value">${coin.momentum.risk}/100</div>
+                            <div class="metric-value">${coin.momentum.riskScore ?? 0}/100</div>
                         </div>
                     </div>
                     

@@ -1,198 +1,45 @@
 require('dotenv').config();
-const { getFearAndGreedIndex } = require('./apis/fearAndGreed');
-const { getTop100, getBTCDominance } = require('./apis/coingecko');
-const { filterAndSort } = require('./utils/filters');
-const { checkMultipleCoins } = require('./apis/binance');
-const { rankByMomentum } = require('./utils/momentum');
-const { getSector } = require('./utils/sectors');
-const { analyzeSectors } = require('./utils/analysis');
-const { getKlines, getWhaleActivity } = require('./apis/binance');
-const { batchProcess } = require('./apis/binance');
 
-// ASCII Art Banner
-console.log(`
-╔═══════════════════════════════════════════════════╗
-║          ALT SEASON SCANNER v1.2.0                ║
-║          Smart Crypto Opportunity Finder          ║
-╚═══════════════════════════════════════════════════╝
-`);
+// Import 
+const { runScanner } = require('./core/scannerLogic');
 
-// Configuration from environment
-const CONFIG = {
-	maxPrice: parseFloat(process.env.MAX_PRICE) || 3,
-	topNCoins: parseInt(process.env.TOP_N_COINS) || 100,
-	minVolumeRatio: 0.03,
-	min7dChange: -20,
-	maxResults: 10,
-};
-
-async function main() {
-	const startTime = Date.now();
-
-	try {
-		// Step 1: Market Overview
-		console.log('📊 MARKET ANALYSIS');
-		console.log('═'.repeat(50));
-
-		const btcDominance = await getBTCDominance();
-		const fearAndGreed = await getFearAndGreedIndex();
-		displayMarketConditions(btcDominance, fearAndGreed);
-
-		  const marketConditions = {
-            btcDominance,
-            fearAndGreed
-        };
-
-		// Step 2: Fetch and filter data
-		console.log('\n📡 DATA COLLECTION');
-		console.log('═'.repeat(50));
-
-		const data = await getTop100();
-		console.log(`✅ Analyzed ${data.count} top cryptocurrencies`);
-
-		// Apply smart filters
-		const criteria = {
-			maxPrice: CONFIG.maxPrice,
-			maxRank: CONFIG.topNCoins,
-			minVolumeRatio: CONFIG.minVolumeRatio,
-			min7dChange: CONFIG.min7dChange,
-			excludeStablecoins: true,
-		};
-
-		const candidates = filterAndSort(data.coins, criteria, 'momentum', 50);
-		console.log(`✅ ${candidates.length} coins meet initial criteria`);
-
-		// Step 3: Binance verification
-		console.log('\n🔍 EXCHANGE VERIFICATION');
-		console.log('═'.repeat(50));
-
-		const symbols = candidates.map((coin) => coin.symbol);
-		const binanceData = await checkMultipleCoins(symbols);
-
-		// Combine all data
-		const coinsWithFullData = candidates
-			.map((coin) => {
-				const binance = binanceData[coin.symbol.toUpperCase()];
-				return {
-					...coin,
-					binance: binance,
-					isOnBinance: binance && binance.isListed,
-					sector: getSector(coin.symbol),
-				};
-			})
-			.filter((coin) => coin.isOnBinance);
-
-		console.log(`✅ ${coinsWithFullData.length} coins available on Binance`);
-
-		// Step 4: Calculate momentum and rank
-		console.log('\n🎯 MOMENTUM & ACCUMULATION ANALYSIS');
-		console.log('═'.repeat(50));
-
-		// Fetch additional data for top 10 coins
-		const topCoinsWithAccumulation = await batchProcess(
-			coinsWithFullData.slice(0, 10), // items
-			3, // batchSize - process 3 coins at a time
-			2000, // delayMs - 2 second delay between batches
-			async (coin) => {
-				// Skip if no Binance data
-				if (!coin.binance || !coin.binance.mainPair) {
-					return {
-						...coin,
-						momentum: calculateMomentumScore(coin),
-					};
-				}
-
-				try {
-					// Fetch klines and whale data in parallel
-					const [klines, whaleData] = await Promise.all([
-						getKlines(coin.binance.mainPair, '1d', 14),
-						getWhaleActivity(coin.binance.mainPair, 500),
-					]);
-
-					// Calculate momentum with accumulation data
-					const momentumWithAccumulation = calculateMomentumScore(coin, marketConditions, {
-						klines,
-						whaleData,
-					});
-
-					// Log if significant accumulation detected
-					if (
-						momentumWithAccumulation.accumulation &&
-						momentumWithAccumulation.accumulation.score >= 60
-					) {
-						console.log(
-							`✨ ${coin.symbol}: Accumulation detected! Score: ${momentumWithAccumulation.accumulation.score}/100`
-						);
-					}
-
-					return {
-						...coin,
-						momentum: momentumWithAccumulation,
-						klines,
-						whaleData,
-					};
-				} catch (error) {
-					console.error(
-						`Failed to get accumulation data for ${coin.symbol}:`,
-						error.message
-					);
-					return {
-						...coin,
-						momentum: calculateMomentumScore(coin),
-					};
-				}
-			}
-		);
-
-		// Rank all coins (rest without accumulation data for performance)
-		const remainingCoins = coinsWithFullData.slice(10).map((coin) => ({
-			...coin,
-			momentum: calculateMomentumScore(coin, marketConditions),
-		}));
-
-		const rankedCoins = [...topCoinsWithAccumulation, ...remainingCoins].sort(
-			(a, b) =>
-				parseFloat(b.momentum.totalScore) - parseFloat(a.momentum.totalScore)
-		);
-
-		// Step 5: Sector Analysis
-		console.log('\n📈 SECTOR ANALYSIS');
-		console.log('═'.repeat(50));
-		const sectorAnalysis = analyzeSectors(rankedCoins);
-		displaySectorAnalysis(sectorAnalysis);
-
-		// Display results
-		displayTopOpportunities(rankedCoins);
-		displayQuickPicks(coinsWithFullData);
-		displayMarketSummary(rankedCoins, btcDominance);
-
-		// Execution time
-		const executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
-		console.log(`\n⏱️  Scan completed in ${executionTime} seconds`);
-		console.log(`📅 ${new Date().toLocaleString()}\n`);
-	} catch (error) {
-		console.error('\n❌ ERROR:', error.message);
-		console.error('Please check your internet connection and API keys');
-		process.exit(1);
+/**
+ * Wyświetla ogólne warunki rynkowe w konsoli.
+ * @param {Object} marketStatus - Obiekt z danymi o stanie rynku.
+ */
+function displayMarketConditions(marketStatus) {
+	console.log('\n📊 WARUNKI RYNKOWE');
+	console.log('═'.repeat(50));
+	console.log(`   Dominacja BTC: ${marketStatus.btcDominance}%`);
+	if (marketStatus.fearAndGreed) {
+		let emoji = '😐';
+		if (marketStatus.fearAndGreed.value > 75) emoji = '🤑';
+		else if (marketStatus.fearAndGreed.value > 55) emoji = '🙂';
+		else if (marketStatus.fearAndGreed.value < 25) emoji = '😨';
+		else if (marketStatus.fearAndGreed.value < 45) emoji = '😟';
+		console.log(`   Fear & Greed: ${marketStatus.fearAndGreed.value} (${emoji} ${marketStatus.fearAndGreed.classification})`);
 	}
+	console.log(`   Faza rynku: ${marketStatus.condition}`);
+	console.log(`   Porada strategiczna: ${marketStatus.advice}`);
 }
 
 /**
- * Displays the results of the sector analysis in the console.
- * @param {Array} sectorAnalysis - Table of analysed sectors.
+ * Wyświetla analizę sektorów w formie tabeli.
+ * @param {Array} sectorAnalysis - Posortowana tablica z danymi o sektorach.
  */
 function displaySectorAnalysis(sectorAnalysis) {
-	console.log('Sector            | Avg Score | Coins | Hot | Top Performer');
+    if (!sectorAnalysis || sectorAnalysis.length === 0) return;
+	console.log('\n📈 ANALIZA SEKTORÓW');
+	console.log('═'.repeat(70));
+	console.log('Sektor            | Śr. Wynik | Monety | Gorące | Lider');
 	console.log('─'.repeat(70));
 
 	sectorAnalysis.forEach((sector) => {
 		const name = sector.name.padEnd(17);
 		const avgScore = sector.averageScore.toFixed(2).padEnd(9);
-		const coinCount = String(sector.coinCount).padEnd(5);
-		const hotCoins = String(sector.hotCoins).padEnd(3);
-		const topPerformer = `${sector.topCoin.symbol} (${parseFloat(
-			sector.topCoin.momentum.totalScore
-		).toFixed(0)})`;
+		const coinCount = String(sector.coinCount).padEnd(6);
+        const hotCoins = String(sector.hotCoins).padEnd(6);
+		const topPerformer = `${sector.topCoin.symbol} (${parseFloat(sector.topCoin.momentum.totalScore).toFixed(0)})`;
 
 		console.log(
 			`${name} | ${avgScore} | ${coinCount} | ${hotCoins} | ${topPerformer}`
@@ -200,76 +47,33 @@ function displaySectorAnalysis(sectorAnalysis) {
 	});
 }
 
-function displayMarketConditions(btcDominance, fearAndGreed) {
-	console.log(`\nBitcoin Dominance: ${btcDominance.toFixed(2)}%`);
 
-	if (fearAndGreed) {
-		let emoji = '😐';
-		if (fearAndGreed.value > 75) emoji = '🤑';
-		else if (fearAndGreed.value > 55) emoji = '🙂';
-		else if (fearAndGreed.value < 25) emoji = '😨';
-		else if (fearAndGreed.value < 45) emoji = '😟';
-
-		console.log(
-			`Fear & Greed Index: ${fearAndGreed.value} (${emoji} ${fearAndGreed.classification})`
-		);
-	}
-	let condition, emoji, advice;
-
-	if (btcDominance > 65) {
-		condition = 'BITCOIN SEASON';
-		emoji = '🟡';
-		advice = 'Alts are bleeding - good for accumulation';
-	} else if (btcDominance > 60) {
-		condition = 'BTC FAVORED';
-		emoji = '🟠';
-		advice = 'Challenging for alts - be selective';
-	} else if (btcDominance > 55) {
-		condition = 'TRANSITIONING';
-		emoji = '🟢';
-		advice = 'Market shifting - watch for breakouts';
-	} else if (btcDominance > 50) {
-		condition = 'BALANCED';
-		emoji = '🟢';
-		advice = 'Good conditions for alt trades';
-	} else {
-		condition = 'ALT SEASON!';
-		emoji = '🚀';
-		advice = 'Alts outperforming - ride the wave!';
-	}
-
-	console.log(`${emoji} Market Condition: ${condition}`);
-	console.log(`💡 Strategy: ${advice}`);
-}
-
+/**
+ * Wyświetla sformatowaną listę najlepszych kryptowalut.
+ * @param {Array} coins - Tablica z danymi monet do wyświetlenia.
+ */
 function displayTopOpportunities(coins) {
-	console.log('\n🏆 TOP OPPORTUNITIES BY MOMENTUM SCORE');
-	console.log('═'.repeat(70));
+	console.log('\n🏆 GŁÓWNE OKAZJE (TOP 10)');
+	console.log('═'.repeat(80));
 	console.log(
-		'Rank | Score | Coin    | Price      | 7d %    | Category    | Signals'
+		'Rank | Symbol   | Cena       | Zmiana 7D | Wynik Mom. | Kategoria     | Sygnały'
 	);
-	console.log('─'.repeat(70));
+	console.log('─'.repeat(80));
 
-	const top10 = coins.slice(0, CONFIG.maxResults);
-
-	top10.forEach((coin, index) => {
+	coins.slice(0, 10).forEach((coin, index) => {
 		const rank = String(index + 1).padEnd(4);
-		const score = coin.momentum.totalScore.padEnd(5);
-		const symbol = coin.symbol.padEnd(7);
+        const symbol = coin.symbol.padEnd(8);
 		const price = `$${coin.price.toFixed(4)}`.padEnd(10);
-		const change7d = `${
-			coin.priceChange7d >= 0 ? '+' : ''
-		}${coin.priceChange7d.toFixed(1)}%`.padEnd(8);
-		const category = `${coin.momentum.emoji} ${coin.momentum.category}`.padEnd(
-			11
-		);
+		const change7d = `${coin.priceChange7d >= 0 ? '+' : ''}${coin.priceChange7d.toFixed(1)}%`.padEnd(11);
+		const score = coin.momentum.totalScore.padEnd(10);
+        const category = `${coin.momentum.emoji} ${coin.momentum.category}`.padEnd(13);
 
 		console.log(
-			`${rank} | ${score} | ${symbol} | ${price} | ${change7d} | ${category} |`
+			`${rank} | ${symbol} | ${price} | ${change7d} | ${score} | ${category} |`
 		);
 
-		// Show top 2 signals for each coin
-		if (coin.momentum.signals.length > 0) {
+        // Wyświetl do 2 sygnałów dla każdej monety
+		if (coin.momentum.signals && coin.momentum.signals.length > 0) {
 			const topSignals = coin.momentum.signals.slice(0, 2);
 			topSignals.forEach((signal) => {
 				console.log(`     └─ ${signal}`);
@@ -278,110 +82,37 @@ function displayTopOpportunities(coins) {
 	});
 }
 
-function displayQuickPicks(coins) {
-	console.log('\n⚡ QUICK PICKS BY STRATEGY');
-	console.log('═'.repeat(50));
+/**
+ * Główna funkcja uruchamiająca skaner z linii komend.
+ */
+async function main() {
+	const startTime = Date.now();
+	console.log(`
+╔═══════════════════════════════════════════════════╗
+║        ALT SEASON SCANNER v1.3.0 (CLI Mode)       ║
+╚═══════════════════════════════════════════════════╝
+    `);
 
-	// Best momentum with good risk/reward
-	const balanced = coins
-		.filter(
-			(c) =>
-				c.momentum && c.momentum.totalScore > 40 && c.momentum.riskScore < 40
-		)
-		.slice(0, 3);
+	try {
+		// Uruchomienie scentralizowanej logiki
+		const results = await runScanner();
 
-	if (balanced.length > 0) {
-		console.log('\n📊 Balanced Risk/Reward:');
-		balanced.forEach((coin) => {
-			console.log(
-				`   ${coin.symbol} - Score: ${coin.momentum.totalScore}, Risk: ${coin.momentum.riskScore}/100`
-			);
-		});
-	}
+		// Przekazanie wyników do funkcji wyświetlających
+		console.log('\n✅ Skanowanie zakończone. Oto podsumowanie:');
+		displayMarketConditions(results.marketStatus);
+        displaySectorAnalysis(results.sectorAnalysis);
+		displayTopOpportunities(results.coins);
 
-	// Potential reversal plays
-	const reversals = coins
-		.filter(
-			(c) =>
-				c.priceChange24h < -5 && c.priceChange7d > 10 && c.volumeToMcap > 0.1
-		)
-		.slice(0, 3);
+		const executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+		console.log(`\nStats: Przeanalizowano ${results.totalAnalyzed}, odfiltrowano ${results.totalFiltered}, na Binance ${results.totalOnBinance}.`);
+		console.log(`\n⏱️  Całe skanowanie zajęło ${executionTime} sekund.`);
 
-	if (reversals.length > 0) {
-		console.log('\n🔄 Potential Reversal Plays:');
-		reversals.forEach((coin) => {
-			console.log(
-				`   ${coin.symbol} - 24h: ${coin.priceChange24h.toFixed(
-					1
-				)}%, 7d: ${coin.priceChange7d.toFixed(1)}%`
-			);
-		});
-	}
-
-	// Volume anomalies
-	const volumeSpikes = coins.filter((c) => c.volumeToMcap > 0.3).slice(0, 3);
-
-	if (volumeSpikes.length > 0) {
-		console.log('\n💥 Unusual Volume Activity:');
-		volumeSpikes.forEach((coin) => {
-			console.log(
-				`   ${coin.symbol} - Volume/MCap: ${(coin.volumeToMcap * 100).toFixed(
-					1
-				)}%`
-			);
-		});
+	} catch (error) {
+		console.error('\n❌ WYSTĄPIŁ KRYTYCZNY BŁĄD:');
+        console.error(error.message);
+		process.exit(1);
 	}
 }
 
-function displayMarketSummary(coins, btcDominance) {
-	console.log('\n📈 MARKET SUMMARY');
-	console.log('═'.repeat(50));
-
-	// Calculate market stats
-	const avgScore =
-		coins.reduce((sum, c) => sum + parseFloat(c.momentum.totalScore), 0) /
-		coins.length;
-	const bullishCoins = coins.filter((c) => c.priceChange7d > 20).length;
-	const oversoldCoins = coins.filter((c) => c.priceChange24h < -10).length;
-
-	console.log(`\n📊 Key Metrics:`);
-	console.log(`   • Average Momentum Score: ${avgScore.toFixed(1)}/100`);
-	console.log(`   • Strongly Bullish (>20% 7d): ${bullishCoins} coins`);
-	console.log(`   • Oversold Today (<-10% 24h): ${oversoldCoins} coins`);
-	console.log(`   • BTC Dominance: ${btcDominance.toFixed(2)}%`);
-
-	// Market recommendation
-	console.log(`\n💡 Market Recommendation:`);
-	if (avgScore < 40 && btcDominance > 60) {
-		console.log(`   ⚠️  Difficult conditions - Be very selective`);
-		console.log(
-			`   📌 Focus on: High volume reversals, strong projects on dips`
-		);
-	} else if (avgScore > 50 && btcDominance < 55) {
-		console.log(`   ✅ Good conditions - Multiple opportunities`);
-		console.log(`   📌 Focus on: Momentum plays, sector rotations`);
-	} else {
-		console.log(`   ➡️  Neutral market - Look for specific setups`);
-		console.log(
-			`   📌 Focus on: Quality over quantity, wait for confirmations`
-		);
-	}
-
-	// Risk warning
-	console.log(`\n⚠️  Risk Reminder:`);
-	console.log(`   • Never invest more than you can afford to lose`);
-	console.log(`   • This is not financial advice - DYOR`);
-	console.log(`   • Use stop losses and manage position sizes`);
-}
-
-// Add cleanup for graceful exit
-process.on('SIGINT', () => {
-	console.log('\n\n👋 Scanner stopped by user');
-	process.exit(0);
-});
-
-// Run the scanner
-main().catch((error) => {
-	console.error('Fatal error:', error);
-	process.exit(1);
-});
+// Uruchomienie głównej funkcji
+main();
