@@ -141,9 +141,10 @@ function calculateRiskScore(coin) {
 /**
  * Calculate comprehensive momentum score
  * @param {Object} coin - Complete coin data with Binance info
+ * @param {Object} [additionalData={}] - Optional data for accumulation
  * @returns {Object} Detailed scoring breakdown
  */
-function calculateMomentumScore(coin) {
+function calculateMomentumScore(coin, additionalData = {}) {
 	// Skip if not on Binance
 	if (!coin.binance || !coin.binance.isListed) {
 		return {
@@ -160,7 +161,7 @@ function calculateMomentumScore(coin) {
 
 	// Calculate accumulation if data provided
 	let accumulationData = null;
-	if (additionalData.klines && additionalData.whaleData) {
+	if (additionalData  && additionalData.klines && additionalData.whaleData) {
 		accumulationData = calculateAccumulationScore(
 			coin,
 			additionalData.klines,
