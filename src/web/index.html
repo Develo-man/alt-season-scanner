@@ -238,7 +238,6 @@
             transition: all 0.3s ease;
             animation: fadeInUp 0.5s ease-out;
             position: relative;
-            overflow: hidden;
         }
 
         .coin-card::before {
@@ -300,7 +299,7 @@
         }
 
         .momentum-score {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: bold;
             color: var(--bitcoin-gold);
         }
@@ -454,6 +453,54 @@
             color: var(--text-secondary);
             margin-bottom: 0.25rem;
             text-align: center;
+        }
+
+        /* Tooltip Styles */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            border-bottom: 1px dotted var(--text-secondary);
+            /* Opcjonalne: podkreślenie, by wskazać interaktywność */
+        }
+
+        .tooltip-container .tooltip-text {
+            visibility: hidden;
+            width: 240px;
+            background-color: var(--medium-gray);
+            color: var(--text-primary);
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 101;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -120px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            font-weight: normal;
+            line-height: 1.4;
+            text-transform: none;
+            letter-spacing: normal;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tooltip-container .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--medium-gray) transparent transparent transparent;
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
         }
 
         /* Loading State */
@@ -841,13 +888,13 @@
                 <div class="coin-card" style="animation-delay: ${Math.random() * 0.3}s">
                     <div class="coin-header">
                         <div class="coin-info">
-                            <div class="coin-rank">${coin.rank}</div>
+                            <div class="coin-rank">${Math.round(coin.momentum.totalScore)}</div>
                             <div class="coin-name">
                                 <h3>${coin.symbol}</h3>
                                 <span>${coin.name}</span>
                             </div>
                         </div>
-                        <div class="momentum-score">${coin.momentum.score}</div>
+                        <div class="momentum-score">${coin.momentum.category}</div>
                     </div>
 
                                 ${accumulationBadge}
@@ -861,12 +908,18 @@
                             <div class="metric-label">7D Change</div>
                             <div class="metric-value ${priceChange}">${priceChange7dValue >= 0 ? '+' : ''}${priceChange7dValue.toFixed(2)}%</div>
                         </div>
-                        <div class="metric">
-                            <div class="metric-label">Volume/MCap</div>
+                   <div class="metric">
+                            <div class="metric-label tooltip-container">
+                                Volume/MCap
+                                <span class="tooltip-text">Stosunek wolumenu z 24h do kapitalizacji rynkowej. Pokazuje płynność i zainteresowanie. Wysoka wartość (>30%) sugeruje, że coś się dzieje.</span>
+                            </div>
                             <div class="metric-value">${((coin.volumeToMcap ?? 0) * 100).toFixed(2)}%</div>
                         </div>
-                        <div class="metric">
-                            <div class="metric-label">Risk Score</div>
+                            <div class="metric">
+                            <div class="metric-label tooltip-container">
+                                Risk Score
+                                <span class="tooltip-text">Ocena ryzyka (0-100, im niżej tym lepiej). Uwzględnia: gwałtowność wzrostów (FOMO), spadki momentum (korekta), niską płynność i pozycję w rankingu.</span>
+                            </div>
                             <div class="metric-value">${coin.momentum.riskScore ?? 0}/100</div>
                         </div>
                     </div>
@@ -881,7 +934,6 @@
         </div>
     `;
         }
-
         // Add to the loadData function after updating market status:
         function createDominanceGauge(dominance) {
             const canvas = document.createElement('canvas');

@@ -26,7 +26,7 @@ async function runScanner() {
 	console.log('🔄 Uruchamiam scentralizowany skaner...');
 
 	// --- Krok 1: Pobranie danych rynkowych ---
-	const [btcDominance, fearAndGreed, data] = await Promise.all([
+	const [btcDominance, fearAndGreed, data, history] = await Promise.all([
 		getBTCDominance(),
 		getFearAndGreedIndex(),
 		getTop100(),
