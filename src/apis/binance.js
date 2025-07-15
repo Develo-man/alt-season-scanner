@@ -279,6 +279,117 @@ async function test() {
 	}
 }
 
+/**
+ * Get klines (candlestick) data for volatility calculation
+ * @param {string} symbol - Trading pair (e.g., 'MATICUSDT')
+ * @param {string} interval - Kline interval (1d, 4h, 1h, etc.)
+ * @param {number} limit - Number of klines to fetch
+ * @returns {Promise<Array>} Kline data
+ */
+async function getKlines(symbol, interval = '1d', limit = 14) {
+	try {
+		const response = await api.get('/api/v3/klines', {
+			params: {
+				symbol: symbol,
+				interval: interval,
+				limit: limit,
+			},
+		});
+
+		return response.data.map((kline) => ({
+			openTime: kline[0],
+			open: parseFloat(kline[1]),
+			high: parseFloat(kline[2]),
+			low: parseFloat(kline[3]),
+			close: parseFloat(kline[4]),
+			volume: parseFloat(kline[5]),
+			closeTime: kline[6],
+			quoteVolume: parseFloat(kline[7]),
+			trades: kline[8],
+		}));
+	} catch (error) {
+		console.error(`❌ Error fetching klines for ${symbol}:`, error.message);
+		return null;
+	}
+}
+
+/**
+ * Get aggregate trades to detect whale activity
+ * @param {string} symbol - Trading pair
+ * @param {number} limit - Number of trades (max 1000)
+ * @returns {Promise<Object>} Whale activity analysis
+ */
+async function getWhaleActivity(symbol, limit = 500) {
+	try {
+		const response = await api.get('/api/v3/aggTrades', {
+			params: {
+				symbol: symbol,
+				limit: limit,
+			},
+		});
+
+		const trades = response.data;
+		const currentPrice = parseFloat(trades[trades.length - 1].p);
+
+		// Analyze trades
+		let largeBuys = 0;
+		let largeSells = 0;
+		let totalLargeVolume = 0;
+		const LARGE_TRADE_USD = 50000; // $50k threshold
+
+		trades.forEach((trade) => {
+			const price = parseFloat(trade.p);
+			const quantity = parseFloat(trade.q);
+			const valueUSD = price * quantity;
+
+			if (valueUSD >= LARGE_TRADE_USD) {
+				totalLargeVolume += valueUSD;
+				// 'm' field indicates if buyer was maker
+				if (trade.m) {
+					largeSells++;
+				} else {
+					largeBuys++;
+				}
+			}
+		});
+
+		const totalLargeTrades = largeBuys + largeSells;
+		const buyPressure =
+			totalLargeTrades > 0 ? largeBuys / totalLargeTrades : 0.5;
+
+		return {
+			largeBuys,
+			largeSells,
+			totalLargeTrades,
+			buyPressure,
+			avgLargeTradeSize:
+				totalLargeTrades > 0 ? totalLargeVolume / totalLargeTrades : 0,
+			period: `Last ${limit} trades`,
+		};
+	} catch (error) {
+		console.error(
+			`❌ Error analyzing whale activity for ${symbol}:`,
+			error.message
+		);
+		return null;
+	}
+}
+async function batchProcess(items, batchSize, delayMs, processFn) {
+	const results = [];
+	
+	for (let i = 0; i < items.length; i += batchSize) {
+		const batch = items.slice(i, i + batchSize);
+		const batchResults = await Promise.all(batch.map(processFn));
+		results.push(...batchResults);
+		
+		if (i + batchSize < items.length) {
+			await new Promise(resolve => setTimeout(resolve, delayMs));
+		}
+	}
+	
+	return results;
+}
+
 module.exports = {
 	getExchangeInfo,
 	checkIfListed,
@@ -287,6 +398,8 @@ module.exports = {
 	checkMultipleCoins,
 	getTopMovers,
 	test,
+	getKlines,
+	getWhaleActivity,
 };
 
 // Run test if this file is executed directly

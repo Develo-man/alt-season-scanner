@@ -2,6 +2,7 @@
  * Advanced Momentum Calculator for Alt Season Scanner
  * Calculates comprehensive scores based on multiple factors
  */
+const { calculateAccumulationScore } = require('./accumulation');
 
 /**
  * Calculate momentum score based on price performance
@@ -157,6 +158,16 @@ function calculateMomentumScore(coin) {
 	const positionScore = calculatePositionScore(coin);
 	const riskScore = calculateRiskScore(coin);
 
+	// Calculate accumulation if data provided
+	let accumulationData = null;
+	if (additionalData.klines && additionalData.whaleData) {
+		accumulationData = calculateAccumulationScore(
+			coin,
+			additionalData.klines,
+			additionalData.whaleData
+		);
+	}
+
 	// Calculate weighted total (risk reduces score)
 	const totalScore = Math.max(
 		0,
@@ -190,12 +201,27 @@ function calculateMomentumScore(coin) {
 		emoji = '💤';
 	}
 
+	// Combine signals
+	const signals = generateSignals(coin, {
+		priceScore,
+		volumeScore,
+		positionScore,
+		riskScore,
+	});
+
+		// Add accumulation signals if available
+	if (accumulationData && accumulationData.signals.length > 0) {
+		signals.push(...accumulationData.signals.slice(0, 2));
+	}
+
+
 	return {
 		totalScore: totalScore.toFixed(2),
 		priceScore,
 		volumeScore,
 		positionScore,
 		riskScore,
+		accumulation: accumulationData,
 		category,
 		emoji,
 		breakdown: {
@@ -203,6 +229,7 @@ function calculateMomentumScore(coin) {
 			volumeActivity: `${volumeScore}/100`,
 			marketPosition: `${positionScore}/60`,
 			riskFactor: `${riskScore}/100`,
+			accumulation: accumulationData ? `${accumulationData.score}/100` : 'N/A',
 		},
 		signals: generateSignals(coin, {
 			priceScore,

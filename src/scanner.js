@@ -6,6 +6,8 @@ const { checkMultipleCoins } = require('./apis/binance');
 const { rankByMomentum } = require('./utils/momentum');
 const { getSector } = require('./utils/sectors');
 const { analyzeSectors } = require('./utils/analysis');
+const { getKlines, getWhaleActivity } = require('./apis/binance');
+const { batchProcess } = require('./apis/binance');
 
 // ASCII Art Banner
 console.log(`
@@ -78,10 +80,75 @@ async function main() {
 		console.log(`✅ ${coinsWithFullData.length} coins available on Binance`);
 
 		// Step 4: Calculate momentum and rank
-		console.log('\n🎯 MOMENTUM ANALYSIS');
+		console.log('\n🎯 MOMENTUM & ACCUMULATION ANALYSIS');
 		console.log('═'.repeat(50));
 
-		const rankedCoins = rankByMomentum(coinsWithFullData);
+		// Fetch additional data for top 10 coins
+		const topCoinsWithAccumulation = await batchProcess(
+			coinsWithFullData.slice(0, 10), // items
+			3, // batchSize - process 3 coins at a time
+			2000, // delayMs - 2 second delay between batches
+			async (coin) => {
+				// Skip if no Binance data
+				if (!coin.binance || !coin.binance.mainPair) {
+					return {
+						...coin,
+						momentum: calculateMomentumScore(coin),
+					};
+				}
+
+				try {
+					// Fetch klines and whale data in parallel
+					const [klines, whaleData] = await Promise.all([
+						getKlines(coin.binance.mainPair, '1d', 14),
+						getWhaleActivity(coin.binance.mainPair, 500),
+					]);
+
+					// Calculate momentum with accumulation data
+					const momentumWithAccumulation = calculateMomentumScore(coin, {
+						klines,
+						whaleData,
+					});
+
+					// Log if significant accumulation detected
+					if (
+						momentumWithAccumulation.accumulation &&
+						momentumWithAccumulation.accumulation.score >= 60
+					) {
+						console.log(
+							`✨ ${coin.symbol}: Accumulation detected! Score: ${momentumWithAccumulation.accumulation.score}/100`
+						);
+					}
+
+					return {
+						...coin,
+						momentum: momentumWithAccumulation,
+						klines,
+						whaleData,
+					};
+				} catch (error) {
+					console.error(
+						`Failed to get accumulation data for ${coin.symbol}:`,
+						error.message
+					);
+					return {
+						...coin,
+						momentum: calculateMomentumScore(coin),
+					};
+				}
+			}
+		);
+
+		// Rank all coins (rest without accumulation data for performance)
+		const remainingCoins = coinsWithFullData.slice(10).map((coin) => ({
+			...coin,
+			momentum: calculateMomentumScore(coin),
+		}));
+
+		const rankedCoins = [...topCoinsWithAccumulation, ...remainingCoins].sort(
+			(a, b) =>
+				parseFloat(b.momentum.totalScore) - parseFloat(a.momentum.totalScore)
+		);
 
 		// Step 5: Sector Analysis
 		console.log('\n📈 SECTOR ANALYSIS');

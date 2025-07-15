@@ -390,6 +390,17 @@
             color: var(--success);
         }
 
+        .accumulation-badge {
+            background: linear-gradient(135deg, var(--bitcoin-gold-dark), var(--bitcoin-gold));
+            color: var(--black);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+
         /* Loading State */
         .loading {
             text-align: center;
@@ -735,6 +746,13 @@
             const priceChange = coin.priceChange7d >= 0 ? 'positive' : 'negative';
             const signals = coin.momentum.signals || [];
 
+            // Check for accumulation data
+            const hasAccumulation = coin.momentum.accumulation && coin.momentum.accumulation.score > 0;
+            const accumulationBadge = hasAccumulation && coin.momentum.accumulation.score >= 60 ?
+                `<div class="accumulation-badge">
+            ${coin.momentum.accumulation.emoji} Accumulation: ${coin.momentum.accumulation.score}
+        </div>` : '';
+
             return `
                 <div class="coin-card" style="animation-delay: ${Math.random() * 0.3}s">
                     <div class="coin-header">
@@ -747,6 +765,8 @@
                         </div>
                         <div class="momentum-score">${coin.momentum.score}</div>
                     </div>
+
+                                ${accumulationBadge}
                     
                     <div class="coin-metrics">
                         <div class="metric">
@@ -767,13 +787,13 @@
                         </div>
                     </div>
                     
-                    ${signals.length > 0 ? `
-                        <div class="coin-signals">
-                            ${signals.slice(0, 3).map(signal => `<span class="signal">${signal}</span>`).join('')}
-                        </div>
-                    ` : ''}
+         ${signals.length > 0 ? `
+                <div class="coin-signals">
+                    ${signals.slice(0, 3).map(signal => `<span class="signal">${signal}</span>`).join('')}
                 </div>
-            `;
+            ` : ''}
+        </div>
+    `;
         }
 
         // Add to the loadData function after updating market status:
