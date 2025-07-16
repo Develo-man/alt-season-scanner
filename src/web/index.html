@@ -17,7 +17,7 @@
     <title>Alt Season Scanner - Smart Crypto Opportunity Finder</title>
 
     <style>
- /* CSS Variables for Modern Crypto Theme */
+        /* CSS Variables for Modern Crypto Theme */
         :root {
             --primary-gold: #FFD700;
             --secondary-gold: #FFA500;
@@ -59,7 +59,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 20% 50%, rgba(123, 63, 242, 0.15) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
                 url('https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop');
@@ -77,10 +77,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(180deg, 
-                rgba(10, 11, 13, 0.8) 0%, 
-                rgba(10, 11, 13, 0.95) 50%, 
-                rgba(10, 11, 13, 1) 100%);
+            background: linear-gradient(180deg,
+                    rgba(10, 11, 13, 0.8) 0%,
+                    rgba(10, 11, 13, 0.95) 50%,
+                    rgba(10, 11, 13, 1) 100%);
             z-index: -1;
         }
 
@@ -130,8 +130,15 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
         }
 
         .nav-links {
@@ -189,8 +196,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
         }
 
         .hero h1 {
@@ -378,7 +392,6 @@
             padding: 2rem;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            overflow: hidden;
         }
 
         .coin-card::before {
@@ -401,7 +414,7 @@
         .coin-card:hover {
             transform: translateY(-10px) scale(1.02);
             border-color: rgba(123, 63, 242, 0.3);
-            box-shadow: 
+            box-shadow:
                 0 20px 40px rgba(123, 63, 242, 0.2),
                 0 0 80px rgba(123, 63, 242, 0.1);
         }
@@ -523,9 +536,9 @@
         }
 
         .sector-card {
-            background: linear-gradient(135deg, 
-                rgba(123, 63, 242, 0.1) 0%, 
-                rgba(0, 212, 255, 0.05) 100%);
+            background: linear-gradient(135deg,
+                    rgba(123, 63, 242, 0.1) 0%,
+                    rgba(0, 212, 255, 0.05) 100%);
             border: 1px solid rgba(123, 63, 242, 0.2);
             border-radius: 20px;
             padding: 2rem;
@@ -602,8 +615,15 @@
         }
 
         @keyframes glow {
-            0%, 100% { box-shadow: 0 4px 20px rgba(255, 184, 0, 0.3); }
-            50% { box-shadow: 0 4px 30px rgba(255, 184, 0, 0.5); }
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(255, 184, 0, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 4px 30px rgba(255, 184, 0, 0.5);
+            }
         }
 
         /* Modern Dev Activity */
@@ -678,8 +698,13 @@
         }
 
         @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
         }
 
         .pressure-label {
@@ -785,6 +810,7 @@
                 transform: translateY(-100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -796,6 +822,7 @@
                 transform: translateY(30px);
                 opacity: 0;
             }
+
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -806,6 +833,7 @@
             from {
                 opacity: 0;
             }
+
             to {
                 opacity: 1;
             }

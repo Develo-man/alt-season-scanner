@@ -1,8 +1,8 @@
 const express = require('express');
 const path = require('path');
-
-// Imports logic
+const resultsPath = path.join(__dirname, '..', 'result');
 const { runScanner } = require('./core/scannerLogic');
+const { loadHistory } = require('./apis/btcDominance');
 
 const PORT = process.env.PORT || 3000;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 min
@@ -29,7 +29,6 @@ app.use((req, res, next) => {
 });
 
 const webPath = path.join(__dirname, 'web');
-const resultsPath = path.join(__dirname, '..', 'results');
 
 app.use(express.static(webPath));
 app.use('/results', express.static(resultsPath));
