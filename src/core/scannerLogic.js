@@ -8,7 +8,12 @@ const {
 	getBTCDominance,
 	getCoinDeveloperData,
 } = require('../apis/coingecko');
-const { checkMultipleCoins, getBuySellPressure } = require('../apis/binance');
+const {
+	checkMultipleCoins,
+	getBuySellPressure,
+	getSmartVolumeAnalysis,
+	getVolumeProfile,
+} = require('../apis/binance');
 const { getFearAndGreedIndex } = require('../apis/fearAndGreed');
 const { filterAndSort } = require('../utils/filters');
 const { rankByMomentum } = require('../utils/momentum');
@@ -62,27 +67,47 @@ async function runScanner() {
 		})
 		.filter((coin) => coin.isOnBinance);
 
-	// --- Krok 4: Wzbogacanie o dane deweloperskie (dla top 20 kandydatów) ---
+	// --- Krok 4 i 5: ZOPTYMALIZOWANE WZBOGACANIE DANYCH ---
 	console.log(
-		`💻 Wzbogacam dane o aktywność deweloperską dla ${Math.min(
+		`⚙️  Wzbogacam dane (deweloperskie, presja, wolumen) dla ${Math.min(
 			20,
 			coinsWithFullData.length
 		)} monet...`
 	);
-	for (const coin of coinsWithFullData.slice(0, 20)) {
-		const devData = await getCoinDeveloperData(coin.id);
-		coin.developerData = devData;
-		await new Promise((resolve) => setTimeout(resolve, 1500)); // Opóźnienie, aby nie przekroczyć limitu API
-	}
 
-	// --- Krok 5: Analiza presji kupna/sprzedaży (dla top 10) ---
-	console.log('📊 Analizuję presję kupna/sprzedaży...');
-	for (const coin of coinsWithFullData.slice(0, 10)) {
-		if (coin.binance && coin.binance.mainPair) {
-			const pressureData = await getBuySellPressure(coin.binance.mainPair, 60); // Ostatnie 60 minut
-			coin.pressureData = pressureData;
-		}
-	}
+	// Przygotowujemy listę (promises) dla każdej monety.
+	const enrichmentPromises = coinsWithFullData
+		.slice(0, 20)
+		.map(async (coin) => {
+			const promises = {
+				// promises pobrania danych deweloperskich
+				devData: getCoinDeveloperData(coin.id),
+				pressureData: null,
+				smartVolume: null,
+				volumeProfile: null,
+			};
+
+			// Jeśli jest para na Binance, dodajemy promises pobrania danych z giełdy
+			if (coin.binance && coin.binance.mainPair) {
+				const mainPair = coin.binance.mainPair;
+				promises.pressureData = getBuySellPressure(mainPair, 60);
+				promises.smartVolume = getSmartVolumeAnalysis(mainPair, 24);
+				promises.volumeProfile = getVolumeProfile(mainPair, '1h', 24);
+			}
+
+			// Czekamy na wszystkie promises dla DANEJ monety
+			const results = await Promise.all(Object.values(promises));
+
+			// Przypisujemy wyniki z powrotem do obiektu monety
+			coin.developerData = results[0];
+			coin.pressureData = results[1];
+			coin.smartVolume = results[2];
+			coin.volumeProfile = results[3];
+
+			return coin;
+		});
+
+	await Promise.all(enrichmentPromises);
 
 	// --- Krok 6: Analiza momentum i sektorów ---
 	const marketConditions = { btcDominance, fearAndGreed };
@@ -113,6 +138,8 @@ async function runScanner() {
 		sector: coin.sector,
 		developerData: coin.developerData || null,
 		pressureData: coin.pressureData || null,
+        smartVolume: coin.smartVolume || null,
+        volumeProfile: coin.volumeProfile || null,
 		momentum: coin.momentum,
 		binance: {
 			trades: coin.binance.binanceTrades24h,

@@ -181,7 +181,7 @@ async function getCoinDeveloperData(coinId) {
 					tickers: false,
 					market_data: false,
 					community_data: false,
-					developer_data: true, // Kluczowy parametr!
+					developer_data: true,
 					sparkline: false,
 				},
 			})

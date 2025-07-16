@@ -224,6 +224,8 @@ function calculateMomentumScore(
 	marketConditions = {},
 	additionalData = {}
 ) {
+	const signals = [];
+
 	// Skip if not on Binance
 	if (!coin.binance || !coin.binance.isListed) {
 		return {
@@ -367,12 +369,14 @@ function calculateMomentumScore(
 	}
 
 	// Combine signals
-	const signals = generateSignals(coin, {
+	const baseSignals = generateSignals(coin, {
 		priceScore,
 		volumeScore,
 		positionScore,
 		riskScore,
 	});
+
+	signals.push(...baseSignals);
 
 	// Add accumulation signals if available
 	if (accumulationData && accumulationData.signals.length > 0) {
