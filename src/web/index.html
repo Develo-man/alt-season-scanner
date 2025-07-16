@@ -235,7 +235,7 @@
         /* Modern Market Status Cards */
         .market-status {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-bottom: 4rem;
             animation: slideUp 0.8s ease-out;
@@ -765,6 +765,138 @@
             transform: translateY(-5px);
         }
 
+        /* Smart Volume Analysis Styles */
+        .smart-volume-section {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(123, 63, 242, 0.05), rgba(0, 212, 255, 0.05));
+            border-radius: 16px;
+            border: 1px solid rgba(123, 63, 242, 0.1);
+        }
+
+        .smart-volume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .smart-volume-title {
+            font-size: 1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .market-character {
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.375rem 0.75rem;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .volume-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .volume-category {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .volume-category:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-purple);
+        }
+
+        .category-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .category-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .category-trades {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Volume Profile Visualization */
+        .volume-profile-section {
+            margin-top: 1rem;
+        }
+
+        .volume-profile-chart {
+            position: relative;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 0.75rem;
+            overflow: hidden;
+        }
+
+        .volume-bar {
+            position: absolute;
+            bottom: 0;
+            background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple));
+            opacity: 0.8;
+            transition: all 0.3s ease;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .volume-bar:hover {
+            opacity: 1;
+            transform: scaleX(1.1);
+        }
+
+        .volume-bar.poc {
+            background: linear-gradient(180deg, var(--primary-gold), var(--secondary-gold));
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .poc-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-gold);
+            background: rgba(255, 215, 0, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .value-area-indicator {
+            position: absolute;
+            background: rgba(0, 255, 163, 0.1);
+            border-left: 2px dashed rgba(0, 255, 163, 0.3);
+            border-right: 2px dashed rgba(0, 255, 163, 0.3);
+            height: 100%;
+            pointer-events: none;
+        }
+
         /* Modern Loading */
         .loading {
             text-align: center;
@@ -1158,6 +1290,108 @@
             </div>
             ` : '';
 
+            const smartVolumeData = coin.smartVolume;
+            const smartVolumeHTML = smartVolumeData ? `
+    <div class="smart-volume-section">
+        <div class="smart-volume-header">
+            <h4 class="smart-volume-title">Smart Volume Analysis (24h)</h4>
+            <span class="market-character">${smartVolumeData.marketCharacter}</span>
+        </div>
+        
+        <div class="volume-categories">
+            ${Object.entries(smartVolumeData.categories)
+                    .filter(([key, cat]) => cat.count > 0)
+                    .map(([key, cat]) => `
+                    <div class="volume-category">
+                        <span class="category-label">${cat.label}</span>
+                        <div class="category-value">${cat.volumePercent}%</div>
+                        <div class="category-trades">${cat.count} trades</div>
+                    </div>
+                `).join('')}
+        </div>
+        
+        <div class="metric" style="background: rgba(123, 63, 242, 0.1); margin-top: 1rem;">
+            <div class="metric-label">Średnia wielkość transakcji</div>
+            <div class="metric-value">${smartVolumeData.avgTradeSizeFormatted}</div>
+        </div>
+        
+        ${renderVolumeProfile(coin.volumeProfile)}
+    </div>
+` : '';
+
+            function renderVolumeProfile(profileData) {
+                if (!profileData) return '';
+
+                const maxVolume = Math.max(...profileData.profile.map(p => p.volume));
+                const currentPrice = profileData.priceRange.current;
+                const pocPrice = profileData.pointOfControl.price;
+
+                return `
+        <div class="volume-profile-section">
+            <h5 style="font-size: 0.875rem; margin-bottom: 0.75rem; color: var(--text-secondary);">
+                Volume Profile (24h) 
+                <span class="tooltip-container">
+                    <span class="tooltip-text">
+                        Pokazuje na jakich poziomach cenowych był największy wolumen. 
+                        POC (Point of Control) = poziom z największym wolumenem.
+                        Value Area = zakres cenowy gdzie było 70% wolumenu.
+                    </span>
+                </span>
+            </h5>
+            
+            <div class="volume-profile-chart">
+                ${profileData.profile.map((level, index) => {
+                    const height = (level.volume / maxVolume) * 100;
+                    const width = 100 / profileData.profile.length;
+                    const left = index * width;
+                    const isPOC = Math.abs(pocPrice - (level.priceFrom + level.priceTo) / 2) < 0.001;
+
+                    return `
+                        <div class="volume-bar ${isPOC ? 'poc' : ''}" 
+                             style="height: ${height}%; width: ${width}%; left: ${left}%;"
+                             title="${formatPrice(level.priceFrom)} - ${formatPrice(level.priceTo)}: ${level.volumePercent}% volume">
+                        </div>
+                    `;
+                }).join('')}
+                
+                <div class="value-area-indicator" 
+                     style="left: ${getValueAreaPosition(profileData, 'left')}%; 
+                            width: ${getValueAreaPosition(profileData, 'width')}%;">
+                </div>
+                
+                <div class="poc-indicator">
+                    POC: ${formatPrice(pocPrice)}
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-secondary);">
+                <span>Low: ${formatPrice(profileData.priceRange.min)}</span>
+                <span>Current: ${formatPrice(currentPrice)}</span>
+                <span>High: ${formatPrice(profileData.priceRange.max)}</span>
+            </div>
+        </div>
+    `;
+            }
+
+            // Funkcje pomocnicze
+            function formatPrice(price) {
+                if (price < 0.01) return price.toFixed(6);
+                if (price < 1) return price.toFixed(4);
+                if (price < 100) return price.toFixed(3);
+                return price.toFixed(2);
+            }
+
+            function getValueAreaPosition(profileData, type) {
+                const range = profileData.priceRange.max - profileData.priceRange.min;
+                const vaLowPos = ((profileData.valueArea.low - profileData.priceRange.min) / range) * 100;
+                const vaHighPos = ((profileData.valueArea.high - profileData.priceRange.min) / range) * 100;
+
+                if (type === 'left') return vaLowPos;
+                if (type === 'width') return vaHighPos - vaLowPos;
+                return 0;
+            }
+
+
             return `
                 <div class="coin-card" style="animation-delay: ${Math.random() * 0.3}s">
                     <div class="coin-header">
@@ -1200,6 +1434,7 @@
                     
                     ${devActivityHTML}
                     ${pressureHTML} 
+                    ${smartVolumeHTML} 
                       ${signals.length > 0 ? `
                 <div class="coin-signals">
                     ${signals.slice(0, 3).map(signal => `<span class="signal">${signal}</span>`).join('')}

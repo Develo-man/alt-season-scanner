@@ -286,6 +286,86 @@ function calculateMomentumScore(
 		emoji = '💤';
 	}
 
+	if (coin.smartVolume) {
+		const sv = coin.smartVolume;
+
+		// Market character signals
+		if (sv.marketCharacter.includes('Whale')) {
+			signals.push('🐋 Wieloryby aktywne - duże transakcje dominują');
+		} else if (sv.marketCharacter.includes('Retail')) {
+			signals.push('👥 Retail FOMO - małe transakcje dominują');
+		}
+
+		// Average trade size signals
+		const avgTradeUSD = parseFloat(sv.avgTradeSize);
+		if (avgTradeUSD > 50000) {
+			signals.push('💰 Bardzo duża średnia transakcja (>$50k)');
+		} else if (avgTradeUSD < 1000 && coin.priceChange7d > 30) {
+			signals.push('⚠️ Retail pump - niska średnia transakcja + duży wzrost');
+		}
+
+		// Whale percentage signals
+		const whalePercent = parseFloat(sv.categories.whale.volumePercent);
+		const retailPercent =
+			parseFloat(sv.categories.retail.volumePercent) +
+			parseFloat(sv.categories.micro.volumePercent);
+
+		if (whalePercent > 50 && coin.priceChange24h < 5) {
+			signals.push(
+				'🎯 Cicha akumulacja - wieloryby kupują bez pompowania ceny'
+			);
+		}
+
+		if (retailPercent > 70 && coin.priceChange24h > 10) {
+			signals.push('🚨 Retail euphoria - może być blisko szczytu');
+		}
+	}
+
+	// Volume Profile signals
+	if (coin.volumeProfile) {
+		const vp = coin.volumeProfile;
+		const currentPrice = coin.price;
+		const pocPrice = vp.pointOfControl.price;
+		const priceVsPOC = ((currentPrice - pocPrice) / pocPrice) * 100;
+
+		// Price vs POC signals
+		if (Math.abs(priceVsPOC) < 2) {
+			signals.push(
+				`📍 Cena przy POC ($${pocPrice.toFixed(4)}) - kluczowy poziom`
+			);
+		} else if (priceVsPOC > 10) {
+			signals.push('📈 Cena znacznie powyżej POC - możliwy powrót');
+		} else if (priceVsPOC < -10) {
+			signals.push('📉 Cena znacznie poniżej POC - potencjał wzrostu');
+		}
+
+		// Value Area signals
+		if (currentPrice >= vp.valueArea.low && currentPrice <= vp.valueArea.high) {
+			signals.push('✅ Cena w Value Area - zrównoważony poziom');
+		} else if (currentPrice > vp.valueArea.high) {
+			signals.push('⬆️ Cena powyżej Value Area - momentum wzrostowe');
+		} else if (currentPrice < vp.valueArea.low) {
+			signals.push('⬇️ Cena poniżej Value Area - szukaj wsparcia');
+		}
+	}
+
+	// Combined Smart Volume + Price Action signals
+	if (coin.smartVolume && coin.volumeProfile) {
+		const whalePercent = parseFloat(
+			coin.smartVolume.categories.whale.volumePercent
+		);
+		const priceNearPOC =
+			Math.abs(
+				((coin.price - coin.volumeProfile.pointOfControl.price) /
+					coin.volumeProfile.pointOfControl.price) *
+					100
+			) < 5;
+
+		if (whalePercent > 40 && priceNearPOC && coin.priceChange24h < 3) {
+			signals.push('🎯 Setup idealny - wieloryby przy kluczowym poziomie');
+		}
+	}
+
 	// Combine signals
 	const signals = generateSignals(coin, {
 		priceScore,

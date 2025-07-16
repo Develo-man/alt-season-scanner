@@ -17,7 +17,8 @@
 		"test:momentum": "node test-momentum.js",
 		"test:filters": "node test-filters.js",
 		"test:dominance": "node test-dominance.js",
-		"test:all": "npm run test:gecko && npm run test:binance && npm run test:momentum && npm run test:dominance",
+		"test:smart-volume": "node test/test-smart-volume.js",
+		"test:all": "npm run test:gecko && npm run test:binance && npm run test:momentum && npm run test:dominance && npm run test:smart-volume",
 		"web": "node src/server.js",
 		"dev": "nodemon src/scanner.js"
 	},

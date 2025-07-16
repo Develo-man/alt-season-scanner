@@ -189,7 +189,7 @@ async function checkMultipleCoins(symbols) {
 	console.log(`🔍 Checking ${symbols.length} coins on Binance...`);
 
 	// Pobieramy dane o giełdzie
-	 const exchangeInfo = await getExchangeInfo();
+	const exchangeInfo = await getExchangeInfo();
 
 	const results = {};
 	const batchSize = 10; // Process 10 at a time to avoid rate limits
@@ -379,17 +379,17 @@ async function getWhaleActivity(symbol, limit = 500) {
 }
 async function batchProcess(items, batchSize, delayMs, processFn) {
 	const results = [];
-	
+
 	for (let i = 0; i < items.length; i += batchSize) {
 		const batch = items.slice(i, i + batchSize);
 		const batchResults = await Promise.all(batch.map(processFn));
 		results.push(...batchResults);
-		
+
 		if (i + batchSize < items.length) {
-			await new Promise(resolve => setTimeout(resolve, delayMs));
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
 		}
 	}
-	
+
 	return results;
 }
 
@@ -400,50 +400,311 @@ async function batchProcess(items, batchSize, delayMs, processFn) {
  * @returns {Promise<Object|null>}
  */
 async function getBuySellPressure(symbol, durationMinutes = 60) {
-    try {
-        const endTime = Date.now();
-        const startTime = endTime - durationMinutes * 60 * 1000;
+	try {
+		const endTime = Date.now();
+		const startTime = endTime - durationMinutes * 60 * 1000;
 
-        const response = await api.get('/api/v3/aggTrades', {
-            params: { symbol, startTime, endTime, limit: 1000 }
-        });
+		const response = await api.get('/api/v3/aggTrades', {
+			params: { symbol, startTime, endTime, limit: 1000 },
+		});
 
-        if (!response.data || response.data.length === 0) return null;
+		if (!response.data || response.data.length === 0) return null;
 
-        let buyVolume = 0;
-        let sellVolume = 0;
+		let buyVolume = 0;
+		let sellVolume = 0;
 
-        for (const trade of response.data) {
-            const price = parseFloat(trade.p);
-            const quantity = parseFloat(trade.q);
-            const volume = price * quantity;
+		for (const trade of response.data) {
+			const price = parseFloat(trade.p);
+			const quantity = parseFloat(trade.q);
+			const volume = price * quantity;
 
-            if (trade.m) { // `m` is true if the buyer is the maker (traktowane jako sell-side pressure)
-                sellVolume += volume;
-            } else {
-                buyVolume += volume;
-            }
-        }
-        
-        const totalVolume = buyVolume + sellVolume;
-        if (totalVolume === 0) return null;
+			if (trade.m) {
+				// `m` is true if the buyer is the maker (traktowane jako sell-side pressure)
+				sellVolume += volume;
+			} else {
+				buyVolume += volume;
+			}
+		}
 
-        const buyPressure = (buyVolume / totalVolume) * 100;
+		const totalVolume = buyVolume + sellVolume;
+		if (totalVolume === 0) return null;
 
-        return {
-            buyVolume: buyVolume,
-            sellVolume: sellVolume,
-            totalVolume: totalVolume,
-            buyPressure: buyPressure.toFixed(1),
-            tradesCount: response.data.length
-        };
+		const buyPressure = (buyVolume / totalVolume) * 100;
 
-    } catch (error) {
-        console.warn(`⚠️  Nie udało się pobrać danych o presji dla ${symbol}`);
-        return null;
-    }
+		return {
+			buyVolume: buyVolume,
+			sellVolume: sellVolume,
+			totalVolume: totalVolume,
+			buyPressure: buyPressure.toFixed(1),
+			tradesCount: response.data.length,
+		};
+	} catch (error) {
+		console.warn(`⚠️  Nie udało się pobrać danych o presji dla ${symbol}`);
+		return null;
+	}
 }
 
+/**
+ * Analyze trade sizes to determine retail vs whale activity
+ * @param {string} symbol - Trading pair (e.g., 'BTCUSDT')
+ * @param {number} hours - How many hours back to analyze
+ * @returns {Promise<Object>} Trade size analysis
+ */
+async function getSmartVolumeAnalysis(symbol, hours = 24) {
+	try {
+		const endTime = Date.now();
+		const startTime = endTime - hours * 60 * 60 * 1000;
+
+		// Get recent trades
+		const response = await api.get('/api/v3/aggTrades', {
+			params: {
+				symbol,
+				startTime,
+				endTime,
+				limit: 1000,
+			},
+		});
+
+		if (!response.data || response.data.length === 0) return null;
+
+		const trades = response.data;
+		const currentPrice = parseFloat(trades[trades.length - 1].p);
+
+		// Define trade size categories (in USD)
+		const categories = {
+			micro: { min: 0, max: 100, count: 0, volume: 0, label: 'Micro (<$100)' },
+			retail: {
+				min: 100,
+				max: 10000,
+				count: 0,
+				volume: 0,
+				label: 'Retail ($100-$10k)',
+			},
+			medium: {
+				min: 10000,
+				max: 50000,
+				count: 0,
+				volume: 0,
+				label: 'Medium ($10k-$50k)',
+			},
+			large: {
+				min: 50000,
+				max: 100000,
+				count: 0,
+				volume: 0,
+				label: 'Large ($50k-$100k)',
+			},
+			whale: {
+				min: 100000,
+				max: Infinity,
+				count: 0,
+				volume: 0,
+				label: 'Whale (>$100k)',
+			},
+		};
+
+		let totalVolume = 0;
+		let totalTrades = trades.length;
+		let buyVolume = 0;
+		let sellVolume = 0;
+
+		// Analyze each trade
+		trades.forEach((trade) => {
+			const price = parseFloat(trade.p);
+			const quantity = parseFloat(trade.q);
+			const volumeUSD = price * quantity;
+
+			totalVolume += volumeUSD;
+
+			// Categorize trade
+			for (const [key, cat] of Object.entries(categories)) {
+				if (volumeUSD >= cat.min && volumeUSD < cat.max) {
+					cat.count++;
+					cat.volume += volumeUSD;
+					break;
+				}
+			}
+
+			// Buy/Sell pressure
+			if (trade.m) {
+				sellVolume += volumeUSD;
+			} else {
+				buyVolume += volumeUSD;
+			}
+		});
+
+		// Calculate average trade size
+		const avgTradeSize = totalVolume / totalTrades;
+
+		// Calculate percentages
+		for (const cat of Object.values(categories)) {
+			cat.volumePercent =
+				totalVolume > 0 ? ((cat.volume / totalVolume) * 100).toFixed(2) : 0;
+			cat.countPercent =
+				totalTrades > 0 ? ((cat.count / totalTrades) * 100).toFixed(2) : 0;
+		}
+
+		// Determine market character
+		const whalePercent = parseFloat(categories.whale.volumePercent);
+		const retailPercent =
+			parseFloat(categories.retail.volumePercent) +
+			parseFloat(categories.micro.volumePercent);
+
+		let marketCharacter;
+		if (whalePercent > 40) {
+			marketCharacter = '🐋 Dominacja wielorybów';
+		} else if (whalePercent > 25) {
+			marketCharacter = '🦈 Mieszane (obecność wielorybów)';
+		} else if (retailPercent > 60) {
+			marketCharacter = '👥 Dominacja handlu detalicznego';
+		} else {
+			marketCharacter = '⚖️ Rynek zrównoważony';
+		}
+
+		return {
+			avgTradeSize: avgTradeSize.toFixed(2),
+			avgTradeSizeFormatted: formatUSD(avgTradeSize),
+			totalVolume: totalVolume.toFixed(2),
+			totalVolumeFormatted: formatUSD(totalVolume),
+			totalTrades,
+			categories,
+			marketCharacter,
+			buyPressure: ((buyVolume / totalVolume) * 100).toFixed(1),
+			period: `${hours}h`,
+			timestamp: new Date().toISOString(),
+		};
+	} catch (error) {
+		console.warn(
+			`⚠️ Could not analyze smart volume for ${symbol}: ${error.message}`
+		);
+		return null;
+	}
+}
+
+/**
+ * Get volume profile showing volume distribution across price levels
+ * @param {string} symbol - Trading pair
+ * @param {string} interval - Kline interval (1h, 4h, 1d)
+ * @param {number} limit - Number of klines
+ * @returns {Promise<Object>} Volume profile data
+ */
+async function getVolumeProfile(symbol, interval = '1h', limit = 24) {
+	try {
+		// Get klines for volume profile
+		const klines = await getKlines(symbol, interval, limit);
+
+		if (!klines || klines.length === 0) return null;
+
+		// Find price range
+		let minPrice = Infinity;
+		let maxPrice = -Infinity;
+
+		klines.forEach((k) => {
+			minPrice = Math.min(minPrice, k.low);
+			maxPrice = Math.max(maxPrice, k.high);
+		});
+
+		// Create price buckets (20 levels)
+		const numBuckets = 20;
+		const priceRange = maxPrice - minPrice;
+		const bucketSize = priceRange / numBuckets;
+
+		const volumeProfile = [];
+		for (let i = 0; i < numBuckets; i++) {
+			volumeProfile.push({
+				priceFrom: minPrice + i * bucketSize,
+				priceTo: minPrice + (i + 1) * bucketSize,
+				volume: 0,
+				volumePercent: 0,
+				trades: 0,
+			});
+		}
+
+		// Distribute volume across price levels
+		let totalVolume = 0;
+
+		klines.forEach((kline) => {
+			const avgPrice = (kline.high + kline.low + kline.close + kline.open) / 4;
+			const bucketIndex = Math.floor((avgPrice - minPrice) / bucketSize);
+
+			if (bucketIndex >= 0 && bucketIndex < numBuckets) {
+				volumeProfile[bucketIndex].volume += kline.quoteVolume;
+				volumeProfile[bucketIndex].trades += kline.trades;
+				totalVolume += kline.quoteVolume;
+			}
+		});
+
+		// Calculate percentages and find POC (Point of Control)
+		let maxVolumeLevel = 0;
+		let pocIndex = 0;
+
+		volumeProfile.forEach((level, index) => {
+			level.volumePercent =
+				totalVolume > 0 ? ((level.volume / totalVolume) * 100).toFixed(2) : 0;
+
+			if (level.volume > maxVolumeLevel) {
+				maxVolumeLevel = level.volume;
+				pocIndex = index;
+			}
+		});
+
+		// Find value areas (70% of volume)
+		const sortedLevels = [...volumeProfile].sort((a, b) => b.volume - a.volume);
+		let valueAreaVolume = 0;
+		let valueAreaLevels = [];
+
+		for (const level of sortedLevels) {
+			valueAreaVolume += level.volume;
+			valueAreaLevels.push(level);
+
+			if (valueAreaVolume >= totalVolume * 0.7) break;
+		}
+
+		const valueAreaHigh = Math.max(...valueAreaLevels.map((l) => l.priceTo));
+		const valueAreaLow = Math.min(...valueAreaLevels.map((l) => l.priceFrom));
+
+		return {
+			profile: volumeProfile,
+			pointOfControl: {
+				price:
+					(volumeProfile[pocIndex].priceFrom +
+						volumeProfile[pocIndex].priceTo) /
+					2,
+				volume: volumeProfile[pocIndex].volume,
+				volumePercent: volumeProfile[pocIndex].volumePercent,
+			},
+			valueArea: {
+				high: valueAreaHigh,
+				low: valueAreaLow,
+				range: valueAreaHigh - valueAreaLow,
+			},
+			priceRange: {
+				min: minPrice,
+				max: maxPrice,
+				current: klines[klines.length - 1].close,
+			},
+			period: `${limit} x ${interval}`,
+			timestamp: new Date().toISOString(),
+		};
+	} catch (error) {
+		console.warn(
+			`⚠️ Could not get volume profile for ${symbol}: ${error.message}`
+		);
+		return null;
+	}
+}
+
+/**
+ * Format number as USD
+ * @param {number} value - Value to format
+ * @returns {string} Formatted string
+ */
+function formatUSD(value) {
+	if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+	if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+	if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+	return `$${value.toFixed(2)}`;
+}
 
 module.exports = {
 	getExchangeInfo,
@@ -456,7 +717,10 @@ module.exports = {
 	getKlines,
 	getWhaleActivity,
 	batchProcess,
-	getBuySellPressure
+	getBuySellPressure,
+	getSmartVolumeAnalysis,
+	getVolumeProfile,
+	formatUSD,
 };
 
 // Run test if this file is executed directly
