@@ -138,8 +138,8 @@ async function runScanner() {
 		sector: coin.sector,
 		developerData: coin.developerData || null,
 		pressureData: coin.pressureData || null,
-        smartVolume: coin.smartVolume || null,
-        volumeProfile: coin.volumeProfile || null,
+		smartVolume: coin.smartVolume || null,
+		volumeProfile: coin.volumeProfile || null,
 		momentum: coin.momentum,
 		binance: {
 			trades: coin.binance.binanceTrades24h,
