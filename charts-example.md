@@ -76,22 +76,18 @@
 ## Example Workflow
 
 1. **Start with Dominance Chart**
-
    - Is BTC dominance below 60%? ✓ Proceed
    - Is it trending down? ✓ Even better
 
 2. **Check Momentum Leaders**
-
    - Which coins have 50+ scores?
    - Are they also green on 7d?
 
 3. **Verify Risk/Reward**
-
    - Find coins in top-left quadrant
    - Note their symbols
 
 4. **Confirm with Volume**
-
    - Are these coins showing high activity?
    - Bigger bubbles = more interest
 

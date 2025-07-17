@@ -126,18 +126,24 @@ function calculatePositionScore(coin) {
 	else if (coin.rank <= 100) score += 10;
 
 	// Price attractiveness for retail
-	if (coin.price < 0.01) score += 30; // "Penny coins"
-	else if (coin.price < 0.1) score += 25; // Very cheap
-	else if (coin.price < 0.5) score += 20; // Cheap
-	else if (coin.price < 1) score += 15; // Under $1 psychological
-	else if (coin.price < 2) score += 10; // Still attractive
+	if (coin.price < 0.01)
+		score += 30; // "Penny coins"
+	else if (coin.price < 0.1)
+		score += 25; // Very cheap
+	else if (coin.price < 0.5)
+		score += 20; // Cheap
+	else if (coin.price < 1)
+		score += 15; // Under $1 psychological
+	else if (coin.price < 2)
+		score += 10; // Still attractive
 	else if (coin.price < 3) score += 5; // Our max
 
 	// Round number proximity bonus
 	if (coin.nearRoundNumber) {
 		const distance =
 			Math.abs(coin.price - coin.nearRoundNumber) / coin.nearRoundNumber;
-		if (distance < 0.05) score += 20; // Very close (5%)
+		if (distance < 0.05)
+			score += 20; // Very close (5%)
 		else if (distance < 0.1) score += 10; // Close (10%)
 	}
 

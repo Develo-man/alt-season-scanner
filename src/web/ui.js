@@ -194,8 +194,8 @@ export function createCoinCard(coin) {
                              title="${formatPrice(
 																level.priceFrom
 															)} - ${formatPrice(level.priceTo)}: ${
-											level.volumePercent
-										}% volume">
+																level.volumePercent
+															}% volume">
                         </div>
                     `;
 									})
@@ -277,8 +277,8 @@ export function createCoinCard(coin) {
                         <div class="metric">
                             <div class="metric-label">7D Change</div>
                             <div class="metric-value ${priceChange}">${
-		priceChange7dValue >= 0 ? '+' : ''
-	}${priceChange7dValue.toFixed(2)}%</div>
+															priceChange7dValue >= 0 ? '+' : ''
+														}${priceChange7dValue.toFixed(2)}%</div>
                         </div>
                    <div class="metric">
                             <div class="metric-label tooltip-container">
@@ -389,9 +389,9 @@ export function renderSectorAnalysis(sectorData, elements) {
 
 // Render Coins
 export function renderCoins(coins, elements) {
- elements.coinsGrid.innerHTML = coins
-    .map((coin) => createCoinCard(coin))
-    .join('');
+	elements.coinsGrid.innerHTML = coins
+		.map((coin) => createCoinCard(coin))
+		.join('');
 }
 export function displayError(elements) {
 	elements.coinsGrid.innerHTML = `<p>Wystąpił błąd podczas ładowania danych. Spróbuj ponownie później.</p>`;

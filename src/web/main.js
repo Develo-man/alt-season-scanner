@@ -73,8 +73,8 @@ async function loadData() {
 
 // Filter and display coins based on the current filter
 function displayFilteredCoins() {
-    const filteredCoins = filterCoins(allCoinsData); 
-    renderCoins(filteredCoins, elements);
+	const filteredCoins = filterCoins(allCoinsData);
+	renderCoins(filteredCoins, elements);
 }
 
 // Filter Coins Logic

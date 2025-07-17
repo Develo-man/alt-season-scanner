@@ -118,13 +118,16 @@ Environment:
 			await runScanner();
 
 			// Then run on interval
-			setInterval(async () => {
-				try {
-					await runScanner();
-				} catch (error) {
-					console.error('❌ Scan failed:', error.message);
-				}
-			}, SCAN_INTERVAL * 60 * 60 * 1000);
+			setInterval(
+				async () => {
+					try {
+						await runScanner();
+					} catch (error) {
+						console.error('❌ Scan failed:', error.message);
+					}
+				},
+				SCAN_INTERVAL * 60 * 60 * 1000
+			);
 		}
 	} catch (error) {
 		console.error('❌ Error:', error.message);

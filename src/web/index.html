@@ -1,134 +1,144 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="description"
+			content="Alt Season Scanner - Professional cryptocurrency opportunity finder tracking top altcoins with advanced momentum scoring"
+		/>
+		<meta
+			name="keywords"
+			content="cryptocurrency, altcoins, bitcoin, trading, scanner, binance, momentum"
+		/>
+		<meta name="author" content="Alt Season Scanner" />
+		<meta
+			property="og:title"
+			content="Alt Season Scanner - Smart Crypto Opportunity Finder"
+		/>
+		<meta
+			property="og:description"
+			content="Track top performing altcoins with advanced momentum scoring and risk analysis"
+		/>
+		<meta property="og:type" content="website" />
+		<link rel="canonical" href="https://altseasonscanner.com" />
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description"
-    content="Alt Season Scanner - Professional cryptocurrency opportunity finder tracking top altcoins with advanced momentum scoring">
-  <meta name="keywords" content="cryptocurrency, altcoins, bitcoin, trading, scanner, binance, momentum">
-  <meta name="author" content="Alt Season Scanner">
-  <meta property="og:title" content="Alt Season Scanner - Smart Crypto Opportunity Finder">
-  <meta property="og:description"
-    content="Track top performing altcoins with advanced momentum scoring and risk analysis">
-  <meta property="og:type" content="website">
-  <link rel="canonical" href="https://altseasonscanner.com">
+		<title>Alt Season Scanner - Smart Crypto Opportunity Finder</title>
+		<link rel="stylesheet" href="styles.css" />
+	</head>
 
-  <title>Alt Season Scanner - Smart Crypto Opportunity Finder</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
+	<body>
+		<header>
+			<nav class="container">
+				<div class="logo">₿ Alt Season Scanner</div>
+				<ul class="nav-links">
+					<li><a href="#dashboard">Dashboard</a></li>
+					<li><a href="/charts">Charts</a></li>
+					<li><a href="#about">About</a></li>
+					<li><a href="#settings">Settings</a></li>
+				</ul>
+			</nav>
+		</header>
 
-<body>
-  <header>
-    <nav class="container">
-      <div class="logo">₿ Alt Season Scanner</div>
-      <ul class="nav-links">
-        <li><a href="#dashboard">Dashboard</a></li>
-        <li><a href="/charts">Charts</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#settings">Settings</a></li>
-      </ul>
-    </nav>
-  </header>
+		<main class="container">
+			<section class="sector-analysis-section">
+				<div class="section-header">
+					<h2>Analiza Sektorów (Najgorętszych)</h2>
+				</div>
+				<div id="sector-analysis-grid"></div>
+			</section>
 
-  <main class="container">
-    <section class="sector-analysis-section">
-      <div class="section-header">
-        <h2>Analiza Sektorów (Najgorętszych)</h2>
-      </div>
-      <div id="sector-analysis-grid">
-      </div>
-    </section>
+			<section class="coins-section"></section>
+			<section class="hero">
+				<h1>Smart Crypto Opportunity Finder</h1>
+				<p>Track top performing altcoins with advanced momentum scoring</p>
+			</section>
 
-    <section class="coins-section">
-    </section>
-    <section class="hero">
-      <h1>Smart Crypto Opportunity Finder</h1>
-      <p>Track top performing altcoins with advanced momentum scoring</p>
-    </section>
+			<section class="market-status" id="market-status">
+				<div class="status-card">
+					<h3>BTC Dominance</h3>
+					<div class="value" id="btc-dominance">--</div>
+					<div class="change" id="dominance-change">--</div>
+				</div>
+				<div class="status-card">
+					<h3>Fear & Greed Index</h3>
+					<div class="value" id="fng-value">--</div>
+					<div class="change" id="fng-classification">--</div>
+				</div>
+				<div class="status-card">
+					<h3>Market Condition</h3>
+					<div class="value" id="market-condition">--</div>
+					<div class="change" id="condition-advice">--</div>
+				</div>
+				<div class="status-card">
+					<h3>Active Opportunities</h3>
+					<div class="value" id="opportunities">--</div>
+					<div class="change positive">Coins above 50 score</div>
+				</div>
+				<div class="status-card">
+					<h3>Last Update</h3>
+					<div class="value" id="last-update">--</div>
+					<div class="change">Auto-refresh: ON</div>
+				</div>
+			</section>
 
-    <section class="market-status" id="market-status">
-      <div class="status-card">
-        <h3>BTC Dominance</h3>
-        <div class="value" id="btc-dominance">--</div>
-        <div class="change" id="dominance-change">--</div>
-      </div>
-      <div class="status-card">
-        <h3>Fear & Greed Index</h3>
-        <div class="value" id="fng-value">--</div>
-        <div class="change" id="fng-classification">--</div>
-      </div>
-      <div class="status-card">
-        <h3>Market Condition</h3>
-        <div class="value" id="market-condition">--</div>
-        <div class="change" id="condition-advice">--</div>
-      </div>
-      <div class="status-card">
-        <h3>Active Opportunities</h3>
-        <div class="value" id="opportunities">--</div>
-        <div class="change positive">Coins above 50 score</div>
-      </div>
-      <div class="status-card">
-        <h3>Last Update</h3>
-        <div class="value" id="last-update">--</div>
-        <div class="change">Auto-refresh: ON</div>
-      </div>
-    </section>
+			<section class="dominance-widget">
+				<h2>Bitcoin Dominance Tracker</h2>
+				<div class="dominance-gauge" id="dominance-gauge">
+					<!-- Canvas gauge will be inserted here -->
+				</div>
+				<div class="dominance-phases">
+					<span class="phase-indicator alt-friendly" data-phase="alt">
+						🚀 Alt Season to mniej niż 50%
+					</span>
+					<span class="phase-indicator" data-phase="balanced">
+						⚖️ Balanced 50-60%
+					</span>
+					<span class="phase-indicator btc-favored" data-phase="btc-favored">
+						🟠 BTC Favored 60-65%
+					</span>
+					<span class="phase-indicator btc-season" data-phase="btc-season">
+						🟡 BTC Season >65%
+					</span>
+				</div>
+			</section>
 
-    <section class="dominance-widget">
-      <h2>Bitcoin Dominance Tracker</h2>
-      <div class="dominance-gauge" id="dominance-gauge">
-        <!-- Canvas gauge will be inserted here -->
-      </div>
-      <div class="dominance-phases">
-        <span class="phase-indicator alt-friendly" data-phase="alt">
-          🚀 Alt Season to mniej niż 50% </span>
-        <span class="phase-indicator" data-phase="balanced">
-          ⚖️ Balanced 50-60%
-        </span>
-        <span class="phase-indicator btc-favored" data-phase="btc-favored">
-          🟠 BTC Favored 60-65%
-        </span>
-        <span class="phase-indicator btc-season" data-phase="btc-season">
-          🟡 BTC Season >65%
-        </span>
-      </div>
-    </section>
+			<section class="coins-section">
+				<div class="section-header">
+					<h2>Top Opportunities</h2>
+					<div class="filter-buttons">
+						<button class="filter-btn active" data-filter="all">All</button>
+						<button class="filter-btn" data-filter="hot">🔥 Hot</button>
+						<button class="filter-btn" data-filter="safe">💎 Safe</button>
+						<button class="filter-btn" data-filter="value">💰 Value</button>
+					</div>
+				</div>
 
-    <section class="coins-section">
-      <div class="section-header">
-        <h2>Top Opportunities</h2>
-        <div class="filter-buttons">
-          <button class="filter-btn active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="hot">🔥 Hot</button>
-          <button class="filter-btn" data-filter="safe">💎 Safe</button>
-          <button class="filter-btn" data-filter="value">💰 Value</button>
-        </div>
-      </div>
+				<div class="loading" id="loading">
+					<div class="spinner"></div>
+					<p>Loading latest data...</p>
+				</div>
 
-      <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p>Loading latest data...</p>
-      </div>
+				<div class="coins-grid" id="coins-grid"></div>
 
-      <div class="coins-grid" id="coins-grid">
-      </div>
+				<noscript>
+					<div class="no-js-message">
+						<p>
+							JavaScript is required for real-time updates. Please enable
+							JavaScript to see live cryptocurrency data.
+						</p>
+					</div>
+				</noscript>
+			</section>
+		</main>
 
-      <noscript>
-        <div class="no-js-message">
-          <p>JavaScript is required for real-time updates. Please enable JavaScript to see live cryptocurrency
-            data.</p>
-        </div>
-      </noscript>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container">
-      <p>&copy; 2025 Alt Season Scanner. Not financial advice. Always DYOR.</p>
-    </div>
-  </footer>
-  <script src="main.js" type="module"></script>
-</body>
-
+		<footer>
+			<div class="container">
+				<p>
+					&copy; 2025 Alt Season Scanner. Not financial advice. Always DYOR.
+				</p>
+			</div>
+		</footer>
+		<script src="main.js" type="module"></script>
+	</body>
 </html>

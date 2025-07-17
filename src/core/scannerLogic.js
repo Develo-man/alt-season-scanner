@@ -158,7 +158,7 @@ async function runScanner() {
 				? {
 						value: fearAndGreed.value,
 						classification: fearAndGreed.classification,
-				  }
+					}
 				: null,
 		},
 		sectorAnalysis: sectorAnalysis,

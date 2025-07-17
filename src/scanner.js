@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-// Import 
+// Import
 const { runScanner } = require('./core/scannerLogic');
 
 /**
@@ -17,7 +17,9 @@ function displayMarketConditions(marketStatus) {
 		else if (marketStatus.fearAndGreed.value > 55) emoji = '🙂';
 		else if (marketStatus.fearAndGreed.value < 25) emoji = '😨';
 		else if (marketStatus.fearAndGreed.value < 45) emoji = '😟';
-		console.log(`   Fear & Greed: ${marketStatus.fearAndGreed.value} (${emoji} ${marketStatus.fearAndGreed.classification})`);
+		console.log(
+			`   Fear & Greed: ${marketStatus.fearAndGreed.value} (${emoji} ${marketStatus.fearAndGreed.classification})`
+		);
 	}
 	console.log(`   Faza rynku: ${marketStatus.condition}`);
 	console.log(`   Porada strategiczna: ${marketStatus.advice}`);
@@ -28,7 +30,7 @@ function displayMarketConditions(marketStatus) {
  * @param {Array} sectorAnalysis - Posortowana tablica z danymi o sektorach.
  */
 function displaySectorAnalysis(sectorAnalysis) {
-    if (!sectorAnalysis || sectorAnalysis.length === 0) return;
+	if (!sectorAnalysis || sectorAnalysis.length === 0) return;
 	console.log('\n📈 ANALIZA SEKTORÓW');
 	console.log('═'.repeat(70));
 	console.log('Sektor            | Śr. Wynik | Monety | Gorące | Lider');
@@ -38,7 +40,7 @@ function displaySectorAnalysis(sectorAnalysis) {
 		const name = sector.name.padEnd(17);
 		const avgScore = sector.averageScore.toFixed(2).padEnd(9);
 		const coinCount = String(sector.coinCount).padEnd(6);
-        const hotCoins = String(sector.hotCoins).padEnd(6);
+		const hotCoins = String(sector.hotCoins).padEnd(6);
 		const topPerformer = `${sector.topCoin.symbol} (${parseFloat(sector.topCoin.momentum.totalScore).toFixed(0)})`;
 
 		console.log(
@@ -46,7 +48,6 @@ function displaySectorAnalysis(sectorAnalysis) {
 		);
 	});
 }
-
 
 /**
  * Wyświetla sformatowaną listę najlepszych kryptowalut.
@@ -62,17 +63,22 @@ function displayTopOpportunities(coins) {
 
 	coins.slice(0, 10).forEach((coin, index) => {
 		const rank = String(index + 1).padEnd(4);
-        const symbol = coin.symbol.padEnd(8);
+		const symbol = coin.symbol.padEnd(8);
 		const price = `$${coin.price.toFixed(4)}`.padEnd(10);
-		const change7d = `${coin.priceChange7d >= 0 ? '+' : ''}${coin.priceChange7d.toFixed(1)}%`.padEnd(11);
+		const change7d =
+			`${coin.priceChange7d >= 0 ? '+' : ''}${coin.priceChange7d.toFixed(1)}%`.padEnd(
+				11
+			);
 		const score = coin.momentum.totalScore.padEnd(10);
-        const category = `${coin.momentum.emoji} ${coin.momentum.category}`.padEnd(13);
+		const category = `${coin.momentum.emoji} ${coin.momentum.category}`.padEnd(
+			13
+		);
 
 		console.log(
 			`${rank} | ${symbol} | ${price} | ${change7d} | ${score} | ${category} |`
 		);
 
-        // Wyświetl do 2 sygnałów dla każdej monety
+		// Wyświetl do 2 sygnałów dla każdej monety
 		if (coin.momentum.signals && coin.momentum.signals.length > 0) {
 			const topSignals = coin.momentum.signals.slice(0, 2);
 			topSignals.forEach((signal) => {
@@ -100,16 +106,17 @@ async function main() {
 		// Przekazanie wyników do funkcji wyświetlających
 		console.log('\n✅ Skanowanie zakończone. Oto podsumowanie:');
 		displayMarketConditions(results.marketStatus);
-        displaySectorAnalysis(results.sectorAnalysis);
+		displaySectorAnalysis(results.sectorAnalysis);
 		displayTopOpportunities(results.coins);
 
 		const executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
-		console.log(`\nStats: Przeanalizowano ${results.totalAnalyzed}, odfiltrowano ${results.totalFiltered}, na Binance ${results.totalOnBinance}.`);
+		console.log(
+			`\nStats: Przeanalizowano ${results.totalAnalyzed}, odfiltrowano ${results.totalFiltered}, na Binance ${results.totalOnBinance}.`
+		);
 		console.log(`\n⏱️  Całe skanowanie zajęło ${executionTime} sekund.`);
-
 	} catch (error) {
 		console.error('\n❌ WYSTĄPIŁ KRYTYCZNY BŁĄD:');
-        console.error(error.message);
+		console.error(error.message);
 		process.exit(1);
 	}
 }

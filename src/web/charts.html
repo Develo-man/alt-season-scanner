@@ -1,138 +1,164 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="description"
+			content="Alt Season Scanner Charts - Advanced cryptocurrency analytics"
+		/>
+		<title>Alt Season Scanner - Advanced Charts</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Alt Season Scanner Charts - Advanced cryptocurrency analytics">
-    <title>Alt Season Scanner - Advanced Charts</title>
+		<!-- Chart.js from CDN -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
 
-    <!-- Chart.js from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+		<link rel="stylesheet" href="styles.css" />
+	</head>
 
-    <link rel="stylesheet" href="styles.css">
+	<body>
+		<header>
+			<div class="container">
+				<div class="header-content">
+					<div class="logo">Alt Season Scanner - Charts</div>
+					<div class="nav-buttons">
+						<a href="/" class="nav-btn"><span>Dashboard</span></a>
+						<button class="nav-btn" onclick="refreshCharts()">
+							<span>Refresh</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</header>
 
-</head>
+		<main class="container">
+			<!-- Summary Stats -->
+			<div class="stats-grid" id="stats-grid">
+				<div class="stat-card">
+					<div class="stat-label">BTC Dominance</div>
+					<div class="stat-value" id="btc-dominance">--</div>
+					<div class="stat-change" id="dominance-change">--</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label">Top Gainer</div>
+					<div class="stat-value" id="top-gainer">--</div>
+					<div class="stat-change positive" id="top-gainer-change">--</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label">Avg Momentum</div>
+					<div class="stat-value" id="avg-momentum">--</div>
+					<div class="stat-change" id="momentum-trend">--</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label">Market Phase</div>
+					<div class="stat-value" id="market-phase">--</div>
+					<div class="stat-change" id="phase-desc">--</div>
+				</div>
+			</div>
 
-<body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">Alt Season Scanner - Charts</div>
-                <div class="nav-buttons">
-                    <a href="/" class="nav-btn"><span>Dashboard</span></a>
-                    <button class="nav-btn" onclick="refreshCharts()"><span>Refresh</span></button>
-                </div>
-            </div>
-        </div>
-    </header>
+			<!-- Charts -->
+			<div class="charts-grid">
+				<!-- BTC Dominance Chart -->
+				<div class="chart-container full-width">
+					<div class="chart-header">
+						<div>
+							<h2 class="chart-title">Bitcoin Dominance Trend</h2>
+							<p class="chart-subtitle">Track BTC market share over time</p>
+						</div>
+						<div class="timeframe-selector">
+							<button
+								class="timeframe-btn active"
+								data-chart="dominance"
+								data-period="24h"
+							>
+								24H
+							</button>
+							<button
+								class="timeframe-btn"
+								data-chart="dominance"
+								data-period="7d"
+							>
+								7D
+							</button>
+							<button
+								class="timeframe-btn"
+								data-chart="dominance"
+								data-period="30d"
+							>
+								30D
+							</button>
+						</div>
+					</div>
+					<div class="chart-wrapper tall">
+						<canvas id="dominanceChart"></canvas>
+					</div>
+				</div>
 
-    <main class="container">
-        <!-- Summary Stats -->
-        <div class="stats-grid" id="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">BTC Dominance</div>
-                <div class="stat-value" id="btc-dominance">--</div>
-                <div class="stat-change" id="dominance-change">--</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Top Gainer</div>
-                <div class="stat-value" id="top-gainer">--</div>
-                <div class="stat-change positive" id="top-gainer-change">--</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Avg Momentum</div>
-                <div class="stat-value" id="avg-momentum">--</div>
-                <div class="stat-change" id="momentum-trend">--</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Market Phase</div>
-                <div class="stat-value" id="market-phase">--</div>
-                <div class="stat-change" id="phase-desc">--</div>
-            </div>
-        </div>
+				<!-- Top Coins Performance -->
+				<div class="chart-container half-width">
+					<div class="chart-header">
+						<div>
+							<h2 class="chart-title">Top 10 Momentum Leaders</h2>
+							<p class="chart-subtitle">7-day performance vs momentum score</p>
+						</div>
+					</div>
+					<div class="chart-wrapper">
+						<canvas id="momentumChart"></canvas>
+					</div>
+				</div>
 
-        <!-- Charts -->
-        <div class="charts-grid">
-            <!-- BTC Dominance Chart -->
-            <div class="chart-container full-width">
-                <div class="chart-header">
-                    <div>
-                        <h2 class="chart-title">Bitcoin Dominance Trend</h2>
-                        <p class="chart-subtitle">Track BTC market share over time</p>
-                    </div>
-                    <div class="timeframe-selector">
-                        <button class="timeframe-btn active" data-chart="dominance" data-period="24h">24H</button>
-                        <button class="timeframe-btn" data-chart="dominance" data-period="7d">7D</button>
-                        <button class="timeframe-btn" data-chart="dominance" data-period="30d">30D</button>
-                    </div>
-                </div>
-                <div class="chart-wrapper tall">
-                    <canvas id="dominanceChart"></canvas>
-                </div>
-            </div>
+				<!-- Volume Analysis -->
+				<div class="chart-container half-width">
+					<div class="chart-header">
+						<div>
+							<h2 class="chart-title">Volume/Market Cap Ratio</h2>
+							<p class="chart-subtitle">Identify high activity coins</p>
+						</div>
+					</div>
+					<div class="chart-wrapper">
+						<canvas id="volumeChart"></canvas>
+					</div>
+				</div>
 
-            <!-- Top Coins Performance -->
-            <div class="chart-container half-width">
-                <div class="chart-header">
-                    <div>
-                        <h2 class="chart-title">Top 10 Momentum Leaders</h2>
-                        <p class="chart-subtitle">7-day performance vs momentum score</p>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="momentumChart"></canvas>
-                </div>
-            </div>
+				<!-- Risk vs Reward Scatter -->
+				<div class="chart-container full-width">
+					<div class="chart-header">
+						<div>
+							<h2 class="chart-title">Risk vs Reward Matrix</h2>
+							<p class="chart-subtitle">
+								Find the best risk-adjusted opportunities
+							</p>
+						</div>
+						<span
+							class="info-tooltip"
+							data-tooltip="Higher score + lower risk = better opportunity"
+							>?</span
+						>
+					</div>
+					<div class="chart-wrapper tall">
+						<canvas id="riskRewardChart"></canvas>
+					</div>
+				</div>
 
-            <!-- Volume Analysis -->
-            <div class="chart-container half-width">
-                <div class="chart-header">
-                    <div>
-                        <h2 class="chart-title">Volume/Market Cap Ratio</h2>
-                        <p class="chart-subtitle">Identify high activity coins</p>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="volumeChart"></canvas>
-                </div>
-            </div>
+				<!-- Market Heatmap -->
+				<div class="chart-container full-width">
+					<div class="chart-header">
+						<div>
+							<h2 class="chart-title">Performance Heatmap</h2>
+							<p class="chart-subtitle">24h vs 7d performance comparison</p>
+						</div>
+					</div>
+					<div class="chart-wrapper">
+						<canvas id="heatmapChart"></canvas>
+					</div>
+				</div>
+			</div>
 
-            <!-- Risk vs Reward Scatter -->
-            <div class="chart-container full-width">
-                <div class="chart-header">
-                    <div>
-                        <h2 class="chart-title">Risk vs Reward Matrix</h2>
-                        <p class="chart-subtitle">Find the best risk-adjusted opportunities</p>
-                    </div>
-                    <span class="info-tooltip" data-tooltip="Higher score + lower risk = better opportunity">?</span>
-                </div>
-                <div class="chart-wrapper tall">
-                    <canvas id="riskRewardChart"></canvas>
-                </div>
-            </div>
+			<div class="loading" id="loading" style="display: none">
+				<div class="spinner"></div>
+				<p>Loading chart data...</p>
+			</div>
+		</main>
 
-            <!-- Market Heatmap -->
-            <div class="chart-container full-width">
-                <div class="chart-header">
-                    <div>
-                        <h2 class="chart-title">Performance Heatmap</h2>
-                        <p class="chart-subtitle">24h vs 7d performance comparison</p>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="heatmapChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="loading" id="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>Loading chart data...</p>
-        </div>
-    </main>
-
-    <script src="charts.js"></script>
-</body>
-
+		<script src="charts.js"></script>
+	</body>
 </html>

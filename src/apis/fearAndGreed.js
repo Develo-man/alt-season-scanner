@@ -28,7 +28,7 @@ async function getFearAndGreedIndex() {
 			};
 		}
 
-				// We log a warning if the data is in a different format
+		// We log a warning if the data is in a different format
 		console.warn(
 			'⚠️ Otrzymano nieprawidłową lub pustą odpowiedź z API Fear & Greed.'
 		);
