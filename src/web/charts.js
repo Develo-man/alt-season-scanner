@@ -762,129 +762,83 @@ function getAllCoinsFromStrategies(scannerData) {
 function createHeatmapChart() {
 	const ctx = document.getElementById('heatmapChart').getContext('2d');
 
-	// Create matrix data
-	const matrixData = [];
-	const labels = [];
+	// Pobierz monety ze wszystkich strategii, posortuj według najwyższego momentum i weź top 15
+	const allCoins = getAllCoinsFromStrategies(scannerData);
+	if (!allCoins || allCoins.length === 0) {
+		console.warn('⚠️ Brak monet do stworzenia heatmapy');
+		return;
+	}
 
-	scannerData.coins.slice(0, 15).forEach((coin, index) => {
-		labels.push(coin.symbol);
+	const topCoins = allCoins
+		.sort(
+			(a, b) =>
+				parseFloat(b.momentum.totalScore) - parseFloat(a.momentum.totalScore)
+		)
+		.slice(0, 15);
 
-		// Color intensity based on performance
-		const performance24h = coin.priceChange24h;
-		const performance7d = coin.priceChange7d;
+	const labels = topCoins.map((coin) => coin.symbol);
 
-		matrixData.push({
-			x: '24h',
-			y: coin.symbol,
-			v: performance24h,
-			color: performance24h > 0 ? colors.success : colors.danger,
-		});
+	// Zniszcz poprzedni wykres, jeśli istnieje
+	if (charts.heatmap) {
+		charts.heatmap.destroy();
+	}
 
-		matrixData.push({
-			x: '7d',
-			y: coin.symbol,
-			v: performance7d,
-			color: performance7d > 0 ? colors.success : colors.danger,
-		});
-	});
-
-	const data = {
-		labels: {
-			x: ['24h', '7d'],
-			y: labels,
-		},
-		datasets: [
-			{
-				label: 'Performance %',
-				data: matrixData,
-				backgroundColor(context) {
-					const value = context.dataset.data[context.dataIndex].v;
-					const alpha = Math.min(Math.abs(value) / 50, 1);
-					const color = value > 0 ? colors.success : colors.danger;
-					return (
-						color +
-						Math.round(alpha * 255)
-							.toString(16)
-							.padStart(2, '0')
-					);
-				},
-				borderWidth: 1,
-				borderColor: colors.gridLines,
-				width: 100,
-				height: 20,
-			},
-		],
-	};
-
-	const options = {
-		responsive: true,
-		maintainAspectRatio: false,
-		plugins: {
-			legend: {
-				display: false,
-			},
-			tooltip: {
-				callbacks: {
-					label: function (context) {
-						const data = context.dataset.data[context.dataIndex];
-						return `${data.y} ${data.x}: ${data.v.toFixed(2)}%`;
-					},
-				},
-			},
-		},
-		scales: {
-			x: {
-				type: 'category',
-				labels: ['24h', '7d'],
-				grid: {
-					display: false,
-				},
-			},
-			y: {
-				type: 'category',
-				labels: labels,
-				grid: {
-					display: false,
-				},
-			},
-		},
-	};
-
-	// Create custom matrix chart using bar chart
 	charts.heatmap = new Chart(ctx, {
 		type: 'bar',
 		data: {
 			labels: labels,
 			datasets: [
 				{
-					label: '24h Change',
-					data: scannerData.coins.slice(0, 15).map((c) => c.priceChange24h),
-					backgroundColor: scannerData.coins
-						.slice(0, 15)
-						.map((c) =>
-							c.priceChange24h > 0
-								? colors.success + '80'
-								: colors.danger + '80'
-						),
+					label: 'Zmiana 24h (%)',
+					data: topCoins.map((c) => c.priceChange24h || 0),
+					backgroundColor: topCoins.map(
+						(c) =>
+							(c.priceChange24h || 0) > 0
+								? colors.success + 'B3'
+								: colors.danger + 'B3' // 70% opacity
+					),
+					borderColor: topCoins.map((c) =>
+						(c.priceChange24h || 0) > 0 ? colors.success : colors.danger
+					),
+					borderWidth: 1,
 				},
 				{
-					label: '7d Change',
-					data: scannerData.coins.slice(0, 15).map((c) => c.priceChange7d),
-					backgroundColor: scannerData.coins
-						.slice(0, 15)
-						.map((c) =>
-							c.priceChange7d > 0 ? colors.success + '80' : colors.danger + '80'
-						),
+					label: 'Zmiana 7d (%)',
+					data: topCoins.map((c) => c.priceChange7d || 0),
+					backgroundColor: topCoins.map(
+						(c) =>
+							(c.priceChange7d || 0) > 0
+								? colors.info + 'B3'
+								: colors.warning + 'B3' // 70% opacity
+					),
+					borderColor: topCoins.map((c) =>
+						(c.priceChange7d || 0) > 0 ? colors.info : colors.warning
+					),
+					borderWidth: 1,
 				},
 			],
 		},
 		options: {
 			responsive: true,
 			maintainAspectRatio: false,
-			indexAxis: 'y',
+			indexAxis: 'y', // Tworzy poziomy wykres słupkowy
 			plugins: {
 				legend: {
 					display: true,
+					position: 'top',
+				},
+				tooltip: {
+					backgroundColor: 'rgba(0, 0, 0, 0.9)',
+					titleColor: colors.bitcoin,
+					bodyColor: colors.text,
+					borderColor: colors.bitcoin,
+					borderWidth: 1,
+					cornerRadius: 8,
+					callbacks: {
+						label: function (context) {
+							return `${context.dataset.label}: ${context.raw.toFixed(2)}%`;
+						},
+					},
 				},
 			},
 			scales: {
@@ -893,14 +847,32 @@ function createHeatmapChart() {
 						color: colors.gridLines,
 					},
 					ticks: {
+						color: colors.textSecondary,
 						callback: function (value) {
 							return value + '%';
+						},
+					},
+					title: {
+						display: true,
+						text: 'Zmiana procentowa',
+						color: colors.textSecondary,
+					},
+				},
+				y: {
+					grid: {
+						display: false,
+					},
+					ticks: {
+						color: colors.text,
+						font: {
+							weight: 'bold',
 						},
 					},
 				},
 			},
 		},
 	});
+	console.log('✅ Wykres heatmapy (słupkowy) utworzony pomyślnie');
 }
 
 // 6 funkcja updateStats

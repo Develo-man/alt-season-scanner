@@ -7,6 +7,7 @@
 
 require('dotenv').config();
 const cron = require('node-cron');
+const config = require('./src/config');
 const {
 	generateDominanceReport,
 	displayReport,
@@ -17,7 +18,7 @@ const path = require('path');
 
 // Configuration
 const MONITOR_INTERVAL = process.env.DOMINANCE_CHECK_HOURS || 1; // Check every hour by default
-const ALERT_THRESHOLD = 1; // Alert if dominance changes by more than 1% in 24h
+const ALERT_THRESHOLD = config.dominanceMonitor.alertThreshold; // Alert if dominance changes by more than 1% in 24h
 const ALERTS_FILE = path.join(__dirname, 'data', 'dominance', 'alerts.json');
 
 // Alert types

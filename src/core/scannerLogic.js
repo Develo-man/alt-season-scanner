@@ -21,61 +21,7 @@ const { rankByMomentum } = require('../utils/momentum');
 const { getSector } = require('../utils/sectors');
 const { analyzeSectors } = require('../utils/analysis');
 const { loadHistory, analyzeTrend } = require('../apis/btcDominance');
-
-/**
- * Define the three trading strategies
- */
-const TRADING_STRATEGIES = {
-	MOMENTUM: {
-		name: '🚀 MOMENTUM LEADERS',
-		description: 'Monety w silnym trendzie wzrostowym',
-		emoji: '🚀',
-		color: 'success',
-		criteria: {
-			maxPrice: 3,
-			maxRank: 100,
-			minVolumeRatio: 0.04,
-			min7dChange: 15, // Strong uptrend
-			max7dChange: 200, // Cap extreme pumps
-			excludeStablecoins: true,
-			strategy: 'MOMENTUM',
-		},
-		advice: 'Momentum trading - wskakuj na trendy, ale uważaj na FOMO',
-	},
-	VALUE: {
-		name: '💎 VALUE HUNTERS',
-		description: 'Okazje po spadkach - potencjalne odbicia',
-		emoji: '💎',
-		color: 'warning',
-		criteria: {
-			maxPrice: 3,
-			maxRank: 100,
-			minVolumeRatio: 0.03,
-			min7dChange: -25, // Recent dips
-			max7dChange: 5, // But not rising too fast
-			excludeStablecoins: true,
-			strategy: 'VALUE',
-		},
-		advice:
-			'Value investing - kupuj gdy inni sprzedają, ale sprawdź fundamenty',
-	},
-	BALANCED: {
-		name: '⚖️ BALANCED PLAYS',
-		description: 'Stabilne monety w konsolidacji',
-		emoji: '⚖️',
-		color: 'info',
-		criteria: {
-			maxPrice: 3,
-			maxRank: 100,
-			minVolumeRatio: 0.03,
-			min7dChange: -10, // Sideways to slight movements
-			max7dChange: 20,
-			excludeStablecoins: true,
-			strategy: 'BALANCED',
-		},
-		advice: 'Balanced approach - niższe ryzyko, stabilny wzrost',
-	},
-};
+const config = require('../config'); //
 
 // --- Główna funkcja skanera ---
 
@@ -104,14 +50,17 @@ async function runScanner() {
 	const allCandidates = new Set(); // Unikalne monety ze wszystkich strategii
 
 	// Process each strategy
-	for (const [key, strategy] of Object.entries(TRADING_STRATEGIES)) {
+	for (const [key, strategy] of Object.entries(config.strategies)) {
 		console.log(`${strategy.emoji} Filtrowanie: ${strategy.name}`);
 
 		const candidates = filterAndSort(
 			data.coins,
-			strategy.criteria,
+			{
+				...strategy.criteria,
+				excludeStablecoins: true,
+			},
 			'momentum',
-			40 // Increase limit for each strategy
+			40
 		);
 
 		strategyResults[key] = {
@@ -122,7 +71,6 @@ async function runScanner() {
 
 		// Add to master list
 		candidates.forEach((coin) => allCandidates.add(coin.symbol));
-
 		console.log(`   └─ Znaleziono ${candidates.length} kandydatów`);
 	}
 
@@ -577,5 +525,5 @@ function calculateAverageScore(coins) {
 
 module.exports = {
 	runScanner,
-	TRADING_STRATEGIES,
+	TRADING_STRATEGIES: config.strategies,
 };

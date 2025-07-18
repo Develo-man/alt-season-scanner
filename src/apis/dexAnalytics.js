@@ -1,9 +1,10 @@
 // src/apis/dexAnalytics.js
 const axios = require('axios');
 require('dotenv').config();
+const config = require('../config');
 
-const BASE_URL = 'https://api.dexscreener.com/latest/dex';
-const RATE_LIMIT_DELAY = 1000; // 1 second between calls
+const BASE_URL = config.api.dexScreener.baseUrl;
+const RATE_LIMIT_DELAY = config.api.dexScreener.rateLimitDelay;
 
 // Create axios instance
 const api = axios.create({
@@ -93,8 +94,8 @@ async function analyzeDEXMetrics(symbol, contractAddress = null) {
 		// Filter and analyze pairs
 		const activePairs = pairs.filter(
 			(pair) =>
-				pair.volume?.h24 > 1000 && // Minimum $1k daily volume
-				pair.liquidity?.usd > 5000 // Minimum $5k liquidity
+				pair.volume?.h24 > config.dex.minDailyVolume &&
+				pair.liquidity?.usd > config.dex.minLiquidity
 		);
 
 		if (activePairs.length === 0) {
