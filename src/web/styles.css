@@ -5,30 +5,27 @@
 
 /* CSS Variables for Clean Design */
 :root {
-	/* Primary Colors - More Professional */
 	--primary-blue: #3b82f6;
 	--primary-blue-light: #60a5fa;
 	--primary-blue-dark: #1d4ed8;
+	--primary-accent: #f59e0b; /* Pomarańczowo-żółty */
+	--primary-accent-dark: #d97706; /* Ciemniejsza wersja */
 
-	/* Accent Colors */
 	--accent-green: #10b981;
 	--accent-red: #ef4444;
 	--accent-yellow: #f59e0b;
 	--accent-purple: #8b5cf6;
 
-	/* Neutral Colors */
-	--background: #0f172a;
-	--surface: #1e293b;
-	--surface-light: #334155;
-	--border: #475569;
-	--border-light: #64748b;
+	--background: #0a0a0a;
+	--surface: #181818;
+	--surface-light: #282828;
+	--border: #383838;
+	--border-light: #525252;
 
-	/* Text Colors */
 	--text-primary: #f8fafc;
 	--text-secondary: #cbd5e1;
 	--text-muted: #94a3b8;
 
-	/* Spacing */
 	--space-xs: 0.25rem;
 	--space-sm: 0.5rem;
 	--space-md: 1rem;
@@ -37,13 +34,11 @@
 	--space-2xl: 3rem;
 	--space-3xl: 4rem;
 
-	/* Border Radius */
 	--radius-sm: 8px;
 	--radius-md: 12px;
 	--radius-lg: 16px;
 	--radius-xl: 20px;
 
-	/* Shadows */
 	--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 	--shadow-lg:
@@ -51,7 +46,6 @@
 	--shadow-xl:
 		0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
-	/* Animations */
 	--transition-fast: 0.15s ease;
 	--transition-normal: 0.3s ease;
 	--transition-slow: 0.5s ease;
@@ -165,11 +159,7 @@ h3 {
 }
 
 .gradient-text {
-	background: linear-gradient(
-		135deg,
-		var(--primary-blue),
-		var(--accent-purple)
-	);
+	background: linear-gradient(135deg, var(--primary-accent), var(--accent-red));
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
@@ -241,6 +231,14 @@ h3 {
 	color: var(--text-primary);
 	background: var(--surface);
 	border-color: var(--border);
+}
+
+button.nav-link {
+	background: transparent;
+	border: 1px solid transparent; /* Upewniamy się, że ramka jest taka sama jak w linku */
+	font-family: inherit; /* Użyj tej samej czcionki co reszta strony */
+	font-size: inherit; /* Użyj tego samego rozmiaru czcionki */
+	cursor: pointer;
 }
 
 /* Help Toggle */
@@ -331,6 +329,8 @@ h3 {
 }
 
 .market-card {
+	position: relative;
+	overflow: hidden;
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius-lg);
@@ -1069,6 +1069,10 @@ h3 {
 
 /* Strategy preview cards styling */
 .strategy-preview-card {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	text-align: center;
 	background: rgba(255, 255, 255, 0.02);
 	border: 1px solid var(--border);
 	border-radius: var(--radius-lg);
@@ -1077,6 +1081,10 @@ h3 {
 	cursor: pointer;
 	position: relative;
 	overflow: hidden;
+}
+
+.strategy-tabs-header p {
+	margin-bottom: var(--space-lg);
 }
 
 .strategy-preview-card::before {
@@ -1573,6 +1581,8 @@ h3 {
 	justify-content: space-between;
 	align-items: flex-start;
 	margin-bottom: var(--space-lg);
+	padding-right: 100px;
+	position: relative;
 }
 
 .coin-info {
@@ -2468,8 +2478,8 @@ h3 {
 /* Priority Badge */
 .priority-badge {
 	position: absolute;
-	top: var(--space-md);
-	right: var(--space-md);
+	top: 0;
+	right: 0;
 	display: flex;
 	align-items: center;
 	gap: var(--space-xs);
@@ -2776,7 +2786,7 @@ h3 {
 	right: 0;
 	height: 3px;
 	background: linear-gradient(90deg, var(--primary-blue), var(--accent-purple));
-	opacity: 0;
+	opacity: 1;
 	transition: var(--transition-normal);
 }
 
@@ -2862,9 +2872,10 @@ h3 {
 	border: 1px solid var(--border);
 	border-radius: var(--radius-lg);
 	padding: var(--space-xl);
-	text-align: center;
+	text-align: left;
 	position: relative;
 	transition: var(--transition-normal);
+	padding-top: calc(var(--space-xl) + 28px);
 }
 
 .step-card:hover {
@@ -2875,23 +2886,24 @@ h3 {
 
 .step-number {
 	position: absolute;
-	top: -12px;
+	top: var(--space-lg);
 	left: var(--space-lg);
-	background: var(--primary-blue);
-	color: white;
-	width: 24px;
-	height: 24px;
+	background: var(--surface-light);
+	color: var(--text-primary);
+	width: 28px;
+	height: 28px;
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-size: 0.875rem;
 	font-weight: 700;
+	border: 1px solid var(--border);
 }
 
 .step-icon {
 	font-size: 2.5rem;
-	margin: var(--space-md) 0;
+	margin-left: 0;
 	display: block;
 }
 
@@ -2944,18 +2956,6 @@ h3 {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 	gap: var(--space-lg);
-}
-
-/* Individual Strategy Cards */
-.strategy-preview-card {
-	background: rgba(255, 255, 255, 0.02);
-	border: 1px solid var(--border);
-	border-radius: var(--radius-lg);
-	padding: var(--space-xl);
-	transition: var(--transition-normal);
-	cursor: pointer;
-	position: relative;
-	overflow: hidden;
 }
 
 .strategy-preview-card::before {
@@ -3460,4 +3460,28 @@ h3 {
 .info-tooltip:hover::after {
 	opacity: 1;
 	visibility: visible;
+}
+/* Aktualizacja kolorów przycisków i linków */
+.action-btn.primary,
+.strategy-action,
+.retry-button,
+.timeframe-btn.active {
+	background: var(--primary-accent);
+	color: #111827; /* Ciemny tekst dla lepszego kontrastu na żółtym */
+}
+.action-btn.primary:hover,
+.strategy-action:hover,
+.retry-button:hover {
+	background: var(--primary-accent-dark);
+}
+
+/* Aktualizacja ramek aktywnych elementów */
+.strategy-tab.active,
+.action-card:hover,
+.step-card:hover {
+	border-color: var(--primary-accent);
+}
+
+.market-card::before {
+	background: linear-gradient(90deg, var(--primary-accent), var(--accent-red));
 }
