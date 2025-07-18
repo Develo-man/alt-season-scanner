@@ -136,18 +136,6 @@ async function runScanner() {
 	const uniqueSymbols = Array.from(allCandidates);
 	const binanceData = await checkMultipleCoins(uniqueSymbols);
 
-	const coinsWithFullData = candidates
-		.map((coin) => {
-			const binanceInfo = binanceData[coin.symbol.toUpperCase()];
-			return {
-				...coin,
-				sector: getSector(coin.symbol),
-				binance: binanceInfo,
-				isOnBinance: binanceInfo?.isListed,
-			};
-		})
-		.filter((coin) => coin.isOnBinance);
-
 	// --- Krok 4: Wzbogacenie danych dla każdej strategii ---
 	for (const [key, strategy] of Object.entries(strategyResults)) {
 		const enrichedCandidates = strategy.candidates
@@ -474,7 +462,7 @@ function analyzeCrossStrategies(strategyResults) {
 	});
 
 	// Find multi-strategy coins
-	const multiStrategCoins = Array.from(coinOccurrences.values())
+	const multiStrategyCoins = Array.from(coinOccurrences.values())
 		.filter((entry) => entry.strategies.length > 1)
 		.sort((a, b) => b.totalScore - a.totalScore)
 		.slice(0, 10);
@@ -506,7 +494,7 @@ function analyzeCrossStrategies(strategyResults) {
 	return {
 		multiStrategyCoins,
 		overlaps,
-		insights: generateCrossStrategyInsights(multiStrategCoins, overlaps),
+		insights: generateCrossStrategyInsights(multiStrategyCoins, overlaps),
 	};
 }
 
