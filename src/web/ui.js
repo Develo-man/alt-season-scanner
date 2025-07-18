@@ -383,21 +383,24 @@ export function createCoinCard(coin) {
 		</div>
 	`;
 
+	const dexAnalyticsHTML = coin.dexData ? renderDEXAnalytics(coin.dexData) : '';
+
 	// Expandable details
 	const expandableDetails = `
-		<div class="expandable-details">
-			<button class="expand-toggle" onclick="toggleDetails(this)">
-				<span>Pokaż szczegóły</span>
-				<span class="expand-arrow">▼</span>
-			</button>
-			<div class="details-content">
-				${devActivityHTML}
-				${pressureHTML}
-				${smartVolumeHTML}
-				${whyInteresting}
-			</div>
-		</div>
-	`;
+    <div class="expandable-details">
+        <button class="expand-toggle" onclick="toggleDetails(this)">
+            <span>Pokaż szczegóły</span>
+            <span class="expand-arrow">▼</span>
+        </button>
+        <div class="details-content">
+            ${devActivityHTML}
+            ${pressureHTML}
+            ${smartVolumeHTML}
+            ${dexAnalyticsHTML}
+            ${whyInteresting}
+        </div>
+    </div>
+`;
 
 	return `
 		<div class="coin-card enhanced-card" style="animation-delay: ${Math.random() * 0.3}s">
@@ -670,3 +673,261 @@ window.toggleDetails = function (button) {
 		arrow.textContent = '▲';
 	}
 };
+/**
+ * Renders DEX analytics section for a coin
+ * @param {Object} dexData - DEX analytics data
+ * @returns {string} HTML string for DEX section
+ */
+function renderDEXAnalytics(dexData) {
+	if (!dexData || !dexData.hasDEXData) {
+		return `
+			<div class="dex-analytics-section unavailable">
+				<div class="dex-header">
+					<h5 class="dex-title">🏪 DEX Analytics</h5>
+					<span class="dex-status unavailable">Niedostępne</span>
+				</div>
+				<div class="dex-message">
+					<p>Moneta dostępna tylko na giełdach scentralizowanych (CEX)</p>
+					<small>Wyższe ryzyko - brak zdecentralizowanej płynności</small>
+				</div>
+			</div>
+		`;
+	}
+
+	const buyPressure = parseFloat(dexData.buyPressure || 50);
+	const liquidityLevel = getLiquidityLevel(dexData.liquidityScore);
+	const volumeQuality = getVolumeQuality(dexData.volumeQualityScore);
+
+	return `
+		<div class="dex-analytics-section active">
+			<div class="dex-header">
+				<h5 class="dex-title">🏪 DEX Analytics (24h)</h5>
+				<span class="dex-status active">Aktywny</span>
+			</div>
+			
+			<div class="dex-key-metrics">
+				<div class="dex-metric">
+					<span class="metric-icon">💧</span>
+					<div class="metric-content">
+						<span class="metric-label">Płynność</span>
+						<span class="metric-value ${liquidityLevel.color}">
+							${dexData.metrics.liquidityFormatted}
+						</span>
+						<span class="metric-interpretation">${liquidityLevel.text}</span>
+					</div>
+				</div>
+				
+				<div class="dex-metric">
+					<span class="metric-icon">📊</span>
+					<div class="metric-content">
+						<span class="metric-label">Wolumen 24h</span>
+						<span class="metric-value">
+							${dexData.metrics.volume24hFormatted}
+						</span>
+						<span class="metric-interpretation">${dexData.totalTxns24h.toLocaleString()} txns</span>
+					</div>
+				</div>
+				
+				<div class="dex-metric">
+					<span class="metric-icon">⚖️</span>
+					<div class="metric-content">
+						<span class="metric-label">Presja kupna</span>
+						<span class="metric-value ${buyPressure > 60 ? 'positive' : buyPressure < 40 ? 'negative' : ''}">
+							${buyPressure}%
+						</span>
+						<span class="metric-interpretation">
+							${
+								buyPressure > 60
+									? '🟢 Przewaga kupujących'
+									: buyPressure < 40
+										? '🔴 Przewaga sprzedających'
+										: '🟡 Równowaga'
+							}
+						</span>
+					</div>
+				</div>
+			</div>
+			
+			<div class="dex-quality-indicators">
+				<div class="quality-indicator">
+					<span class="indicator-label">Jakość wolumenu</span>
+					<div class="quality-bar">
+						<div class="quality-fill ${volumeQuality.color}" 
+							 style="width: ${dexData.volumeQualityScore || 0}%"></div>
+					</div>
+					<span class="quality-text">${volumeQuality.text}</span>
+				</div>
+				
+				<div class="dex-diversity">
+					<span class="diversity-label">Dostępność DEX</span>
+					<div class="dex-badges">
+						${generateDEXBadges(dexData.topPairs || [])}
+					</div>
+					<span class="diversity-count">${dexData.uniqueDEXes || 0} różnych DEX</span>
+				</div>
+			</div>
+			
+			${renderTopDEXPairs(dexData.topPairs || [])}
+			
+			<div class="dex-insights">
+				<h6>🔍 Kluczowe obserwacje DEX:</h6>
+				<div class="insight-list">
+					${generateDEXInsights(dexData)
+						.map((insight) => `<div class="insight-item">${insight}</div>`)
+						.join('')}
+				</div>
+			</div>
+		</div>
+	`;
+}
+
+/**
+ * Get liquidity level interpretation
+ * @param {number} liquidityScore - Liquidity score 0-100
+ * @returns {Object} Level interpretation
+ */
+function getLiquidityLevel(liquidityScore) {
+	if (liquidityScore >= 80) return { text: 'Doskonała', color: 'excellent' };
+	if (liquidityScore >= 60) return { text: 'Dobra', color: 'good' };
+	if (liquidityScore >= 40) return { text: 'Średnia', color: 'average' };
+	return { text: 'Niska', color: 'poor' };
+}
+
+/**
+ * Get volume quality interpretation
+ * @param {number} volumeQualityScore - Volume quality score 0-100
+ * @returns {Object} Quality interpretation
+ */
+function getVolumeQuality(volumeQualityScore) {
+	if (volumeQualityScore >= 80) return { text: 'Organiczny', color: 'success' };
+	if (volumeQualityScore >= 60) return { text: 'Dobry', color: 'good' };
+	if (volumeQualityScore >= 40) return { text: 'Średni', color: 'average' };
+	return { text: 'Podejrzany', color: 'danger' };
+}
+
+/**
+ * Generate DEX badges for different platforms
+ * @param {Array} topPairs - Top DEX pairs
+ * @returns {string} HTML badges
+ */
+function generateDEXBadges(topPairs) {
+	const dexes = [...new Set(topPairs.map((pair) => pair.dex))];
+	const dexIcons = {
+		'uniswap-v3': '🦄',
+		'uniswap-v2': '🦄',
+		sushiswap: '🍣',
+		pancakeswap: '🥞',
+		quickswap: '⚡',
+		curve: '🌊',
+		balancer: '⚖️',
+		'1inch': '1️⃣',
+	};
+
+	return dexes
+		.slice(0, 4)
+		.map((dex) => {
+			const icon = dexIcons[dex] || '🔄';
+			const name = dex.charAt(0).toUpperCase() + dex.slice(1);
+			return `<span class="dex-badge" title="${name}">${icon}</span>`;
+		})
+		.join('');
+}
+
+/**
+ * Render top DEX pairs table
+ * @param {Array} topPairs - Top DEX pairs
+ * @returns {string} HTML table
+ */
+function renderTopDEXPairs(topPairs) {
+	if (topPairs.length === 0) return '';
+
+	return `
+		<div class="top-dex-pairs">
+			<h6>🏆 Top pary DEX:</h6>
+			<div class="pairs-table">
+				${topPairs
+					.slice(0, 3)
+					.map(
+						(pair) => `
+					<div class="pair-row">
+						<div class="pair-info">
+							<span class="pair-dex">${pair.dex}</span>
+							<span class="pair-tokens">${pair.baseToken}/${pair.quoteToken}</span>
+							<span class="pair-chain">${pair.chain}</span>
+						</div>
+						<div class="pair-metrics">
+							<span class="pair-volume">${pair.volume24h}</span>
+							<span class="pair-liquidity">${pair.liquidity}</span>
+							<span class="pair-change ${parseFloat(pair.priceChange24h) >= 0 ? 'positive' : 'negative'}">
+								${pair.priceChange24h}
+							</span>
+						</div>
+					</div>
+				`
+					)
+					.join('')}
+			</div>
+		</div>
+	`;
+}
+
+/**
+ * Generate DEX-specific insights
+ * @param {Object} dexData - DEX analytics data
+ * @returns {Array} Array of insight strings
+ */
+function generateDEXInsights(dexData) {
+	const insights = [];
+
+	// Liquidity insights
+	if (dexData.liquidityScore >= 80) {
+		insights.push(
+			'💧 Wysoka płynność = niski slippage przy większych transakcjach'
+		);
+	} else if (dexData.liquidityScore < 40) {
+		insights.push(
+			'⚠️ Niska płynność = uważaj na slippage przy większych kwotach'
+		);
+	}
+
+	// Buy/sell pressure insights
+	const buyPressure = parseFloat(dexData.buyPressure || 50);
+	if (buyPressure > 65) {
+		insights.push('🚀 Dominuje presja kupna - możliwy dalszy wzrost');
+	} else if (buyPressure < 35) {
+		insights.push('📉 Dominuje presja sprzedaży - możliwy dalszy spadek');
+	}
+
+	// Volume quality insights
+	if (dexData.volumeQualityScore < 40) {
+		insights.push('🔍 Podejrzany wolumen - sprawdź czy to nie wash trading');
+	} else if (dexData.volumeQualityScore >= 80) {
+		insights.push('✅ Organiczny wolumen - prawdziwe zainteresowanie traderów');
+	}
+
+	// DEX diversity insights
+	if (dexData.uniqueDEXes >= 5) {
+		insights.push('🌐 Szeroka dostępność - łatwe wejście/wyjście');
+	} else if (dexData.uniqueDEXes === 1) {
+		insights.push('⚠️ Dostępne tylko na jednym DEX - ryzyko koncentracji');
+	}
+
+	// Activity insights
+	if (dexData.totalTxns24h > 10000) {
+		insights.push('🔥 Bardzo wysoka aktywność - silne zainteresowanie');
+	}
+
+	// Special opportunities
+	const avgTxnSize =
+		dexData.totalTxns24h > 0
+			? dexData.totalVolume24h / dexData.totalTxns24h
+			: 0;
+
+	if (avgTxnSize > 10000) {
+		insights.push('🐋 Duże średnie transakcje - wieloryby mogą być aktywne');
+	} else if (avgTxnSize > 0 && avgTxnSize < 500) {
+		insights.push('👥 Małe średnie transakcje - dominuje handel detaliczny');
+	}
+
+	return insights.slice(0, 4); // Return max 4 insights
+}

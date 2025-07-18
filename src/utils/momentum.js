@@ -2,7 +2,8 @@
  * Advanced Momentum Calculator for Alt Season Scanner
  * Calculates comprehensive scores based on multiple factors
  */
-const { calculateAccumulationScore } = require('./accumulation');
+const { calculateMomentumScoreWithDEX } = require('./accumulation');
+const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
 
 /**
  * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
@@ -225,6 +226,13 @@ function calculateDeveloperScore(coin) {
  * @param {Object} [additionalData={}] - Optional data for accumulation
  * @returns {Object} Detailed scoring breakdown
  */
+/**
+ * Calculate comprehensive momentum score with DEX integration
+ * @param {Object} coin - Complete coin data with Binance info
+ * @param {Object} [marketConditions={}] - Optional market conditions data
+ * @param {Object} [additionalData={}] - Optional data for accumulation
+ * @returns {Object} Detailed scoring breakdown
+ */
 function calculateMomentumScore(
 	coin,
 	marketConditions = {},
@@ -247,30 +255,47 @@ function calculateMomentumScore(
 	const riskScore = calculateRiskScore(coin);
 	const devScore = calculateDeveloperScore(coin);
 
+	// NEW: Calculate DEX score
+	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
+
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
+
+	// Enhanced weighting with DEX component
+	const enhancedWeights = {
+		...weights,
+		dex: 0.15, // 15% weight for DEX metrics
+	};
+
+	// Adjust other weights to accommodate DEX
+	Object.keys(enhancedWeights).forEach((key) => {
+		if (key !== 'dex') {
+			enhancedWeights[key] *= 0.85; // Reduce by 15% to make room for DEX
+		}
+	});
 
 	// Calculate accumulation if data provided
 	let accumulationData = null;
 	if (additionalData && additionalData.klines && additionalData.whaleData) {
-		accumulationData = calculateAccumulationScore(
+		accumulationData = calculateMomentumScoreWithDEX(
 			coin,
 			additionalData.klines,
 			additionalData.whaleData
 		);
 	}
 
-	// Calculate weighted total (risk reduces score)
+	// Calculate weighted total with DEX component
 	const totalScore = Math.max(
 		0,
-		priceScore * (weights.price * 0.85) +
-			volumeScore * (weights.volume * 0.85) +
-			positionScore * (weights.position * 0.85) +
-			devScore * 0.15 -
-			riskScore * weights.risk
+		priceScore * enhancedWeights.price +
+			volumeScore * enhancedWeights.volume +
+			positionScore * enhancedWeights.position +
+			devScore * 0.1 +
+			dexScore * enhancedWeights.dex -
+			riskScore * enhancedWeights.risk
 	);
 
-	// Determine category
+	// Determine category (enhanced with DEX consideration)
 	let category = 'NEUTRAL';
 	let emoji = '😐';
 
@@ -294,6 +319,7 @@ function calculateMomentumScore(
 		emoji = '💤';
 	}
 
+	// Smart Volume signals (existing code)
 	if (coin.smartVolume) {
 		const sv = coin.smartVolume;
 
@@ -329,7 +355,7 @@ function calculateMomentumScore(
 		}
 	}
 
-	// Volume Profile signals
+	// Volume Profile signals (existing code)
 	if (coin.volumeProfile) {
 		const vp = coin.volumeProfile;
 		const currentPrice = coin.price;
@@ -357,7 +383,7 @@ function calculateMomentumScore(
 		}
 	}
 
-	// Combined Smart Volume + Price Action signals
+	// Combined Smart Volume + Price Action signals (existing code)
 	if (coin.smartVolume && coin.volumeProfile) {
 		const whalePercent = parseFloat(
 			coin.smartVolume.categories.whale.volumePercent
@@ -374,15 +400,20 @@ function calculateMomentumScore(
 		}
 	}
 
-	// Combine signals
+	// Generate base signals
 	const baseSignals = generateSignals(coin, {
 		priceScore,
 		volumeScore,
 		positionScore,
 		riskScore,
 	});
-
 	signals.push(...baseSignals);
+
+	// NEW: Add DEX signals
+	if (coin.dexData) {
+		const dexSignals = generateDEXSignals(coin.dexData, coin);
+		signals.push(...dexSignals.slice(0, 2)); // Add top 2 DEX signals
+	}
 
 	// Add accumulation signals if available
 	if (accumulationData && accumulationData.signals.length > 0) {
@@ -396,6 +427,7 @@ function calculateMomentumScore(
 		positionScore,
 		devScore,
 		riskScore,
+		dexScore, // NEW
 		accumulation: accumulationData,
 		category,
 		emoji,
@@ -403,6 +435,7 @@ function calculateMomentumScore(
 			priceMomentum: `${priceScore}/70`,
 			volumeActivity: `${volumeScore}/100`,
 			marketPosition: `${positionScore}/60`,
+			dexMetrics: `${dexScore}/100`, // NEW
 			riskFactor: `${riskScore}/100`,
 			accumulation: accumulationData ? `${accumulationData.score}/100` : 'N/A',
 		},

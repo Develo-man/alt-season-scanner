@@ -155,7 +155,7 @@ function generateAccumulationSignals(scores, coin) {
  * @param {Object} whaleData - Whale activity data
  * @returns {Object} Accumulation analysis
  */
-function calculateAccumulationScore(coin, klines, whaleData) {
+function calculateMomentumScoreWithDEX(coin, klines, whaleData) {
 	// Calculate individual components
 	const volatilityScore = calculateVolatilityScore(klines);
 	const absorptionScore = calculateAbsorptionScore(coin);
@@ -217,6 +217,6 @@ module.exports = {
 	calculateVolatilityScore,
 	calculateAbsorptionScore,
 	calculateWhaleScore,
-	calculateAccumulationScore,
+	calculateMomentumScoreWithDEX,
 	generateAccumulationSignals,
 };

@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { getKlines, getWhaleActivity } = require('../src/apis/binance');
-const { calculateAccumulationScore } = require('../src/utils/accumulation');
+const { calculateMomentumScoreWithDEX } = require('../src/utils/accumulation');
 
 async function testAccumulation() {
 	console.log('🧪 Testing Accumulation Detection...\n');
@@ -24,7 +24,7 @@ async function testAccumulation() {
 		console.log('🐋 Whale data:', whaleData);
 
 		// Calculate accumulation
-		const accumulation = calculateAccumulationScore(
+		const accumulation = calculateMomentumScoreWithDEX(
 			testCoin,
 			klines,
 			whaleData
