@@ -194,15 +194,15 @@ async function runScanner() {
 	let condition, advice, recommendedStrategy;
 	if (btcDominance > 65) {
 		condition = 'SEZON BITCOINA';
-		advice = 'Trudny czas dla altów - preferuj VALUE strategy';
+		advice = 'Trudny czas dla altów - preferuj strategię VALUE';
 		recommendedStrategy = 'VALUE';
 	} else if (btcDominance > 55) {
-		condition = 'PRZEJŚCIE';
-		advice = 'Zmieszany rynek - BALANCED approach najlepszy';
+		condition = 'FAZA PRZEJŚCIOWA';
+		advice = 'Zmienny rynek - najlepsza będzie strategia BALANCED';
 		recommendedStrategy = 'BALANCED';
 	} else {
-		condition = 'PRZYJAZNY DLA ALTÓW';
-		advice = 'Doskonały czas dla MOMENTUM plays';
+		condition = 'SEZON ALTCOINÓW';
+		advice = 'Doskonały czas na zagrania pod MOMENTUM';
 		recommendedStrategy = 'MOMENTUM';
 	}
 

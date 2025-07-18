@@ -169,36 +169,61 @@ function calculatePositionScore(coin) {
 }
 
 /**
- * Calculate risk score (lower is better)
- * @param {Object} coin - Coin data
- * @returns {number} Risk score (0-100)
+ * Oblicza Współczynnik Ryzyka v2 (bardziej dynamiczny i wielowymiarowy)
+ * @param {Object} coin - Dane monety
+ * @param {Object} marketConditions - Aktualne warunki rynkowe (w tym Fear & Greed)
+ * @param {Array} klines - Dane świecowe (do obliczenia zmienności)
+ * @returns {number} Wynik ryzyka (0-100)
  */
-function calculateRiskScore(coin) {
+function calculateRiskScore(coin, marketConditions = {}, klines = []) {
 	let risk = 0;
 
-	// Too much pump already (FOMO risk)
-	if (coin.priceChange7d > 100) risk += 40;
-	else if (coin.priceChange7d > 70) risk += 25;
-	else if (coin.priceChange7d > 50) risk += 15;
-
-	// Negative 24h with positive 7d (momentum fading?)
-	if (coin.priceChange24h < -10 && coin.priceChange7d > 20) {
-		risk += 20;
+	// 1. Ryzyko zmienności (Volatility Risk) - NOWOŚĆ
+	// Wykorzystujemy funkcję, którą już masz w src/utils/accumulation.js
+	if (klines && klines.length >= 14) {
+		const atr14 = require('./accumulation').calculateATR(klines);
+		const price = coin.price;
+		if (price > 0) {
+			const atrPercentage = (atr14 / price) * 100;
+			if (atrPercentage > 20)
+				risk += 30; // Dzienna zmienność > 20% to bardzo dużo
+			else if (atrPercentage > 10) risk += 15;
+			else if (atrPercentage > 5) risk += 5;
+		}
 	}
 
-	// Low liquidity risk
-	if (coin.volumeToMcap < 0.02) risk += 20; // Less than 2% daily volume
-
-	// Rank risk (too low = risky)
-	if (coin.rank > 90) risk += 15;
-	else if (coin.rank > 80) risk += 10;
-
-	// Binance specific risks
-	if (coin.binance && coin.binance.binanceTrades24h < 10000) {
-		risk += 20; // Very low activity on Binance
+	// 2. Ryzyko przegrzania rynku (FOMO Risk) - ULEPSZONE
+	const priceChange7d = coin.priceChange7d || 0;
+	if (priceChange7d > 50) {
+		// Kara skalowana zamiast stałej
+		risk += Math.min(30, (priceChange7d - 50) / 2); // max 30 pkt
 	}
 
-	return Math.min(risk, 100);
+	// 3. Ryzyko sentymentu rynkowego (Market Sentiment Risk) - NOWOŚĆ
+	if (marketConditions.fearAndGreed) {
+		const fngValue = marketConditions.fearAndGreed.value;
+		if (fngValue > 80)
+			risk += 25; // Extreme Greed
+		else if (fngValue > 65) risk += 15; // Greed
+	}
+
+	// 4. Ryzyko projektu (Project Risk) - NOWOŚĆ
+	if (coin.developerData) {
+		// Kara za brak aktywności deweloperskiej w ostatnim miesiącu
+		if (coin.developerData.commit_count_4_weeks === 0) {
+			risk += 20;
+		}
+	}
+
+	// 5. Ryzyko płynności (Liquidity Risk) - bez zmian
+	if (coin.volumeToMcap < 0.02) risk += 15;
+
+	// 6. Ryzyko niskiej kapitalizacji (Low Cap Risk) - ULEPSZONE
+	if (coin.rank > 75) {
+		risk += Math.min(15, (coin.rank - 75) / 2); // Kara skalowana, max 15 pkt
+	}
+
+	return Math.min(Math.round(risk), 100); // Zwracamy zaokrągloną wartość, max 100
 }
 
 /**

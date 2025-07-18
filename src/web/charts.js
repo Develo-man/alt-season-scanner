@@ -139,20 +139,15 @@ async function fetchDominanceHistory() {
 // 1. BTC Dominance Line Chart
 function createDominanceChart() {
 	const ctx = document.getElementById('dominanceChart').getContext('2d');
-
-	// Sprawdź czy mamy dane
 	if (!dominanceHistory || dominanceHistory.length === 0) {
 		console.warn('Brak danych dominacji - używam mock data');
 		dominanceHistory = generateMockDominanceHistory();
 	}
 
-	// Filtruj i waliduj dane
-	const validData = dominanceHistory.filter((d) => {
-		return (
+	const validData = dominanceHistory.filter(
+		(d) =>
 			d && typeof d.btc === 'number' && d.btc > 0 && d.btc < 100 && d.timestamp
-		);
-	});
-
+	);
 	if (validData.length === 0) {
 		console.error('Brak prawidłowych danych dominacji');
 		return;
@@ -160,15 +155,19 @@ function createDominanceChart() {
 
 	console.log(`📊 Wykres dominacji: ${validData.length} punktów danych`);
 
+	// 1. Zbierz wszystkie punkty danych (BTC i ETH), aby znaleźć prawdziwe minimum i maksimum
+	const allDataPoints = validData.flatMap((d) => [d.btc, d.eth || 0]);
+	const dataMin = Math.min(...allDataPoints);
+	const dataMax = Math.max(...allDataPoints);
+
 	const data = {
-		labels: validData.map((d) => {
-			const date = new Date(d.timestamp);
-			return date.toLocaleDateString('pl-PL', {
+		labels: validData.map((d) =>
+			new Date(d.timestamp).toLocaleDateString('pl-PL', {
 				month: 'short',
 				day: 'numeric',
 				hour: validData.length < 50 ? 'numeric' : undefined,
-			});
-		}),
+			})
+		),
 		datasets: [
 			{
 				label: 'BTC Dominance %',
@@ -204,20 +203,14 @@ function createDominanceChart() {
 	const options = {
 		responsive: true,
 		maintainAspectRatio: false,
-		interaction: {
-			mode: 'index',
-			intersect: false,
-		},
+		interaction: { mode: 'index', intersect: false },
 		plugins: {
 			legend: {
 				display: true,
 				position: 'top',
 				labels: {
 					color: colors.text,
-					font: {
-						size: 14,
-						weight: 'bold',
-					},
+					font: { size: 14, weight: 'bold' },
 					padding: 20,
 					usePointStyle: true,
 					pointStyle: 'circle',
@@ -245,100 +238,42 @@ function createDominanceChart() {
 					label: function (context) {
 						return `${context.dataset.label}: ${context.parsed.y}%`;
 					},
-					afterBody: function (context) {
-						const dataPoint = validData[context[0].dataIndex];
-						const btc = dataPoint.btc;
-						const phase =
-							btc > 65
-								? 'Bitcoin Season'
-								: btc > 55
-									? 'BTC Favored'
-									: btc > 50
-										? 'Balanced'
-										: 'Alt Season';
-						return [`Faza rynku: ${phase}`];
-					},
 				},
 			},
 		},
 		scales: {
 			x: {
-				grid: {
-					color: colors.gridLines,
-					lineWidth: 1,
-				},
+				grid: { color: colors.gridLines, lineWidth: 1 },
 				ticks: {
 					color: colors.textSecondary,
-					font: {
-						size: 12,
-					},
+					font: { size: 12 },
 					maxTicksLimit: 8,
 				},
 			},
 			y: {
-				grid: {
-					color: colors.gridLines,
-					lineWidth: 1,
-				},
+				grid: { color: colors.gridLines, lineWidth: 1 },
 				ticks: {
 					color: colors.textSecondary,
-					font: {
-						size: 12,
-					},
+					font: { size: 12 },
 					callback: function (value) {
 						return value + '%';
 					},
 				},
-				min: Math.max(0, Math.min(...validData.map((d) => d.btc)) - 5),
-				max: Math.min(100, Math.max(...validData.map((d) => d.btc)) + 5),
-				// Dodaj linie referencyjne dla faz rynku
-				afterDraw: function (chart) {
-					const ctx = chart.ctx;
-					const yAxis = chart.scales.y;
-
-					// Linia 50% (Alt Season threshold)
-					const y50 = yAxis.getPixelForValue(50);
-					ctx.save();
-					ctx.strokeStyle = colors.success + '80';
-					ctx.lineWidth = 2;
-					ctx.setLineDash([5, 5]);
-					ctx.beginPath();
-					ctx.moveTo(chart.chartArea.left, y50);
-					ctx.lineTo(chart.chartArea.right, y50);
-					ctx.stroke();
-					ctx.restore();
-
-					// Linia 65% (Bitcoin Season threshold)
-					const y65 = yAxis.getPixelForValue(65);
-					ctx.save();
-					ctx.strokeStyle = colors.danger + '80';
-					ctx.lineWidth = 2;
-					ctx.setLineDash([5, 5]);
-					ctx.beginPath();
-					ctx.moveTo(chart.chartArea.left, y65);
-					ctx.lineTo(chart.chartArea.right, y65);
-					ctx.stroke();
-					ctx.restore();
-				},
+				// 2. Użyj obliczonego min/max do ustawienia skali, dodając trochę marginesu
+				min: Math.floor(dataMin - 5),
+				max: Math.ceil(dataMax + 5),
 			},
-		},
-		onHover: (event, activeElements) => {
-			event.native.target.style.cursor =
-				activeElements.length > 0 ? 'pointer' : 'default';
 		},
 	};
 
-	// Zniszcz poprzedni wykres jeśli istnieje
 	if (charts.dominance) {
 		charts.dominance.destroy();
 	}
-
 	charts.dominance = new Chart(ctx, {
 		type: 'line',
 		data: data,
 		options: options,
 	});
-
 	console.log('✅ Wykres dominacji utworzony pomyślnie');
 }
 // 2. Momentum Bar Chart
@@ -655,10 +590,10 @@ function createRiskRewardChart() {
 					if (d.x < 50 && d.y < 50) return colors.info; // Low risk, low reward
 					return colors.danger; // High risk, low reward
 				}),
-				borderColor: colors.text,
-				borderWidth: 1,
-				pointRadius: 6,
-				pointHoverRadius: 8,
+				pointRadius: 8, // Zwiększamy domyślny rozmiar kropki
+				pointHoverRadius: 12, // Zwiększamy rozmiar po najechaniu
+				borderWidth: 2, // Grubość obramowania kropki
+				borderColor: 'rgba(15, 23, 42, 0.8)', // Kolor tła
 			},
 		],
 	};
@@ -666,6 +601,11 @@ function createRiskRewardChart() {
 	const options = {
 		responsive: true,
 		maintainAspectRatio: false,
+		layout: {
+			padding: {
+				left: 10,
+			},
+		},
 		plugins: {
 			legend: {
 				display: false,
@@ -702,10 +642,13 @@ function createRiskRewardChart() {
 				grid: {
 					color: colors.gridLines,
 				},
-				min: 0,
+				min: -1,
 				max: 100,
 				ticks: {
 					color: colors.textSecondary,
+					callback: function (value, index, ticks) {
+						return value >= 0 ? value : null;
+					},
 				},
 			},
 			y: {
@@ -888,20 +831,20 @@ function createHeatmapChart() {
 }
 
 // 6 funkcja updateStats
+
 function updateStats() {
 	if (!scannerData || !scannerData.marketStatus) {
 		console.warn('⚠️ Brak danych rynkowych do statystyk');
 		return;
 	}
 
-	// BTC Dominance
+	// Dominacja BTC
 	const btcDominanceEl = document.getElementById('btc-dominance');
 	const dominanceChangeEl = document.getElementById('dominance-change');
 
 	if (btcDominanceEl && scannerData.marketStatus.btcDominance) {
 		btcDominanceEl.textContent = scannerData.marketStatus.btcDominance + '%';
 	}
-
 	if (dominanceChangeEl && scannerData.marketStatus.dominanceChange) {
 		dominanceChangeEl.textContent = scannerData.marketStatus.dominanceChange;
 		dominanceChangeEl.className =
@@ -910,7 +853,7 @@ function updateStats() {
 				: 'stat-change positive';
 	}
 
-	// Top Gainer
+	// Lider Wzrostów
 	const allCoins = getAllCoinsFromStrategies(scannerData);
 	if (allCoins.length > 0) {
 		const topGainer = allCoins.reduce((max, coin) => {
@@ -918,10 +861,8 @@ function updateStats() {
 			const coinChange = coin.priceChange7d || -Infinity;
 			return coinChange > maxChange ? coin : max;
 		});
-
 		const topGainerEl = document.getElementById('top-gainer');
 		const topGainerChangeEl = document.getElementById('top-gainer-change');
-
 		if (topGainerEl) topGainerEl.textContent = topGainer.symbol;
 		if (topGainerChangeEl) {
 			topGainerChangeEl.textContent =
@@ -929,7 +870,7 @@ function updateStats() {
 		}
 	}
 
-	// Average Momentum
+	// Średnie Momentum
 	const coinsWithMomentum = allCoins.filter((c) => c.momentum?.totalScore);
 	if (coinsWithMomentum.length > 0) {
 		const avgMomentum =
@@ -937,25 +878,21 @@ function updateStats() {
 				(sum, coin) => sum + parseFloat(coin.momentum.totalScore),
 				0
 			) / coinsWithMomentum.length;
-
 		const avgMomentumEl = document.getElementById('avg-momentum');
 		const momentumTrendEl = document.getElementById('momentum-trend');
-
 		if (avgMomentumEl) avgMomentumEl.textContent = avgMomentum.toFixed(1);
 		if (momentumTrendEl) {
 			momentumTrendEl.textContent =
-				avgMomentum > 50 ? 'Strong' : avgMomentum > 40 ? 'Moderate' : 'Weak';
+				avgMomentum > 50 ? 'Silne' : avgMomentum > 40 ? 'Umiarkowane' : 'Słabe';
 		}
 	}
 
-	// Market Phase
+	// Faza Rynku
 	const marketPhaseEl = document.getElementById('market-phase');
 	const phaseDescEl = document.getElementById('phase-desc');
-
 	if (marketPhaseEl && scannerData.marketStatus.condition) {
 		marketPhaseEl.textContent = scannerData.marketStatus.condition;
 	}
-
 	if (phaseDescEl && scannerData.marketStatus.advice) {
 		phaseDescEl.textContent = scannerData.marketStatus.advice;
 	}
@@ -1010,9 +947,9 @@ function showLoading(show) {
 }
 
 // Mock data generators (for demo)
+
 function generateMockData() {
 	console.log('🔄 Generuję mock data dla wykresów...');
-
 	const mockCoins = [];
 	const symbols = [
 		'BTC',
@@ -1026,14 +963,12 @@ function generateMockData() {
 		'PEPE',
 		'SHIB',
 	];
-
 	symbols.forEach((symbol, index) => {
 		const price = Math.random() * 3;
-		const priceChange7d = (Math.random() - 0.3) * 80; // Bias towards positive
+		const priceChange7d = (Math.random() - 0.3) * 80;
 		const volumeToMcap = Math.random() * 0.5;
 		const momentumScore = Math.floor(Math.random() * 60) + 20;
 		const riskScore = Math.floor(Math.random() * 80) + 10;
-
 		mockCoins.push({
 			symbol,
 			name: `${symbol} Mock`,
@@ -1059,28 +994,25 @@ function generateMockData() {
 		marketStatus: {
 			btcDominance: '62.5',
 			dominanceChange: '-0.8%',
-			condition: 'BTC FAVORED',
-			advice: 'Challenging for alts - be selective',
+			condition: 'PRZEJŚCIE',
+			advice: 'Zmienny rynek - bądź selektywny',
 		},
 		strategies: [
 			{
 				key: 'MOMENTUM',
-				name: 'Momentum Leaders',
+				name: 'Liderzy Wzrostu',
 				topCoins: mockCoins.slice(0, 5),
 			},
-			{
-				key: 'VALUE',
-				name: 'Value Hunters',
-				topCoins: mockCoins.slice(3, 8),
-			},
+			{ key: 'VALUE', name: 'Okazje Cenowe', topCoins: mockCoins.slice(3, 8) },
 			{
 				key: 'BALANCED',
-				name: 'Balanced Plays',
+				name: 'Zrównoważone',
 				topCoins: mockCoins.slice(2, 7),
 			},
 		],
 	};
 }
+
 function generateMockDominanceHistory() {
 	console.log('🔄 Generuję mock data dla dominacji BTC...');
 
