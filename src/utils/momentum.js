@@ -559,38 +559,6 @@ function rankByMomentum(coins, marketConditions) {
 }
 
 /**
- * Get top coins by specific category
- * @param {Array} coins - Array of coins
- * @param {string} category - Category to filter by
- * @param {number} limit - Max results
- * @returns {Array} Filtered and sorted coins
- */
-function getTopByCategory(coins, category, limit = 5) {
-	const ranked = rankByMomentum(coins); // Note: this will use default market conditions
-
-	switch (category) {
-		case 'safest':
-			return ranked.filter((c) => c.momentum.riskScore < 40).slice(0, limit);
-
-		case 'momentum':
-			return ranked.filter((c) => c.momentum.priceScore > 50).slice(0, limit);
-
-		case 'volume':
-			return ranked
-				.sort((a, b) => b.momentum.volumeScore - a.momentum.volumeScore)
-				.slice(0, limit);
-
-		case 'value':
-			return ranked
-				.filter((c) => c.price < 1 && c.momentum.totalScore > 40)
-				.slice(0, limit);
-
-		default:
-			return ranked.slice(0, limit);
-	}
-}
-
-/**
  * Oblicza punktację na podstawie pozycji ceny względem jej profilu wolumenu.
  * @param {Object} volumeProfile - Dane profilu wolumenu z funkcji getVolumeProfile.
  * @param {number} currentPrice - Aktualna cena monety.
@@ -641,5 +609,4 @@ module.exports = {
 	calculateMomentumScore,
 	generateSignals,
 	rankByMomentum,
-	getTopByCategory,
 };

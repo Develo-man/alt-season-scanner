@@ -210,34 +210,6 @@ async function checkMultipleCoins(symbols) {
 	return finalResults;
 }
 
-/**
- * Get top movers on Binance (bonus feature)
- * @returns {Promise<Array>} Top gaining coins
- */
-async function getTopMovers() {
-	try {
-		console.log('📈 Fetching Binance top movers...');
-		const response = await api.get('/api/v3/ticker/24hr');
-
-		// Filter USDT pairs and sort by price change
-		const movers = response.data
-			.filter((t) => t.symbol.endsWith('USDT'))
-			.map((t) => ({
-				symbol: t.symbol.replace('USDT', ''),
-				priceChangePercent: parseFloat(t.priceChangePercent),
-				volume: parseFloat(t.quoteVolume),
-				price: parseFloat(t.lastPrice),
-			}))
-			.sort((a, b) => b.priceChangePercent - a.priceChangePercent)
-			.slice(0, 10);
-
-		return movers;
-	} catch (error) {
-		console.error('❌ Error fetching top movers:', error.message);
-		return [];
-	}
-}
-
 // Test function
 async function test() {
 	console.log('🧪 Testing Binance API...\n');
@@ -301,67 +273,6 @@ async function getKlines(symbol, interval = '1d', limit = 14) {
 	}
 }
 
-/**
- * Get aggregate trades to detect whale activity
- * @param {string} symbol - Trading pair
- * @param {number} limit - Number of trades (max 1000)
- * @returns {Promise<Object>} Whale activity analysis
- */
-async function getWhaleActivity(symbol, limit = 500) {
-	try {
-		const response = await api.get('/api/v3/aggTrades', {
-			params: {
-				symbol: symbol,
-				limit: limit,
-			},
-		});
-
-		const trades = response.data;
-		const currentPrice = parseFloat(trades[trades.length - 1].p);
-
-		// Analyze trades
-		let largeBuys = 0;
-		let largeSells = 0;
-		let totalLargeVolume = 0;
-		const LARGE_TRADE_USD = 50000; // $50k threshold
-
-		trades.forEach((trade) => {
-			const price = parseFloat(trade.p);
-			const quantity = parseFloat(trade.q);
-			const valueUSD = price * quantity;
-
-			if (valueUSD >= LARGE_TRADE_USD) {
-				totalLargeVolume += valueUSD;
-				// 'm' field indicates if buyer was maker
-				if (trade.m) {
-					largeSells++;
-				} else {
-					largeBuys++;
-				}
-			}
-		});
-
-		const totalLargeTrades = largeBuys + largeSells;
-		const buyPressure =
-			totalLargeTrades > 0 ? largeBuys / totalLargeTrades : 0.5;
-
-		return {
-			largeBuys,
-			largeSells,
-			totalLargeTrades,
-			buyPressure,
-			avgLargeTradeSize:
-				totalLargeTrades > 0 ? totalLargeVolume / totalLargeTrades : 0,
-			period: `Last ${limit} trades`,
-		};
-	} catch (error) {
-		console.error(
-			`❌ Error analyzing whale activity for ${symbol}:`,
-			error.message
-		);
-		return null;
-	}
-}
 async function batchProcess(items, batchSize, delayMs, processFn) {
 	const results = [];
 
@@ -731,10 +642,8 @@ module.exports = {
 	get24hrTicker,
 	getDetailedBinanceData,
 	checkMultipleCoins,
-	getTopMovers,
 	test,
 	getKlines,
-	getWhaleActivity,
 	batchProcess,
 	getBuySellPressure,
 	getSmartVolumeAnalysis,

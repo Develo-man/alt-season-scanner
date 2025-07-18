@@ -377,39 +377,6 @@ async function main() {
 	}
 }
 
-// Enhanced help function
-function displayHelp() {
-	console.log(`
-Alt Season Scanner v2.0 - Triple Strategy
-
-USAGE:
-  npm run scan [options]
-
-OPTIONS:
-  --interactive, -i           Interactive mode with menu
-  --strategy=<name>          Show specific strategy (momentum/value/balanced)
-  --help, -h                 Show this help
-
-STRATEGIES:
-  🚀 MOMENTUM: Coins in strong uptrends (15%+ 7d growth)
-  💎 VALUE: Dip opportunities (-25% to 5% 7d change)
-  ⚖️ BALANCED: Stable coins in consolidation (-10% to 20% 7d change)
-
-EXAMPLES:
-  npm run scan                        # Quick overview
-  npm run scan -- --interactive       # Interactive mode
-  npm run scan -- --strategy=momentum # Show momentum strategy
-  npm run scan -- --strategy=value    # Show value opportunities
-  npm run web                         # Start web interface
-
-TIPS:
-  • Use interactive mode for detailed analysis
-  • Check the web interface for charts and DEX data
-  • Monitor the recommended strategy based on market conditions
-  • Cross-strategy coins often have the strongest signals
-	`);
-}
-
 // Check for help flag
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
 	displayHelp();
