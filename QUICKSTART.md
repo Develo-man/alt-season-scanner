@@ -1,123 +1,69 @@
-# Alt Season Scanner - Quick Start Guide 🚀
+# Alt Season Scanner - Przewodnik Szybkiego Startu 🚀
 
-## Installation (5 minutes)
+Ten przewodnik pomoże Ci uruchomić aplikację w mniej niż 5 minut.
 
-1. **Clone & Install**
+## Instalacja
 
-```bash
-git clone [your-repo-url]
-cd alt-season-scanner
-npm install
-```
+1.  **Sklonuj repozytorium i zainstaluj zależności**
 
-2. **Configure API Keys**
+    ```bash
+    git clone [adres-twojego-repozytorium]
+    cd alt-season-scanner
+    npm install
+    ```
 
-```bash
-cp .env.example .env
-# Edit .env and add your CoinGecko API key
-```
+2.  **Skonfiguruj klucze API**
 
-3. **Test Everything Works**
+    ```bash
+    # Skopiuj plik przykładowy
+    cp .env.example .env
+    ```
 
-```bash
-npm run test:all
-```
+    Następnie otwórz plik `.env` i wklej swój darmowy klucz API z CoinGecko.
 
-## Running the Scanner
+3.  **Uruchom aplikację!**
+    ```bash
+    # Startuje serwer i interfejs webowy
+    npm run web
+    ```
+    Otwórz przeglądarkę i wejdź na **http://localhost:3000**.
 
-### Option 1: Command Line Only
+## Jak używać aplikacji (krok po kroku)
 
-```bash
-# Single scan
-npm run scan
+### Krok 1: Zanalizuj warunki rynkowe
 
-# Continuous scanning (every 6 hours)
-npm run scan:continuous
-```
+Na górze strony znajdziesz kluczowe wskaźniki:
 
-### Option 2: Web Dashboard
+- **Dominacja BTC:** Najważniejszy wskaźnik. Jeśli spada poniżej 55%, warunki dla altcoinów są dobre.
+- **Fear & Greed:** Pokazuje ogólny sentyment na rynku.
+- **Rekomendowana Strategia:** Aplikacja automatycznie sugeruje, która ze strategii (Momentum, Value, Balanced) jest obecnie najsensowniejsza.
 
-```bash
-# Start web server
-npm run web
+### Krok 2: Wybierz strategię i przeglądaj monety
 
-# Open browser
-http://localhost:3000
-```
+Kliknij na jedną ze strategii, aby zobaczyć listę najlepszych monet, które pasują do jej kryteriów. Monety są posortowane od najlepszej (najwyższy `Total Score`).
 
-## Understanding Results
+### Krok 3: Zrozumienie kart monet
 
-### Momentum Scores
+Każda karta monety zawiera kluczowe informacje:
 
-- **70+** = 🔥 HOT (rare, extreme opportunity)
-- **60+** = 💪 STRONG (good momentum)
-- **50+** = 🌟 PROMISING (worth watching)
-- **40+** = 👀 INTERESTING (early stage)
-- **30+** = 😐 NEUTRAL (wait and see)
+- **Ocena (Score):** Ogólny wynik od 0 do 100. Im wyższy, tym lepsza okazja według algorytmu.
+- **Ryzyko:** Ocena ryzyka (0-100). Im niższa, tym bezpieczniej.
+- **Aktywność:** Stosunek wolumenu do kapitalizacji. Wysoka wartość oznacza duże zainteresowanie.
+- **💡 Dlaczego warto?:** Automatycznie wygenerowane sygnały, które podsumowują, dlaczego dana moneta jest interesująca.
 
-### Key Signals
+### Krok 4: Sprawdź szczegóły
 
-- ⚠️ **Extended rally** = Already pumped hard
-- ⚡ **Dip opportunity** = Recent pullback
-- 🔥 **Extreme volume** = Something happening
-- ✅ **Low risk** = Steady growth
+Kliknij przycisk **"📊 Więcej szczegółów"** lub **"🏪 DEX Info"**, aby otworzyć okno z dogłębną analizą techniczną oraz danymi z giełd zdecentralizowanych.
 
-### Market Conditions
+## Zaawansowane użycie (Terminal)
 
-- **BTC Dominance >65%** = Hard mode for alts
-- **BTC Dominance 55-65%** = Be selective
-- **BTC Dominance <55%** = Alt season vibes
+Jeśli wolisz pracę w konsoli:
 
-## Trading Strategy
+- **`npm run scan -- --interactive`**: Uruchamia skaner w trybie interaktywnym z menu w terminalu.
+- **`npm run dominance:monitor`**: Uruchamia w tle monitor dominacji BTC, który informuje o kluczowych zmianach na rynku.
 
-### Entry Checklist
+## Bezpieczeństwo przede wszystkim 🛡️
 
-- [ ] Score above 40
-- [ ] Positive 7-day trend
-- [ ] Listed on Binance
-- [ ] Risk score under 50
-- [ ] Not already pumped >70%
-
-### Position Sizing
-
-- **Score 60+**: Up to 5% of portfolio
-- **Score 50-60**: Up to 3% of portfolio
-- **Score 40-50**: Up to 2% of portfolio
-- **Always use stop losses!**
-
-## Troubleshooting
-
-### "No coins found"
-
-- Check BTC dominance - might be bad timing
-- Lower filter thresholds in .env
-
-### "API rate limit"
-
-- Using free CoinGecko? Wait 1 minute
-- Consider getting API key
-
-### "Can't connect to Binance"
-
-- Check internet connection
-- Binance API might be down
-
-## Safety First 🛡️
-
-1. **This is NOT financial advice**
-2. **Never invest more than you can lose**
-3. **DYOR - Do Your Own Research**
-4. **Start small, test the system**
-5. **Keep a trading journal**
-
-## Next Steps
-
-1. Run scanner daily for a week
-2. Paper trade the recommendations
-3. Track which signals work best
-4. Adjust filters based on results
-5. Consider automating with cron
-
----
-
-**Remember**: The best trader is a disciplined trader. Stick to your rules!
+1.  **To NIE jest porada inwestycyjna.** Aplikacja jest narzędziem analitycznym.
+2.  **DYOR** - Zawsze wykonaj własną, dogłębną analizę przed zainwestowaniem.
+3.  **Zarządzaj ryzykiem.** Zawsze używaj zleceń stop-loss i nigdy не inwestuj więcej, niż możesz stracić.

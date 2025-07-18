@@ -17,7 +17,7 @@ function getDynamicWeights(marketConditions) {
 		price: 0.35,
 		volume: 0.35,
 		position: 0.3,
-		risk: 0.25, // Standardowa waga ryzyka
+		risk: 0.5,
 	};
 	if (
 		!marketConditions ||
@@ -32,30 +32,28 @@ function getDynamicWeights(marketConditions) {
 
 	// === Dynamiczne Wagi Główne (na podstawie dominacji BTC) ===
 	if (btcDominance < 55) {
-		// Hossa na altach - cena jest kluczowa
 		weights.price = 0.45;
 		weights.volume = 0.3;
 		weights.position = 0.25;
 	} else if (btcDominance > 60) {
-		// Sezon Bitcoina - szukamy siły we względnym wolumenie
 		weights.price = 0.25;
 		weights.volume = 0.45;
 		weights.position = 0.3;
 	}
 
-	// === Dynamiczna Waga Ryzyka (na podstawie Fear & Greed) ===
+	// BARDZIEJ AGRESYWNA WAGA RYZYKA
 	if (fngValue > 75) {
-		// EXTREME GREED: Rynek jest euforyczny, ignoruje ryzyko. My je podbijamy.
-		weights.risk = 0.45; // Znacząco zwiększamy wagę ryzyka
+		// EXTREME GREED
+		weights.risk = 0.8; // ZNACZĄCO zwiększamy wagę ryzyka
 		console.log(
-			'⚖️ Rynek w trybie "Extreme Greed". Zwiększono wagę ryzyka do 0.45.'
+			'⚖️ Rynek w trybie "Extreme Greed". Zwiększono wagę ryzyka do 0.8.'
 		);
 	} else if (fngValue > 60) {
-		// GREED: Rynek jest chciwy, ryzyko jest niedoceniane.
-		weights.risk = 0.35; // Lekko zwiększamy wagę ryzyka
+		// GREED
+		weights.risk = 0.65; // Zwiększamy wagę ryzyka
 	} else if (fngValue < 25) {
-		// EXTREME FEAR: Rynek jest w panice. Ryzyko jest już w cenach.
-		weights.risk = 0.2; // Lekko zmniejszamy wagę ryzyka, aby nagrodzić odważnych.
+		// EXTREME FEAR
+		weights.risk = 0.4; // Lekko zmniejszamy wagę ryzyka
 	}
 
 	return weights;
@@ -297,7 +295,7 @@ function calculateMomentumScore(
 	const riskScore = calculateRiskScore(coin);
 	const devScore = calculateDeveloperScore(coin);
 
-	// NEW: Calculate DEX score
+	// Calculate DEX score
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
 
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
@@ -308,7 +306,7 @@ function calculateMomentumScore(
 	// Enhanced weighting with DEX component
 	const enhancedWeights = {
 		...weights,
-		dex: 0.15, // 15% weight for DEX metrics
+		dex: 0.15,
 	};
 
 	// Adjust other weights to accommodate DEX
@@ -408,14 +406,17 @@ function calculateMomentumScore(
 		const priceVsPOC = ((coin.price - pocPrice) / pocPrice) * 100;
 
 		// Price vs POC signals
-		if (Math.abs(priceVsPOC) < 2) {
-			signals.push(
-				`🎯 Cena przy kluczowym poziomie POC ($${pocPrice.toFixed(4)})`
-			);
-		} else if (priceVsPOC > 0 && priceVsPOC < 5) {
-			signals.push('📈 Pozytywny retest POC - potencjał wzrostowy');
-		} else if (coin.price > coin.volumeProfile.valueArea.high) {
-			signals.push('⬆️ Cena powyżej Strefy Wartości - silne momentum');
+		if (coin.volumeProfile) {
+			const vp = coin.volumeProfile;
+			const currentPrice = coin.price;
+			const pocPrice = coin.volumeProfile.pointOfControl.price;
+			if (Math.abs(((currentPrice - pocPrice) / pocPrice) * 100) < 2) {
+				signals.push(
+					`🎯 Cena przy kluczowym poziomie POC ($${pocPrice.toFixed(4)})`
+				);
+			} else if (currentPrice > vp.valueArea.high) {
+				signals.push('⬆️ Cena powyżej Strefy Wartości - silne momentum');
+			}
 		}
 
 		// Value Area signals
@@ -454,13 +455,11 @@ function calculateMomentumScore(
 	});
 	signals.push(...baseSignals);
 
-	// NEW: Add DEX signals
 	if (coin.dexData) {
 		const dexSignals = generateDEXSignals(coin.dexData, coin);
-		signals.push(...dexSignals.slice(0, 2)); // Add top 2 DEX signals
+		signals.push(...dexSignals.slice(0, 2));
 	}
 
-	// Add accumulation signals if available
 	if (accumulationData && accumulationData.signals.length > 0) {
 		signals.push(...accumulationData.signals.slice(0, 2));
 	}
@@ -472,7 +471,7 @@ function calculateMomentumScore(
 		positionScore,
 		devScore,
 		riskScore,
-		dexScore, // NEW
+		dexScore,
 		accumulation: accumulationData,
 		category,
 		emoji,

@@ -1,251 +1,105 @@
-# Alt Season Scanner 🚀
+# Alt Season Scanner v1.3.0 🚀
 
-## Project Overview
+## Przegląd projektu
 
-Personal cryptocurrency scanner designed to identify promising altcoins during alt season. Focus on swing trading (3-7 day holds) without the need for constant monitoring.
+Osobisty, zaawansowany skaner kryptowalut zaprojektowany do identyfikowania obiecujących altcoinów. Aplikacja wykorzystuje trzy strategie tradingowe (Momentum, Value, Balanced) i prezentuje wyniki w profesjonalnym interfejsie webowym z interaktywnymi wykresami i szczegółową analityką.
 
-## Current Status: ✅ v1.2.0 - Working Scanner
+## Aktualny status: ✅ v1.3.0 – W pełni funkcjonalna aplikacja analityczna
 
-- [x] Define project requirements
-- [x] Establish selection criteria
-- [x] Build MVP scanner
-- [x] CoinGecko API integration
-- [x] Binance verification
-- [x] Advanced momentum scoring
-- [ ] Create web interface
-- [ ] Test with paper trading
-- [ ] Deploy for personal use
+- [x] Zbudowanie rdzenia skanera z API CoinGecko i Binance
+- [x] Wdrożenie zaawansowanego systemu oceny (Momentum & Ryzyko)
+- [x] Rozbudowa o trzy strategie tradingowe (Momentum, Value, Balanced)
+- [x] Stworzenie profesjonalnego interfejsu webowego z interaktywnymi wykresami
+- [x] Zbudowanie autonomicznego monitora dominacji BTC z alertami
+- [x] Integracja z analityką DEX (DexScreener) oraz Smart Volume (Binance)
+- [x] Dodanie analizy sektorów rynkowych
 
-## Core Features
+## Kluczowe funkcje
 
-### 1. Daily Momentum Scanner
+### 1. Profesjonalny Dashboard Webowy
 
-- Analyzes top 100 cryptocurrencies
-- Filters by our specific criteria
-- Provides actionable insights, not just price data
+Uruchamiany lokalnie na `http://localhost:3000`, prezentuje wszystkie dane w czasie rzeczywistym. Zawiera interaktywne wykresy, szczegóły monet, analizę strategii i warunków rynkowych.
 
-### 2. Selection Criteria
+### 2. Analiza w oparciu o 3 strategie
 
-- **Price**: < $3 USD (retail psychology factor)
-- **Exchange**: Must be listed on Binance
-- **Market Cap**: Top 100 only
-- **Momentum**: Outperforming BTC over 7 days
-- **Volume**: Significant increase indicating real interest
+Skaner automatycznie kategoryzuje monety według trzech różnych strategii, dopasowanych do różnych warunków rynkowych i apetytu na ryzyko:
 
-### 3. Key Metrics Tracked
+- **🚀 Momentum Leaders:** Monety w silnym trendzie wzrostowym.
+- **💎 Value Hunters:** Okazje po spadkach z potencjałem na odbicie.
+- **⚖️ Balanced Plays:** Stabilne monety w fazie konsolidacji.
 
-- 7-day performance vs BTC
-- Volume/Market Cap ratio
-- Sector rotation (DeFi, Gaming, L1s, etc.)
-- BTC dominance trend
-- "Ulica Score" (retail FOMO potential)
+### 3. Zaawansowany Skoring Wielowymiarowy
 
-## Technical Stack
+Każda moneta jest oceniana na podstawie złożonego algorytmu, który uwzględnia:
 
-### Backend
+- **Momentum Ceny i Wolumenu:** Dynamika wzrostów i aktywność handlowa.
+- **Współczynnik Ryzyka:** Ocena oparta na zmienności (ATR), przegrzaniu rynku (FOMO) i sentymencie (Fear & Greed).
+- **Analityka DEX:** Płynność, jakość wolumenu i presja kupna na giełdach zdecentralizowanych.
+- **Sygnały Akumulacji:** Wykrywanie potencjalnej akumulacji przez "smart money".
 
-- **Language**: Node.js (vanilla)
-- **APIs**:
-  - CoinGecko (general market data)
-  - Binance (volume, order book)
-  - Potential: Bybit (futures data)
-- **Database**: Local JSON/CSV initially
+### 4. Monitor Dominacji BTC
 
-### Frontend
+Niezależne narzędzie do śledzenia dominacji Bitcoina – kluczowego wskaźnika sezonu na alty. Analizuje trendy, fazy rynku i wysyła alerty o kluczowych zmianach.
 
-- **Framework**: Pure JavaScript (no React)
-- **Styling**: Simple CSS
-- **Hosting**: Local initially, then Vercel
+### 5. Analiza Sektorów i Smart Volume
 
-## Project Philosophy
+System automatycznie grupuje monety w sektory (AI, DeFi, Gaming), aby śledzić rotację kapitału. Dodatkowo analizuje wolumen transakcji, aby odróżnić aktywność "wielorybów" od inwestorów detalicznych.
 
-1. **KISS Principle** - Keep it simple
-2. **Data-driven** - No FOMO, just numbers
-3. **Personal tool first** - Built for my needs
-4. **Swing trading focus** - No day trading features
+## Stos technologiczny
 
-## API Keys Required
+- **Backend:** Node.js, Express.js
+- **Frontend:** Czysty HTML, CSS i JavaScript (ES Modules)
+- **Wizualizacja Danych:** Chart.js
+- **API:** CoinGecko, Binance, Fear & Greed (alternative.me), DexScreener
 
-- [ ] CoinGecko API (free tier)
-- [ ] Binance API (read-only)
-- [ ] (Optional) Bybit API
+## Użycie (Nowa Wersja)
 
-## Development Phases
+### 1. Uruchomienie Interfejsu Webowego (Główna metoda)
 
-### Phase 1: Core Scanner (Week 1)
-
-- Basic API integration
-- Momentum scoring algorithm
-- Console output of top picks
-
-### Phase 2: Web Interface (Week 2)
-
-- Simple dashboard
-- Daily report view
-- Basic portfolio tracking
-
-### Phase 3: Enhanced Features (Week 3+)
-
-- Email/push alerts
-- Historical performance tracking
-- Macro events integration
-
-## File Structure
-
-```
-crypto-alt-scanner/
-├── README.md           # This file
-├── .env.example        # API keys template
-├── src/
-│   ├── scanner.js      # Core scanning logic
-│   ├── apis/           # API integrations
-│   ├── utils/          # Helper functions
-│   └── web/            # Frontend files
-├── data/               # Local data storage
-└── docs/               # Additional documentation
-```
-
-## Usage
+To najwygodniejszy sposób korzystania z aplikacji.
 
 ```bash
-# Run scanner once
+# Uruchamia serwer i interfejs webowy
+npm run web
+```
+
+Następnie otwórz przeglądarkę i wejdź na **http://localhost:3000**.
+
+### 2. Uruchomienie Skanera w Konsoli
+
+Dla szybkich analiz lub integracji z innymi narzędziami.
+
+```bash
+# Uruchamia jednorazowy skan z podsumowaniem w konsoli
 npm run scan
 
-# Run with logging and results saving
-npm run scan:once
-
-# Run continuously (every 6 hours)
-npm run scan:continuous
-
-# Test individual components
-npm run test:all           # Run all tests
-npm run test:gecko         # Test CoinGecko API
-npm run test:binance       # Test Binance API
-npm run test:momentum      # Test momentum calculator
-
-# Development mode (auto-restart on changes)
-npm run dev
+# Uruchamia skaner w trybie interaktywnym z menu
+npm run scan -- --interactive
 ```
 
-## Understanding Output
+### 3. Monitorowanie Dominacji BTC
 
-### Market Conditions
-
-- **Bitcoin Dominance** >65% = Bitcoin Season (tough for alts)
-- **Bitcoin Dominance** 60-65% = BTC Favored
-- **Bitcoin Dominance** 55-60% = Transitioning
-- **Bitcoin Dominance** <55% = Good for alts
-
-### Momentum Scores
-
-- **70+** = 🔥 HOT (rare in bear market)
-- **60+** = 💪 STRONG
-- **50+** = 🌟 PROMISING
-- **40+** = 👀 INTERESTING
-- **30+** = 😐 NEUTRAL
-- **<30** = 💤 WEAK
-
-### Key Signals
-
-- ⚠️ **Extended rally** = Consider waiting for pullback
-- ⚡ **Potential dip buy** = Negative 24h but positive 7d
-- 🔥 **Extreme volume** = Something significant happening
-- 💹 **Very liquid** = Easy to buy/sell
-- ✅ **Low risk** = Stable momentum without overextension
-
-## BTC Dominance Tracker 📊
-
-Advanced tracking of Bitcoin dominance - the key indicator for alt seasons.
-
-### Running Dominance Analysis
+Uruchom w osobnym terminalu, aby śledzić rynek w tle.
 
 ```bash
-# One-time dominance report
-npm run dominance
-
-# Check dominance with alerts
-npm run dominance:check
-
-# Continuous monitoring (every hour)
+# Uruchamia monitor, który sprawdza dominację co godzinę
 npm run dominance:monitor
 
-# View recent alerts
-npm run dominance:alerts
+# Wykonuje jednorazowy raport dominacji
+npm run dominance:check
 ```
 
-### Market Phases
+## Zrozumienie wyników
 
-- **70%+** = 🥶 Bitcoin Winter (best time to accumulate alts)
-- **65-70%** = 🟡 Bitcoin Season (BTC outperforms)
-- **60-65%** = 🟠 BTC Favored (challenging for alts)
-- **55-60%** = 🟢 Transition (market shifting)
-- **50-55%** = ⚖️ Balanced (both BTC and alts perform)
-- **45-50%** = 🚀 Alt Season (alts outperform)
-- **<45%** = 🎯 Peak Euphoria (consider taking profits)
+### Fazy Rynku (wg Dominacji BTC)
 
-### Alerts System
+- **>65% (SEZON BITCOINA):** Trudny czas dla altów. Szukaj okazji w strategii **VALUE**.
+- **55-65% (FAZA PRZEJŚCIOWA):** Rynek jest zmienny. Najlepsze podejście to **BALANCED**.
+- **<55% (SEZON ALTCOINÓW):** Idealne warunki dla altów. Skup się na strategii **MOMENTUM**.
 
-The dominance tracker will alert you when:
+### Oceny Momentum (Total Score)
 
-- Market phase changes (e.g., entering alt season)
-- Major dominance shifts (>1% in 24h)
-- Critical levels are reached (<50% or >60%)
-
-## Web Interface 🌐
-
-The scanner includes a professional web dashboard with Bitcoin-themed design.
-
-### Starting the Web Interface
-
-```bash
-# Start the web server
-npm run web
-
-# Open in browser
-http://localhost:3000
-```
-
-### Features
-
-- **Real-time Data**: Auto-refreshes every 5 minutes
-- **Bitcoin Theme**: Professional gold & black design
-- **Mobile Responsive**: Works on all devices
-- **Filter Options**: Hot picks, safe bets, value plays
-- **No Dependencies**: Pure HTML/CSS/JS - under 100KB
-
-### API Endpoint
-
-```
-GET http://localhost:3000/api/scanner-results
-```
-
-Returns current scanner results in JSON format.
-
-## Context for AI Assistant
-
-When continuing work on this project, mention:
-
-1. Current phase/task
-2. Any errors or blockers
-3. Specific files being worked on
-4. Recent changes made
-
-## Last Updated
-
-December 2024 - v1.3.0 Full scanner with charts and dominance tracking
-
-## Features Implemented
-
-- ✅ Top 100 coin analysis from CoinGecko
-- ✅ Smart filtering (price, volume, market cap)
-- ✅ Binance availability verification
-- ✅ Advanced momentum scoring system
-- ✅ Risk assessment
-- ✅ Multiple trading strategies
-- ✅ Market condition analysis
-- ✅ BTC Dominance Tracker with alerts
-- ✅ Historical dominance tracking
-- ✅ Automated scheduling option
-- ✅ Results logging and history
-- ✅ Professional web dashboard
-- ✅ Advanced interactive charts
+- **70+ (🔥 GORĄCY):** Bardzo silny sygnał, ale może być blisko szczytu.
+- **60+ (💪 SILNY):** Potwierdzony, zdrowy trend.
+- **50+ (🌟 OBIECUJĄCY):** Warto obserwować, trend się buduje.
+- **<40 (💤 SŁABY):** Prawdopodobnie nieciekawy w danym momencie.

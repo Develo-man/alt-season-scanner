@@ -1,104 +1,53 @@
-# Alt Season Scanner - Charts Overview 📊
+# Przegląd Wykresów 📊
 
-## Available Charts
+Ten dokument wyjaśnia, jak czytać i interpretować dane z interaktywnych wykresów w panelu webowym.
 
-### 1. Bitcoin Dominance Trend
+## Dostępne Wykresy
 
-- **Type**: Line Chart
-- **Data**: Historical BTC & ETH dominance
-- **Timeframes**: 24h, 7d, 30d views
-- **Use**: Track when alt season might be starting
-- **Key Levels**:
-  - > 65% = Bitcoin Season
-  - 50-65% = Transitioning
-  - <50% = Alt Season
+### 1. Trend Dominacji Bitcoina (Linowy)
 
-### 2. Top 10 Momentum Leaders
+- **Co pokazuje?** Historyczny udział Bitcoina (BTC) i Ethereum (ETH) w całym rynku krypto.
+- **Jak czytać?**
+  - **Spadający trend BTC (zwłaszcza poniżej 55%)** to silny sygnał, że zbliża się "sezon na alty".
+  - **Rosnący trend BTC** oznacza, że kapitał płynie do Bitcoina, co jest negatywne dla altcoinów.
 
-- **Type**: Bar Chart
-- **Data**: Momentum scores + 7d performance
-- **Colors**:
-  - Green (60+) = Hot opportunities
-  - Gold (40-60) = Moderate momentum
-  - Yellow (<40) = Weak momentum
-- **Use**: Quick view of best performers
+### 2. Liderzy Momentum (Słupkowy)
 
-### 3. Volume/Market Cap Analysis
+- **Co pokazuje?** Top 10 monet z najwyższym wynikiem (Score) w danej strategii.
+- **Jak czytać?**
+  - **Wysokość słupka** odzwierciedla ogólną ocenę (`Total Score`).
+  - **Kolor słupka** zależy od siły sygnału: `zielony` (gorący), `niebieski` (dobry), `żółty` (obserwuj).
+  - Szukaj monet z wynikiem **powyżej 50-60 punktów**.
 
-- **Type**: Bubble Chart
-- **X-axis**: Market cap rank
-- **Y-axis**: Volume/MCap ratio
-- **Bubble size**: Momentum score
-- **Use**: Find coins with unusual activity
+### 3. Analiza Wolumenu do Kapitalizacji (Bąbelkowy)
 
-### 4. Risk vs Reward Matrix
+- **Co pokazuje?** Które monety mają nietypowo wysoką aktywność handlową w stosunku do swojej wielkości.
+- **Jak czytać?**
+  - **Oś X (pozioma):** Ranking kapitalizacji rynkowej (im niżej, tym mniejsza moneta).
+  - **Oś Y (pionowa):** Stosunek wolumenu 24h do kapitalizacji (%). Wartości powyżej 20-30% oznaczają ogromne zainteresowanie.
+  - **Wielkość bąbelka:** Ogólny `Momentum Score`.
+  - Szukaj **dużych bąbelków** po prawej stronie (niższy ranking) i na górze (wysoka aktywność).
 
-- **Type**: Scatter Plot
-- **X-axis**: Risk Score (0-100)
-- **Y-axis**: Momentum Score (0-100)
-- **Quadrants**:
-  - Top-Left: Sweet spot (High reward, Low risk)
-  - Top-Right: High risk, High reward
-  - Bottom-Left: Low risk, Low reward
-  - Bottom-Right: Avoid (High risk, Low reward)
+### 4. Macierz Ryzyka vs. Nagrody (Punktowy)
 
-### 5. Performance Heatmap
+- **Co pokazuje?** Idealne monety, które mają wysoki potencjał (nagroda) przy jak najniższym ryzyku.
+- **Jak czytać?** Wykres jest podzielony na cztery ćwiartki:
+  - **↖️ Lewy górny róg (SWEET SPOT):** Wysoki `Momentum Score`, niskie ryzyko. **Tutaj szukasz najlepszych okazji.**
+  - **↗️ Prawy górny róg:** Wysoki score, wysokie ryzyko. Potencjalnie zyskowne, ale niebezpieczne.
+  - **↙️ Lewy dolny róg:** Niski score, niskie ryzyko. "Nudne" i bezpieczne monety.
+  - **↘️ Prawy dolny róg (UNIKAJ):** Niski score, wysokie ryzyko. Najgorsze połączenie.
 
-- **Type**: Horizontal Bar Chart
-- **Shows**: 24h vs 7d performance
-- **Colors**: Green (positive) vs Red (negative)
-- **Use**: Compare short vs medium term trends
+### 5. Mapa Cieplna Wydajności (Poziomy słupkowy)
 
-## How to Use Charts
+- **Co pokazuje?** Porównanie krótkoterminowego (24h) i średnioterminowego (7d) trendu cenowego.
+- **Jak czytać?**
+  - Szukaj monet, które mają **oba słupki zielone** (dodatnie). Oznacza to spójny i zdrowy trend wzrostowy.
+  - Jeśli słupek 24h jest czerwony, a 7d zielony, może to być **dobra okazja do zakupu w dołku (dip)**.
 
-### Finding Opportunities
+## Przykładowy schemat analizy
 
-1. Check BTC Dominance - is it falling? Good for alts
-2. Look at Momentum Leaders - who's hot right now?
-3. Check Risk/Reward scatter - find coins in the "sweet spot"
-4. Verify with Volume chart - is there real interest?
-5. Use Heatmap to confirm trend consistency
-
-### Trading Signals from Charts
-
-- **BTC Dom falling + High momentum** = Strong alt buy signal
-- **Low risk + High score** = Best risk/reward plays
-- **High volume + Positive trend** = Real momentum (not fake pump)
-- **Green on both 24h & 7d** = Consistent uptrend
-
-### Chart Interactions
-
-- **Hover** over any data point for details
-- **Click** timeframe buttons to change periods
-- **Refresh** button updates all data
-- **Responsive** - works on mobile too
-
-## Example Workflow
-
-1. **Start with Dominance Chart**
-   - Is BTC dominance below 60%? ✓ Proceed
-   - Is it trending down? ✓ Even better
-
-2. **Check Momentum Leaders**
-   - Which coins have 50+ scores?
-   - Are they also green on 7d?
-
-3. **Verify Risk/Reward**
-   - Find coins in top-left quadrant
-   - Note their symbols
-
-4. **Confirm with Volume**
-   - Are these coins showing high activity?
-   - Bigger bubbles = more interest
-
-5. **Final Check on Heatmap**
-   - Green on both timeframes?
-   - You found a potential winner!
-
-## Pro Tips
-
-- Best time to check: Daily at same time
-- Look for divergences (price down, volume up)
-- Sweet spot: Score 50+, Risk <40
-- Don't chase pumps >70% in 7d
-- Volume/MCap >30% = Something's happening
+1.  **Sprawdź Dominację BTC:** Czy spada? Jeśli tak, przejdź dalej.
+2.  **Znajdź Liderów Momentum:** Które monety mają wynik powyżej 60?
+3.  **Sprawdź je na Macierzy Ryzyka:** Czy znajdują się w "sweet spot" (lewy górny róg)?
+4.  **Weryfikacja Wolumenem:** Czy te monety mają duży bąbelek na wykresie wolumenu? Oznacza to realne zainteresowanie rynku.
+5.  **Ostateczny test na Mapie Cieplnej:** Czy oba słupki (24h i 7d) są zielone? Jeśli tak, znalazłeś potencjalnego zwycięzcę!
