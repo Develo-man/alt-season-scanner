@@ -120,109 +120,94 @@ async function get24hrTicker(tradingPair) {
 }
 
 /**
- * Get Binance-specific data for a coin
- * @param {string} symbol - Coin symbol
- * @param {Object} exchangeInfo - Pre-fetched exchange info
- * @returns {Promise<Object>} Binance data including volume
+ * Pobiera szczegółowe dane rynkowe (ticker 24h) dla pojedynczej, zweryfikowanej pary.
+ * @param {string} mainPair - Główna para handlowa (np. 'MATICUSDT').
+ * @param {string} symbol - Symbol monety.
+ * @returns {Promise<Object>} Szczegółowe dane z Binance.
  */
-async function getBinanceData(symbol, exchangeInfo) {
-	try {
-		const listing = await checkIfListed(symbol, exchangeInfo);
+async function getDetailedBinanceData(mainPair, symbol) {
+	const ticker = await get24hrTicker(mainPair);
 
-		if (!listing || !listing.isListed) {
-			return {
-				isListed: false,
-				symbol: symbol.toUpperCase(),
-				reason: 'Not listed on Binance',
-			};
-		}
-
-		// Get ticker data for main trading pair
-		const ticker = await get24hrTicker(listing.mainPair);
-
-		if (!ticker) {
-			return {
-				isListed: true,
-				symbol: symbol.toUpperCase(),
-				tradingPairs: listing.tradingPairs,
-				error: 'Could not fetch ticker data',
-			};
-		}
-
+	if (!ticker) {
 		return {
-			isListed: true,
+			isListed: true, // Wiemy, że jest, bo przeszła weryfikację
 			symbol: symbol.toUpperCase(),
-			tradingPairs: listing.tradingPairs,
-			mainPair: listing.mainPair,
-			binancePrice: ticker.lastPrice,
-			binanceVolume24h: ticker.quoteVolume, // Volume in USDT
-			binanceVolumeCoins: ticker.volume, // Volume in coins
-			binancePriceChange24h: ticker.priceChangePercent,
-			binanceTrades24h: ticker.count,
-			high24h: ticker.highPrice,
-			low24h: ticker.lowPrice,
-			priceRange24h:
-				(
-					((ticker.highPrice - ticker.lowPrice) / ticker.lowPrice) *
-					100
-				).toFixed(2) + '%',
-		};
-	} catch (error) {
-		console.error(
-			`❌ Error getting Binance data for ${symbol}:`,
-			error.message
-		);
-		return {
-			isListed: false,
-			symbol: symbol.toUpperCase(),
-			error: error.message,
+			error: 'Nie można było pobrać danych z tickera.',
 		};
 	}
+
+	return {
+		isListed: true,
+		symbol: symbol.toUpperCase(),
+		mainPair: mainPair,
+		binancePrice: ticker.lastPrice,
+		binanceVolume24h: ticker.quoteVolume,
+		binanceTrades24h: ticker.count,
+		priceRange24h:
+			(((ticker.highPrice - ticker.lowPrice) / ticker.lowPrice) * 100).toFixed(
+				2
+			) + '%',
+	};
 }
 
 /**
- * Check multiple coins on Binance (batch operation)
- * @param {Array} symbols - Array of coin symbols
- * @returns {Promise<Object>} Map of symbol -> binance data
+ * Sprawdza wiele monet na Binance w zoptymalizowany, dwuetapowy sposób.
+ * Etap 1: Szybka weryfikacja notowań dla wszystkich symboli.
+ * Etap 2: Pobranie szczegółowych danych tylko dla notowanych monet.
+ * @param {Array<string>} symbols - Tablica symboli monet do sprawdzenia.
+ * @returns {Promise<Object>} Mapa symbol -> dane z Binance.
  */
 async function checkMultipleCoins(symbols) {
-	console.log(`🔍 Checking ${symbols.length} coins on Binance...`);
-
-	// Pobieramy dane o giełdzie
+	console.log(
+		`🔍 Weryfikacja ${symbols.length} monet na Binance (Etap 1: Notowanie)...`
+	);
 	const exchangeInfo = await getExchangeInfo();
+	const listingResults = verifyListingStatus(symbols, exchangeInfo);
 
-	const results = {};
-	const batchSize = 10; // Process 10 at a time to avoid rate limits
+	const listedCoins = Object.entries(listingResults)
+		.filter(([, data]) => data.isListed)
+		.map(([symbol, data]) => ({ symbol, mainPair: data.mainPair }));
 
-	for (let i = 0; i < symbols.length; i += batchSize) {
-		const batch = symbols.slice(i, i + batchSize);
-		const promises = batch.map((symbol) =>
-			getBinanceData(symbol, exchangeInfo)
-				.then((data) => {
-					results[symbol.toUpperCase()] = data;
-				})
-				.catch((error) => {
-					results[symbol.toUpperCase()] = {
-						isListed: false,
-						error: error.message,
-					};
-				})
+	console.log(
+		`📈 Pobieranie szczegółowych danych dla ${listedCoins.length} notowanych monet (Etap 2: Dane rynkowe)...`
+	);
+
+	const detailedDataResults = {};
+	const batchSize = 10; // Przetwarzaj w partiach po 10
+
+	for (let i = 0; i < listedCoins.length; i += batchSize) {
+		const batch = listedCoins.slice(i, i + batchSize);
+		const promises = batch.map((coin) =>
+			getDetailedBinanceData(coin.mainPair, coin.symbol).then((data) => {
+				detailedDataResults[coin.symbol.toUpperCase()] = data;
+			})
 		);
-
 		await Promise.all(promises);
 
-		// Small delay between batches
-		if (i + batchSize < symbols.length) {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+		if (i + batchSize < listedCoins.length) {
+			await new Promise((resolve) => setTimeout(resolve, 1000)); // Krótka przerwa między partiami
 		}
 	}
 
-	const listedCount = Object.values(results).filter((r) => r.isListed).length;
+	// Połącz wyniki
+	const finalResults = {};
+	for (const symbol of symbols) {
+		const upperSymbol = symbol.toUpperCase();
+		if (detailedDataResults[upperSymbol]) {
+			finalResults[upperSymbol] = detailedDataResults[upperSymbol];
+		} else {
+			finalResults[upperSymbol] = { isListed: false, symbol: upperSymbol };
+		}
+	}
+
+	const listedCount = Object.values(finalResults).filter(
+		(r) => r.isListed
+	).length;
 	console.log(
-		`✅ Found ${listedCount} out of ${symbols.length} coins on Binance`
+		`✅ Weryfikacja Binance zakończona. Znaleziono ${listedCount} z ${symbols.length} monet.`
 	);
 
-	return results;
+	return finalResults;
 }
 
 /**
@@ -273,7 +258,7 @@ async function test() {
 
 		// Test 3: Get detailed data
 		console.log('\nTest 3: Get detailed Binance data for MATIC');
-		const maticData = await getBinanceData('MATIC');
+		const maticData = await getDetailedBinanceData('MATIC');
 		console.log('MATIC data:', JSON.stringify(maticData, null, 2));
 
 		console.log('\n✅ All tests passed!');
@@ -706,11 +691,45 @@ function formatUSD(value) {
 	return `$${value.toFixed(2)}`;
 }
 
+/**
+ * Szybko weryfikuje, które monety są notowane na Binance, bez pobierania danych rynkowych.
+ * @param {Array<string>} symbols - Tablica symboli monet.
+ * @param {Object} exchangeInfo - Wcześniej pobrane dane o giełdzie.
+ * @returns {Object} Mapa symbol -> informacja o notowaniu.
+ */
+function verifyListingStatus(symbols, exchangeInfo) {
+	const results = {};
+	const allBinanceSymbols = exchangeInfo.symbols;
+
+	for (const symbol of symbols) {
+		const upperSymbol = symbol.toUpperCase();
+		const pairs = allBinanceSymbols.filter(
+			(s) =>
+				s.baseAsset === upperSymbol &&
+				s.status === 'TRADING' &&
+				(s.quoteAsset === 'USDT' ||
+					s.quoteAsset === 'BUSD' ||
+					s.quoteAsset === 'BTC')
+		);
+
+		if (pairs.length > 0) {
+			const usdtPair = pairs.find((p) => p.quoteAsset === 'USDT');
+			results[upperSymbol] = {
+				isListed: true,
+				mainPair: (usdtPair || pairs[0]).symbol,
+			};
+		} else {
+			results[upperSymbol] = { isListed: false };
+		}
+	}
+	return results;
+}
+
 module.exports = {
 	getExchangeInfo,
 	checkIfListed,
 	get24hrTicker,
-	getBinanceData,
+	getDetailedBinanceData,
 	checkMultipleCoins,
 	getTopMovers,
 	test,
@@ -721,6 +740,7 @@ module.exports = {
 	getSmartVolumeAnalysis,
 	getVolumeProfile,
 	formatUSD,
+	verifyListingStatus,
 };
 
 // Run test if this file is executed directly

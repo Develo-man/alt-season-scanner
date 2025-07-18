@@ -1,8 +1,8 @@
-// src/core/scannerLogic.js
-
 require('dotenv').config();
 
 // --- Importy zależności ---
+const cache = require('./cache');
+
 const {
 	getTop100,
 	getBTCDominance,
@@ -21,8 +21,9 @@ const { rankByMomentum } = require('../utils/momentum');
 const { getSector } = require('../utils/sectors');
 const { analyzeSectors } = require('../utils/analysis');
 const { loadHistory, analyzeTrend } = require('../apis/btcDominance');
-const config = require('../config'); //
+const config = require('../config');
 
+const MARKET_DATA_CACHE_TTL = 15 * 60 * 1000; // 15 minut
 // --- Główna funkcja skanera ---
 
 /**
@@ -33,13 +34,33 @@ async function runScanner() {
 	console.log('🔄 Uruchamiam rozszerzony skaner z DEX Analytics...');
 
 	// --- Krok 1: Pobranie danych rynkowych ---
-	const [btcDominance, fearAndGreed, data, history] = await Promise.all([
-		getBTCDominance(),
-		getFearAndGreedIndex(),
-		getTop100(),
-		loadHistory(),
-	]);
+	let btcDominance = cache.get('btcDominance');
+	let fearAndGreed = cache.get('fearAndGreed');
+	let top100Data = cache.get('top100Data');
 
+	if (btcDominance && fearAndGreed && top100Data) {
+		console.log('✅ Pobrano podstawowe dane rynkowe z CACHE.');
+	} else {
+		console.log('📊 Pobieram świeże dane rynkowe z API...');
+		const [fetchedDominance, fetchedFnG, fetchedTop100] = await Promise.all([
+			getBTCDominance(),
+			getFearAndGreedIndex(),
+			getTop100(),
+		]);
+
+		// Zapisz świeże dane do cache
+		cache.set('btcDominance', fetchedDominance, MARKET_DATA_CACHE_TTL);
+		cache.set('fearAndGreed', fetchedFnG, MARKET_DATA_CACHE_TTL);
+		// W getTop100 zwracany jest obiekt, bierzemy z niego `coins`
+		cache.set('top100Data', fetchedTop100.coins, MARKET_DATA_CACHE_TTL);
+
+		btcDominance = fetchedDominance;
+		fearAndGreed = fetchedFnG;
+		top100Data = fetchedTop100.coins;
+	}
+
+	// Wczytaj historię dominacji - to jest z pliku, więc nie potrzebuje cache
+	const history = await loadHistory();
 	const trendAnalysis = analyzeTrend(history);
 	const dominanceChange24h = trendAnalysis.changes['24h'];
 
@@ -54,7 +75,7 @@ async function runScanner() {
 		console.log(`${strategy.emoji} Filtrowanie: ${strategy.name}`);
 
 		const candidates = filterAndSort(
-			data.coins,
+			top100Data,
 			{
 				...strategy.criteria,
 				excludeStablecoins: true,
@@ -230,7 +251,7 @@ async function runScanner() {
 
 		// Global stats
 		stats: {
-			totalAnalyzed: data.count,
+			totalAnalyzed: top100Data.length,
 			totalUniqueCandidates: allCandidates.size,
 			totalWithDEXData: Object.values(dexAnalytics).filter((d) => d.hasDEXData)
 				.length,
