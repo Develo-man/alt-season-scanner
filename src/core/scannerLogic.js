@@ -233,7 +233,7 @@ async function runScanner() {
 			advice: strategy.advice,
 			totalCandidates: strategy.count,
 			binanceCandidates: strategy.binanceCount,
-			topCoins: strategy.rankedCoins?.slice(0, 12) || [],
+			topCoins: strategy.rankedCoins || [],
 			topCoin: strategy.topCoin,
 			performance: calculateStrategyPerformance(strategy.rankedCoins || []),
 			isRecommended: key === recommendedStrategy,

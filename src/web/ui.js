@@ -676,23 +676,45 @@ function switchToStrategy(strategyKey) {
 }
 
 /**
- * Show more coins for a strategy
+ * POKAZUJE WIĘCEJ MONET DLA DANEJ STRATEGII
  */
 function showMoreCoins(strategyKey) {
-	// Implementation would expand to show all coins
-	console.log(`Showing more coins for strategy: ${strategyKey}`);
-
-	// For now, just show a message
 	const button = event.target;
-	button.textContent = 'Ładuję więcej monet...';
+	button.textContent = 'Ładuję...';
 	button.disabled = true;
 
-	// Simulate loading
-	setTimeout(() => {
-		button.textContent = 'Wszystkie monety załadowane!';
-		button.style.background = 'var(--accent-green)';
-	}, 1000);
+	// Znajdź odpowiednią strategię w danych
+	const strategy = window.appState.scannerResults.strategies.find(
+		(s) => s.key === strategyKey
+	);
+	if (!strategy || !strategy.topCoins) {
+		button.textContent = 'Błąd - nie znaleziono monet';
+		return;
+	}
+
+	// Pobierz monety, które jeszcze nie zostały wyświetlone (od 7 wzwyż)
+	const coinsToShow = strategy.topCoins.slice(6);
+
+	// Znajdź kontener grid dla tej strategii
+	const gridContainer = button
+		.closest('.strategy-panel')
+		.querySelector('.coins-grid');
+
+	if (gridContainer && coinsToShow.length > 0) {
+		// Stwórz HTML dla nowych kart monet
+		const newCardsHTML = coinsToShow
+			.map((coin) => createSimplifiedCoinCard(coin, strategy))
+			.join('');
+
+		// Dodaj nowe karty do siatki
+		gridContainer.insertAdjacentHTML('beforeend', newCardsHTML);
+	}
+
+	// Ukryj przycisk po załadowaniu wszystkiego
+	button.parentElement.style.display = 'none';
 }
+
+window.showMoreCoins = showMoreCoins;
 
 /**
  * Show detailed coin information
