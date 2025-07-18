@@ -65,11 +65,18 @@ app.get('/api/scanner-results', async (req, res, next) => {
 		}
 
 		console.log('🔄 Uruchamiam skaner dla zapytania web...');
+		const { runScanner } = require('./core/scannerLogic');
 		const results = await runScanner();
 
 		// Update cache
 		cachedResults = results;
 		lastScanTime = Date.now();
+
+		console.log('✅ Enhanced scanner completed:', {
+			strategies: results.strategies?.length || 0,
+			totalCandidates: results.stats?.totalUniqueCandidates || 0,
+			recommendedStrategy: results.marketStatus?.recommendedStrategy || 'none',
+		});
 
 		res.json(results);
 	} catch (error) {

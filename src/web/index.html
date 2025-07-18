@@ -41,19 +41,7 @@
 		</header>
 
 		<main class="container">
-			<section class="sector-analysis-section">
-				<div class="section-header">
-					<h2>Analiza Sektorów (Najgorętszych)</h2>
-				</div>
-				<div id="sector-analysis-grid"></div>
-			</section>
-
-			<section class="coins-section"></section>
-			<section class="hero">
-				<h1>Smart Crypto Opportunity Finder</h1>
-				<p>Track top performing altcoins with advanced momentum scoring</p>
-			</section>
-
+			<!-- Market Status Section (existing) -->
 			<section class="market-status" id="market-status">
 				<div class="status-card">
 					<h3>BTC Dominance</h3>
@@ -82,53 +70,34 @@
 				</div>
 			</section>
 
-			<section class="dominance-widget">
-				<h2>Bitcoin Dominance Tracker</h2>
-				<div class="dominance-gauge" id="dominance-gauge">
-					<!-- Canvas gauge will be inserted here -->
-				</div>
-				<div class="dominance-phases">
-					<span class="phase-indicator alt-friendly" data-phase="alt">
-						🚀 Alt Season to mniej niż 50%
-					</span>
-					<span class="phase-indicator" data-phase="balanced">
-						⚖️ Balanced 50-60%
-					</span>
-					<span class="phase-indicator btc-favored" data-phase="btc-favored">
-						🟠 BTC Favored 60-65%
-					</span>
-					<span class="phase-indicator btc-season" data-phase="btc-season">
-						🟡 BTC Season >65%
-					</span>
+			<!-- Strategy Recommendation Section (NEW) -->
+			<section id="strategy-recommendation"></section>
+
+			<!-- Triple Strategy Section (NEW) -->
+			<section id="strategies-container">
+				<div class="loading" id="loading">
+					<div class="spinner"></div>
+					<p>Loading strategies...</p>
 				</div>
 			</section>
 
-			<section class="coins-section">
+			<!-- Cross-Strategy Analysis Section (NEW) -->
+			<section id="cross-strategy-container"></section>
+
+			<!-- Strategy Comparison Section (NEW) -->
+			<section id="strategy-comparison"></section>
+
+			<!-- Traditional Sector Analysis (existing, but optional) -->
+			<section class="sector-analysis-section">
 				<div class="section-header">
-					<h2>Top Opportunities</h2>
-					<div class="filter-buttons">
-						<button class="filter-btn active" data-filter="all">All</button>
-						<button class="filter-btn" data-filter="hot">🔥 Hot</button>
-						<button class="filter-btn" data-filter="safe">💎 Safe</button>
-						<button class="filter-btn" data-filter="value">💰 Value</button>
-					</div>
+					<h2>Analiza Sektorów</h2>
 				</div>
+				<div id="sector-analysis-grid"></div>
+			</section>
 
-				<div class="loading" id="loading">
-					<div class="spinner"></div>
-					<p>Loading latest data...</p>
-				</div>
-
+			<!-- Legacy coins section (kept for backward compatibility) -->
+			<section class="coins-section" style="display: none">
 				<div class="coins-grid" id="coins-grid"></div>
-
-				<noscript>
-					<div class="no-js-message">
-						<p>
-							JavaScript is required for real-time updates. Please enable
-							JavaScript to see live cryptocurrency data.
-						</p>
-					</div>
-				</noscript>
 			</section>
 		</main>
 

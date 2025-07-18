@@ -494,40 +494,17 @@ function formatPrice(price) {
 	return price.toFixed(2);
 }
 
-// Update Market Status - rozszerzone o interpretacje
+// Enhanced legacy functions for backward compatibility
 export function updateMarketStatus(status, elements, allCoinsData) {
-	elements.btcDominance.textContent = status.btcDominance + '%';
-	elements.dominanceChange.textContent = status.dominanceChange;
-	elements.dominanceChange.className = status.dominanceChange.startsWith('+')
-		? 'change negative' // Wzrost dominacji BTC = źle dla altów
-		: 'change positive'; // Spadek dominacji BTC = dobrze dla altów
+	renderEnhancedMarketStatus(status, elements);
 
+	// Legacy hot coins count
 	const hotCoins = allCoinsData.filter(
-		(c) => c.momentum.totalScore >= 50
+		(c) => c.momentum?.totalScore >= 50
 	).length;
 	elements.opportunities.textContent = hotCoins;
-
-	renderDominanceGauge(parseFloat(status.btcDominance));
-	updateDominancePhaseIndicator(parseFloat(status.btcDominance));
-
-	if (status.fearAndGreed) {
-		elements.fngValue.textContent = status.fearAndGreed.value;
-		elements.fngClassification.textContent = status.fearAndGreed.classification;
-
-		if (status.fearAndGreed.value < 30) {
-			elements.fngValue.className = 'value negative';
-		} else if (status.fearAndGreed.value > 70) {
-			elements.fngValue.className = 'value positive';
-		} else {
-			elements.fngValue.className = 'value';
-		}
-	}
-
-	elements.marketCondition.textContent = status.condition;
-	elements.conditionAdvice.textContent = status.advice;
 }
 
-// Rendering sektorów z lepszymi opisami
 export function renderSectorAnalysis(sectorData, elements) {
 	if (!sectorData || sectorData.length === 0) {
 		elements.sectorAnalysisGrid.innerHTML =
@@ -567,78 +544,9 @@ export function renderSectorAnalysis(sectorData, elements) {
 		.join('');
 }
 
-// Renderowanie monet z priorytetami
 export function renderCoins(coins, elements) {
-	// Grupuj monety według priorytetów
-	const highPriority = coins.filter(
-		(c) => parseFloat(c.momentum.totalScore) >= 60
-	);
-	const mediumPriority = coins.filter(
-		(c) =>
-			parseFloat(c.momentum.totalScore) >= 40 &&
-			parseFloat(c.momentum.totalScore) < 60
-	);
-	const lowPriority = coins.filter(
-		(c) => parseFloat(c.momentum.totalScore) < 40
-	);
-
-	let html = '';
-
-	// Sekcja wysokiego priorytetu
-	if (highPriority.length > 0) {
-		html += `
-			<div class="priority-section">
-				<div class="priority-header">
-					<div class="priority-badge priority-high">Wysoki Priorytet</div>
-					<div class="priority-info">
-						<h3>🔥 Najgorętsze Okazje</h3>
-						<p>Monety z momentem score ≥60 - sprawdź je pierwszych!</p>
-					</div>
-				</div>
-				<div class="coins-grid">
-					${highPriority.map((coin) => createCoinCard(coin)).join('')}
-				</div>
-			</div>
-		`;
-	}
-
-	// Sekcja średniego priorytetu
-	if (mediumPriority.length > 0) {
-		html += `
-			<div class="priority-section">
-				<div class="priority-header">
-					<div class="priority-badge priority-medium">Średni Priorytet</div>
-					<div class="priority-info">
-						<h3>👀 Warte Obserwacji</h3>
-						<p>Monety z potencjałem (40-59) - sprawdź gdy będziesz miał czas</p>
-					</div>
-				</div>
-				<div class="coins-grid">
-					${mediumPriority.map((coin) => createCoinCard(coin)).join('')}
-				</div>
-			</div>
-		`;
-	}
-
-	// Sekcja niskiego priorytetu
-	if (lowPriority.length > 0) {
-		html += `
-			<div class="priority-section">
-				<div class="priority-header">
-					<div class="priority-badge priority-low">Niski Priorytet</div>
-					<div class="priority-info">
-						<h3>📊 Informacyjne</h3>
-						<p>Monety do obserwowania w dłuższym terminie</p>
-					</div>
-				</div>
-				<div class="coins-grid">
-					${lowPriority.map((coin) => createCoinCard(coin)).join('')}
-				</div>
-			</div>
-		`;
-	}
-
-	elements.coinsGrid.innerHTML = html;
+	// Legacy function - now handled by strategy rendering
+	console.warn('renderCoins is deprecated - use renderStrategies instead');
 }
 
 export function displayError(elements) {
@@ -655,7 +563,19 @@ export function displayError(elements) {
 
 export function setLoadingState(isLoading, elements) {
 	elements.loading.style.display = isLoading ? 'block' : 'none';
-	elements.coinsGrid.style.display = isLoading ? 'none' : 'block';
+
+	// Hide/show strategy container instead of just coins grid
+	const strategiesContainer =
+		elements.strategiesContainer ||
+		document.getElementById('strategies-container');
+	if (strategiesContainer) {
+		strategiesContainer.style.display = isLoading ? 'none' : 'block';
+	}
+
+	// Legacy coins grid
+	if (elements.coinsGrid) {
+		elements.coinsGrid.style.display = isLoading ? 'none' : 'block';
+	}
 }
 
 // Funkcja do toggle szczegółów
@@ -931,3 +851,679 @@ function generateDEXInsights(dexData) {
 
 	return insights.slice(0, 4); // Return max 4 insights
 }
+// src/web/ui.js - Enhanced UI for Triple Strategy
+
+/**
+ * Enhanced UI for Alt Season Scanner with Triple Strategy
+ */
+
+/**
+ * Render strategy tabs and content
+ */
+export function renderStrategies(strategies, elements) {
+	const strategiesContainer =
+		elements.strategiesContainer ||
+		document.getElementById('strategies-container');
+
+	if (!strategiesContainer) {
+		console.warn('Strategies container not found');
+		return;
+	}
+
+	// Create strategy tabs
+	const tabsHTML = `
+		<div class="strategy-tabs">
+			<div class="strategy-tabs-header">
+				<h2>🎯 Strategie Tradingowe</h2>
+				<div class="strategy-selector">
+					${strategies
+						.map(
+							(strategy, index) => `
+						<button 
+							class="strategy-tab ${index === 0 ? 'active' : ''} ${strategy.isRecommended ? 'recommended' : ''}"
+							data-strategy="${strategy.key}"
+							onclick="switchStrategy('${strategy.key}')"
+						>
+							<span class="strategy-emoji">${strategy.emoji}</span>
+							<div class="strategy-info">
+								<span class="strategy-name">${strategy.name}</span>
+								<span class="strategy-count">${strategy.binanceCandidates} monet</span>
+							</div>
+							${strategy.isRecommended ? '<span class="recommended-badge">Rekomendowana</span>' : ''}
+						</button>
+					`
+						)
+						.join('')}
+				</div>
+			</div>
+			
+			<div class="strategy-content">
+				${strategies
+					.map(
+						(strategy, index) => `
+					<div 
+						class="strategy-panel ${index === 0 ? 'active' : ''}"
+						data-strategy="${strategy.key}"
+					>
+						${renderStrategyPanel(strategy)}
+					</div>
+				`
+					)
+					.join('')}
+			</div>
+		</div>
+	`;
+
+	strategiesContainer.innerHTML = tabsHTML;
+}
+
+/**
+ * Render individual strategy panel
+ */
+function renderStrategyPanel(strategy) {
+	const performance = strategy.performance || {};
+	const topCoins = strategy.topCoins || [];
+
+	return `
+		<div class="strategy-header">
+			<div class="strategy-meta">
+				<div class="strategy-title">
+					<span class="strategy-emoji-large">${strategy.emoji}</span>
+					<div class="strategy-details">
+						<h3>${strategy.name}</h3>
+						<p class="strategy-description">${strategy.description}</p>
+						<p class="strategy-advice">${strategy.advice}</p>
+					</div>
+				</div>
+				
+				<div class="strategy-metrics">
+					<div class="metric-card">
+						<span class="metric-label">Kandydatów</span>
+						<span class="metric-value">${strategy.binanceCandidates}</span>
+					</div>
+					<div class="metric-card">
+						<span class="metric-label">Średni Score</span>
+						<span class="metric-value">${(performance.avgScore || 0).toFixed(1)}</span>
+					</div>
+					<div class="metric-card">
+						<span class="metric-label">Wysokie Score (≥60)</span>
+						<span class="metric-value">${performance.strongCandidates || 0}</span>
+					</div>
+					<div class="metric-card">
+						<span class="metric-label">Średnie Ryzyko</span>
+						<span class="metric-value">${(performance.avgRisk || 0).toFixed(1)}/100</span>
+					</div>
+				</div>
+			</div>
+			
+			${
+				strategy.topCoin
+					? `
+				<div class="strategy-champion">
+					<h4>🏆 Champion strategii:</h4>
+					<div class="champion-card">
+						<div class="champion-info">
+							<span class="champion-symbol">${strategy.topCoin.symbol}</span>
+							<span class="champion-name">${strategy.topCoin.name}</span>
+						</div>
+						<div class="champion-metrics">
+							<span class="champion-score">${strategy.topCoin.momentum?.totalScore || 0}</span>
+							<span class="champion-change ${strategy.topCoin.priceChange7d >= 0 ? 'positive' : 'negative'}">
+								${strategy.topCoin.priceChange7d >= 0 ? '+' : ''}${(strategy.topCoin.priceChange7d || 0).toFixed(1)}%
+							</span>
+						</div>
+					</div>
+				</div>
+			`
+					: ''
+			}
+		</div>
+		
+		<div class="strategy-coins">
+			<h4>💎 Top okazje (${strategy.key}):</h4>
+			<div class="coins-grid strategy-grid">
+				${topCoins
+					.slice(0, 8)
+					.map((coin) => createStrategyCard(coin, strategy))
+					.join('')}
+			</div>
+		</div>
+	`;
+}
+
+/**
+ * Create strategy-specific coin card
+ */
+function createStrategyCard(coin, strategy) {
+	const priceChange7d = coin.priceChange7d || 0;
+	const momentumScore = parseFloat(coin.momentum?.totalScore || 0);
+
+	// Strategy-specific highlighting
+	const getStrategyHighlight = (strategy, coin) => {
+		switch (strategy.key) {
+			case 'MOMENTUM':
+				return priceChange7d > 30 ? 'hot-momentum' : 'momentum';
+			case 'VALUE':
+				return priceChange7d < -15 ? 'deep-value' : 'value';
+			case 'BALANCED':
+				return Math.abs(priceChange7d) < 10 ? 'balanced' : 'balanced-lean';
+			default:
+				return 'neutral';
+		}
+	};
+
+	const highlight = getStrategyHighlight(strategy, coin);
+	const signals = coin.momentum?.signals || [];
+
+	return `
+		<div class="strategy-coin-card ${highlight}">
+			<div class="strategy-card-header">
+				<div class="coin-basic-info">
+					<span class="coin-rank">#${coin.rank}</span>
+					<div class="coin-identity">
+						<h5>${coin.symbol}</h5>
+						<span class="coin-name">${coin.name}</span>
+					</div>
+				</div>
+				<div class="strategy-score">
+					<span class="score-value">${momentumScore.toFixed(0)}</span>
+					<span class="score-label">Score</span>
+				</div>
+			</div>
+			
+			<div class="strategy-metrics">
+				<div class="metric-row">
+					<span class="metric-label">Cena:</span>
+					<span class="metric-value">$${coin.price.toFixed(4)}</span>
+				</div>
+				<div class="metric-row">
+					<span class="metric-label">7D zmiana:</span>
+					<span class="metric-value ${priceChange7d >= 0 ? 'positive' : 'negative'}">
+						${priceChange7d >= 0 ? '+' : ''}${priceChange7d.toFixed(1)}%
+					</span>
+				</div>
+				<div class="metric-row">
+					<span class="metric-label">Płynność:</span>
+					<span class="metric-value">${((coin.volumeToMcap || 0) * 100).toFixed(1)}%</span>
+				</div>
+				<div class="metric-row">
+					<span class="metric-label">Sektor:</span>
+					<span class="metric-value">${coin.sector || 'Unknown'}</span>
+				</div>
+			</div>
+			
+			${getStrategyInsight(strategy, coin)}
+			
+			${
+				signals.length > 0
+					? `
+				<div class="strategy-signals">
+					${signals
+						.slice(0, 2)
+						.map(
+							(signal) => `
+						<span class="strategy-signal">${signal}</span>
+					`
+						)
+						.join('')}
+				</div>
+			`
+					: ''
+			}
+			
+			${
+				coin.dexData?.hasDEXData
+					? `
+				<div class="dex-mini-indicator">
+					<span class="dex-available">🏪 DEX: ${coin.dexData.metrics.liquidityFormatted}</span>
+				</div>
+			`
+					: ''
+			}
+		</div>
+	`;
+}
+
+/**
+ * Get strategy-specific insight for a coin
+ */
+function getStrategyInsight(strategy, coin) {
+	const priceChange7d = coin.priceChange7d || 0;
+	const momentumScore = parseFloat(coin.momentum?.totalScore || 0);
+
+	switch (strategy.key) {
+		case 'MOMENTUM':
+			if (priceChange7d > 50) {
+				return `<div class="strategy-insight momentum-hot">🔥 Silny trend wzrostowy - momentum kontynuuje</div>`;
+			} else if (priceChange7d > 25) {
+				return `<div class="strategy-insight momentum-good">🚀 Dobry momentum - wskacz na trend</div>`;
+			} else {
+				return `<div class="strategy-insight momentum-early">⚡ Wczesny momentum - obserwuj rozwój</div>`;
+			}
+
+		case 'VALUE':
+			if (priceChange7d < -20) {
+				return `<div class="strategy-insight value-deep">💎 Głęboki spadek - potencjalne dno</div>`;
+			} else if (priceChange7d < -10) {
+				return `<div class="strategy-insight value-moderate">🛒 Umiarkowany spadek - dobra okazja</div>`;
+			} else {
+				return `<div class="strategy-insight value-stabilizing">📈 Stabilizacja po spadku - wczesne odbicie</div>`;
+			}
+
+		case 'BALANCED':
+			if (Math.abs(priceChange7d) < 5) {
+				return `<div class="strategy-insight balanced-stable">⚖️ Stabilna konsolidacja - bezpieczny wybór</div>`;
+			} else if (priceChange7d > 0) {
+				return `<div class="strategy-insight balanced-upward">📊 Lekki trend wzrostowy - konserwatywny wzrost</div>`;
+			} else {
+				return `<div class="strategy-insight balanced-correcting">🔄 Lekka korekta - dobry moment wejścia</div>`;
+			}
+
+		default:
+			return '';
+	}
+}
+
+/**
+ * Render cross-strategy analysis
+ */
+export function renderCrossStrategyAnalysis(crossStrategy, elements) {
+	const crossContainer =
+		elements.crossStrategyContainer ||
+		document.getElementById('cross-strategy-container');
+
+	if (!crossContainer || !crossStrategy) return;
+
+	const multiStrategyCoins = crossStrategy.multiStrategyCoins || [];
+	const insights = crossStrategy.insights || [];
+
+	const html = `
+		<div class="cross-strategy-section">
+			<div class="cross-strategy-header">
+				<h3>🎯 Analiza Multi-Strategy</h3>
+				<p>Monety które pasują do wielu strategii - najsilniejsze sygnały</p>
+			</div>
+			
+			${
+				insights.length > 0
+					? `
+				<div class="cross-strategy-insights">
+					${insights
+						.map(
+							(insight) => `
+						<div class="insight-item">${insight}</div>
+					`
+						)
+						.join('')}
+				</div>
+			`
+					: ''
+			}
+			
+			${
+				multiStrategyCoins.length > 0
+					? `
+				<div class="multi-strategy-coins">
+					<h4>🏆 Multi-Strategy Champions:</h4>
+					<div class="multi-coins-grid">
+						${multiStrategyCoins
+							.slice(0, 6)
+							.map(
+								(entry) => `
+							<div class="multi-coin-card">
+								<div class="multi-coin-header">
+									<span class="multi-coin-symbol">${entry.coin.symbol}</span>
+									<span class="multi-coin-score">${entry.totalScore.toFixed(0)}</span>
+								</div>
+								<div class="multi-coin-strategies">
+									${entry.strategies
+										.map(
+											(strategy) => `
+										<span class="strategy-tag strategy-${strategy.toLowerCase()}">
+											${TRADING_STRATEGIES[strategy]?.emoji || '📊'} ${strategy}
+										</span>
+									`
+										)
+										.join('')}
+								</div>
+								<div class="multi-coin-change ${entry.coin.priceChange7d >= 0 ? 'positive' : 'negative'}">
+									${entry.coin.priceChange7d >= 0 ? '+' : ''}${(entry.coin.priceChange7d || 0).toFixed(1)}% (7D)
+								</div>
+							</div>
+						`
+							)
+							.join('')}
+					</div>
+				</div>
+			`
+					: `
+				<div class="no-multi-strategy">
+					<p>📊 Brak nakładających się strategii - każda znajduje unikalne okazje</p>
+				</div>
+			`
+			}
+		</div>
+	`;
+
+	crossContainer.innerHTML = html;
+}
+
+/**
+ * Render enhanced market status with strategy recommendations
+ */
+export function renderEnhancedMarketStatus(marketStatus, elements) {
+	// Update basic market status
+	elements.btcDominance.textContent = marketStatus.btcDominance + '%';
+	elements.dominanceChange.textContent = marketStatus.dominanceChange;
+	elements.dominanceChange.className = marketStatus.dominanceChange.startsWith(
+		'+'
+	)
+		? 'change negative'
+		: 'change positive';
+
+	elements.marketCondition.textContent = marketStatus.condition;
+	elements.conditionAdvice.textContent = marketStatus.advice;
+
+	// Add strategy recommendation
+	const strategyRecommendation =
+		elements.strategyRecommendation ||
+		document.getElementById('strategy-recommendation');
+	if (strategyRecommendation && marketStatus.recommendedStrategy) {
+		const strategy = TRADING_STRATEGIES[marketStatus.recommendedStrategy];
+		if (strategy) {
+			strategyRecommendation.innerHTML = `
+				<div class="recommended-strategy">
+					<h4>💡 Rekomendowana Strategia</h4>
+					<div class="strategy-recommendation-card">
+						<span class="strategy-emoji">${strategy.emoji}</span>
+						<div class="strategy-rec-info">
+							<span class="strategy-rec-name">${strategy.name}</span>
+							<span class="strategy-rec-reason">${marketStatus.advice}</span>
+						</div>
+					</div>
+				</div>
+			`;
+		}
+	}
+
+	// Update Fear & Greed if available
+	if (marketStatus.fearAndGreed) {
+		elements.fngValue.textContent = marketStatus.fearAndGreed.value;
+		elements.fngClassification.textContent =
+			marketStatus.fearAndGreed.classification;
+
+		if (marketStatus.fearAndGreed.value < 30) {
+			elements.fngValue.className = 'value negative';
+		} else if (marketStatus.fearAndGreed.value > 70) {
+			elements.fngValue.className = 'value positive';
+		} else {
+			elements.fngValue.className = 'value';
+		}
+	}
+}
+
+/**
+ * Render strategy comparison chart
+ */
+export function renderStrategyComparison(strategies, elements) {
+	const comparisonContainer =
+		elements.strategyComparison ||
+		document.getElementById('strategy-comparison');
+
+	if (!comparisonContainer) return;
+
+	const html = `
+		<div class="strategy-comparison-section">
+			<h3>📊 Porównanie Strategii</h3>
+			<div class="comparison-grid">
+				${strategies
+					.map(
+						(strategy) => `
+					<div class="comparison-card ${strategy.isRecommended ? 'recommended' : ''}">
+						<div class="comparison-header">
+							<span class="comparison-emoji">${strategy.emoji}</span>
+							<h4>${strategy.name}</h4>
+							${strategy.isRecommended ? '<span class="rec-badge">Rekomendowana</span>' : ''}
+						</div>
+						<div class="comparison-metrics">
+							<div class="comparison-metric">
+								<span class="metric-label">Kandydaci</span>
+								<span class="metric-value">${strategy.binanceCandidates}</span>
+							</div>
+							<div class="comparison-metric">
+								<span class="metric-label">Średni Score</span>
+								<span class="metric-value">${(strategy.performance?.avgScore || 0).toFixed(1)}</span>
+							</div>
+							<div class="comparison-metric">
+								<span class="metric-label">Wysokie Score</span>
+								<span class="metric-value">${strategy.performance?.strongCandidates || 0}</span>
+							</div>
+							<div class="comparison-metric">
+								<span class="metric-label">Ryzyko</span>
+								<span class="metric-value">${(strategy.performance?.avgRisk || 0).toFixed(0)}/100</span>
+							</div>
+						</div>
+						<div class="comparison-advice">
+							<p>${strategy.advice}</p>
+						</div>
+					</div>
+				`
+					)
+					.join('')}
+			</div>
+		</div>
+	`;
+
+	comparisonContainer.innerHTML = html;
+}
+
+/**
+ * Switch between strategy tabs
+ */
+window.switchStrategy = function (strategyKey) {
+	// Update tab states
+	document.querySelectorAll('.strategy-tab').forEach((tab) => {
+		tab.classList.remove('active');
+	});
+	document
+		.querySelector(`[data-strategy="${strategyKey}"]`)
+		.classList.add('active');
+
+	// Update panel states
+	document.querySelectorAll('.strategy-panel').forEach((panel) => {
+		panel.classList.remove('active');
+	});
+	document
+		.querySelector(`.strategy-panel[data-strategy="${strategyKey}"]`)
+		.classList.add('active');
+
+	// Trigger analytics event
+	if (typeof gtag !== 'undefined') {
+		gtag('event', 'strategy_switch', {
+			strategy: strategyKey,
+		});
+	}
+};
+
+/**
+ * Enhanced main render function
+ */
+export function renderEnhancedResults(results, elements) {
+	// Render market status
+	renderEnhancedMarketStatus(results.marketStatus, elements);
+
+	// Render strategies
+	renderStrategies(results.strategies, elements);
+
+	// Render cross-strategy analysis
+	renderCrossStrategyAnalysis(results.crossStrategy, elements);
+
+	// Render strategy comparison
+	renderStrategyComparison(results.strategies, elements);
+
+	// Render sector analysis (traditional)
+	renderSectorAnalysis(results.sectorAnalysis, elements);
+
+	// Update last update time
+	elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+}
+
+/**
+ * Create strategy performance chart (for future Chart.js integration)
+ */
+export function createStrategyPerformanceChart(strategies, chartContainer) {
+	if (!chartContainer || typeof Chart === 'undefined') return;
+
+	const ctx = chartContainer.getContext('2d');
+
+	const data = {
+		labels: strategies.map((s) => s.name),
+		datasets: [
+			{
+				label: 'Średni Score',
+				data: strategies.map((s) => s.performance?.avgScore || 0),
+				backgroundColor: strategies.map((s) => {
+					switch (s.key) {
+						case 'MOMENTUM':
+							return 'rgba(0, 255, 163, 0.8)';
+						case 'VALUE':
+							return 'rgba(255, 184, 0, 0.8)';
+						case 'BALANCED':
+							return 'rgba(0, 212, 255, 0.8)';
+						default:
+							return 'rgba(255, 255, 255, 0.8)';
+					}
+				}),
+				borderWidth: 2,
+				borderColor: '#fff',
+			},
+		],
+	};
+
+	const options = {
+		responsive: true,
+		maintainAspectRatio: false,
+		plugins: {
+			legend: {
+				display: false,
+			},
+		},
+		scales: {
+			y: {
+				beginAtZero: true,
+				max: 100,
+				grid: {
+					color: 'rgba(255, 255, 255, 0.1)',
+				},
+			},
+			x: {
+				grid: {
+					display: false,
+				},
+			},
+		},
+	};
+
+	new Chart(ctx, {
+		type: 'bar',
+		data: data,
+		options: options,
+	});
+}
+
+/**
+ * Add strategy tooltips and help system
+ */
+export function initializeStrategyHelp() {
+	document.querySelectorAll('.strategy-tab').forEach((tab) => {
+		tab.addEventListener('mouseenter', (e) => {
+			const strategyKey = e.target.dataset.strategy;
+			const strategy = TRADING_STRATEGIES[strategyKey];
+
+			if (strategy) {
+				showStrategyTooltip(e.target, strategy);
+			}
+		});
+
+		tab.addEventListener('mouseleave', () => {
+			hideStrategyTooltip();
+		});
+	});
+}
+
+/**
+ * Show strategy tooltip
+ */
+function showStrategyTooltip(element, strategy) {
+	const tooltip = document.createElement('div');
+	tooltip.className = 'strategy-tooltip';
+	tooltip.innerHTML = `
+		<div class="tooltip-header">
+			<span>${strategy.emoji}</span>
+			<strong>${strategy.name}</strong>
+		</div>
+		<p>${strategy.description}</p>
+		<div class="tooltip-criteria">
+			<strong>Kryteria:</strong>
+			<ul>
+				<li>Zmiana 7D: ${strategy.criteria.min7dChange}% - ${strategy.criteria.max7dChange || '∞'}%</li>
+				<li>Min. płynność: ${(strategy.criteria.minVolumeRatio * 100).toFixed(1)}%</li>
+				<li>Max. cena: ${strategy.criteria.maxPrice}</li>
+			</ul>
+		</div>
+	`;
+
+	document.body.appendChild(tooltip);
+
+	// Position tooltip
+	const rect = element.getBoundingClientRect();
+	tooltip.style.left = rect.left + 'px';
+	tooltip.style.top = rect.bottom + 10 + 'px';
+}
+
+/**
+ * Hide strategy tooltip
+ */
+function hideStrategyTooltip() {
+	const tooltip = document.querySelector('.strategy-tooltip');
+	if (tooltip) {
+		tooltip.remove();
+	}
+}
+
+// Import strategy definitions (this would be imported from the backend)
+const TRADING_STRATEGIES = {
+	MOMENTUM: {
+		name: '🚀 MOMENTUM LEADERS',
+		emoji: '🚀',
+		description: 'Monety w silnym trendzie wzrostowym',
+		criteria: {
+			min7dChange: 15,
+			max7dChange: 200,
+			minVolumeRatio: 0.04,
+			maxPrice: 3,
+		},
+	},
+	VALUE: {
+		name: '💎 VALUE HUNTERS',
+		emoji: '💎',
+		description: 'Okazje po spadkach - potencjalne odbicia',
+		criteria: {
+			min7dChange: -25,
+			max7dChange: 5,
+			minVolumeRatio: 0.03,
+			maxPrice: 3,
+		},
+	},
+	BALANCED: {
+		name: '⚖️ BALANCED PLAYS',
+		emoji: '⚖️',
+		description: 'Stabilne monety w konsolidacji',
+		criteria: {
+			min7dChange: -10,
+			max7dChange: 20,
+			minVolumeRatio: 0.03,
+			maxPrice: 3,
+		},
+	},
+};

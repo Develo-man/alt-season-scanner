@@ -1,14 +1,18 @@
 import {
-	updateMarketStatus,
+	renderEnhancedResults,
+	renderStrategies,
+	renderCrossStrategyAnalysis,
+	renderStrategyComparison,
+	renderEnhancedMarketStatus,
 	renderSectorAnalysis,
-	renderCoins,
 	displayError,
 	setLoadingState,
+	initializeStrategyHelp,
 } from './ui.js';
 
 // App State
-let allCoinsData = [];
-let currentFilter = 'all';
+let scannerResults = null;
+let currentStrategy = 'MOMENTUM';
 
 // DOM Elements
 const elements = {
@@ -19,74 +23,88 @@ const elements = {
 	marketCondition: document.getElementById('market-condition'),
 	conditionAdvice: document.getElementById('condition-advice'),
 	opportunities: document.getElementById('opportunities'),
-	sectorAnalysisGrid: document.getElementById('sector-analysis-grid'),
 	lastUpdate: document.getElementById('last-update'),
-	coinsGrid: document.getElementById('coins-grid'),
+
+	// New strategy containers
+	strategiesContainer: document.getElementById('strategies-container'),
+	crossStrategyContainer: document.getElementById('cross-strategy-container'),
+	strategyComparison: document.getElementById('strategy-comparison'),
+	strategyRecommendation: document.getElementById('strategy-recommendation'),
+	sectorAnalysisGrid: document.getElementById('sector-analysis-grid'),
 	loading: document.getElementById('loading'),
-	filterButtons: document.querySelectorAll('.filter-btn'),
+
+	// Legacy (kept for compatibility)
+	coinsGrid: document.getElementById('coins-grid'),
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
 	loadData();
-	setupEventListeners();
+	initializeStrategyHelp();
+
 	// Auto refresh every 5 minutes
 	setInterval(loadData, 5 * 60 * 1000);
 });
 
-// Setup Event Listeners
-function setupEventListeners() {
-	elements.filterButtons.forEach((btn) => {
-		btn.addEventListener('click', (e) => {
-			currentFilter = e.currentTarget.dataset.filter;
-			elements.filterButtons.forEach((b) => b.classList.remove('active'));
-			e.currentTarget.classList.add('active');
-			displayFilteredCoins();
-		});
-	});
-}
-
-// Load Data from API
+// Load Data from Enhanced API
 async function loadData() {
 	setLoadingState(true, elements);
 	try {
 		const response = await fetch('/api/scanner-results');
 		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
+			throw new Error('HTTP error! status: ' + response.status);
 		}
 		const data = await response.json();
 
-		allCoinsData = data.coins;
-		updateMarketStatus(data.marketStatus, elements, allCoinsData);
-		renderSectorAnalysis(data.sectorAnalysis, elements);
-		displayFilteredCoins();
+		// Store results globally
+		scannerResults = data;
 
+		// Render everything using the new enhanced UI
+		renderEnhancedResults(data, elements);
+
+		// Update last update time
 		elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+
+		console.log('📊 Enhanced scanner results loaded:', {
+			strategies: data.strategies?.length || 0,
+			totalCandidates: data.stats?.totalUniqueCandidates || 0,
+			recommendedStrategy: data.marketStatus?.recommendedStrategy || 'none',
+		});
 	} catch (error) {
 		console.error('Error loading data:', error);
-		// Zamiast używać danych mockowych, wyświetl błąd
 		displayError(elements);
 	} finally {
 		setLoadingState(false, elements);
 	}
 }
 
-// Filter and display coins based on the current filter
-function displayFilteredCoins() {
-	const filteredCoins = filterCoins(allCoinsData);
-	renderCoins(filteredCoins, elements);
-}
+// Strategy switching function (called from UI)
+window.switchStrategy = function (strategyKey) {
+	currentStrategy = strategyKey;
 
-// Filter Coins Logic
-function filterCoins(coins) {
-	switch (currentFilter) {
-		case 'hot':
-			return coins.filter((c) => c.momentum.totalScore >= 60);
-		case 'safe':
-			return coins.filter((c) => c.momentum.riskScore < 40);
-		case 'value':
-			return coins.filter((c) => c.price < 1);
-		default:
-			return coins;
+	// Update UI
+	document.querySelectorAll('.strategy-tab').forEach((tab) => {
+		tab.classList.remove('active');
+	});
+	document
+		.querySelector('[data-strategy="' + strategyKey + '"]')
+		.classList.add('active');
+
+	document.querySelectorAll('.strategy-panel').forEach((panel) => {
+		panel.classList.remove('active');
+	});
+	document
+		.querySelector('.strategy-panel[data-strategy="' + strategyKey + '"]')
+		.classList.add('active');
+
+	// Analytics
+	if (typeof gtag !== 'undefined') {
+		gtag('event', 'strategy_switch', {
+			strategy: strategyKey,
+		});
 	}
-}
+};
+
+// Export for debugging
+window.getScannerResults = () => scannerResults;
+window.getCurrentStrategy = () => currentStrategy;
