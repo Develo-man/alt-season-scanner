@@ -9,6 +9,7 @@ import {
 	displayError,
 	formatNumber,
 	getScoreInterpretation,
+	initializeModal,
 } from './ui.js';
 
 // ========================================
@@ -88,6 +89,8 @@ function initializeApp() {
 
 	// Load initial data
 	loadData();
+
+	initializeModal();
 
 	// Setup auto-refresh if enabled
 	if (appState.userPreferences.autoRefresh) {

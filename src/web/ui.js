@@ -717,14 +717,105 @@ function showMoreCoins(strategyKey) {
 window.showMoreCoins = showMoreCoins;
 
 /**
- * Show detailed coin information
+ * Pokazuje okno modalne ze szczegółami monety (NOWA WERSJA)
  */
 function showCoinDetails(symbol) {
-	// This would open a modal or navigate to detail page
-	console.log(`Showing details for: ${symbol}`);
+	// Znajdź wszystkie monety ze wszystkich strategii
+	const allCoins = window.appState.scannerResults.strategies.flatMap(
+		(s) => s.topCoins
+	);
+	const coin = allCoins.find((c) => c.symbol === symbol);
 
-	// For demo, show alert
-	alert(`Szczegóły dla ${symbol} - tutaj byłaby szczegółowa analiza monety`);
+	if (!coin) {
+		console.error(`Nie znaleziono monety: ${symbol}`);
+		alert(`Nie można wczytać szczegółów dla ${symbol}.`);
+		return;
+	}
+
+	const modal = document.getElementById('coin-details-modal');
+	const modalBody = document.getElementById('modal-body');
+	const momentum = coin.momentum || {};
+
+	const scoreInfo = getScoreInterpretation(momentum.totalScore || 0);
+	const riskInfo = getScoreInterpretation(momentum.riskScore || 0, 'risk');
+
+	// Wygeneruj HTML dla zawartości okna
+	modalBody.innerHTML = `
+		<div class="modal-header">
+			<div class="coin-rank">#${coin.rank}</div>
+			<div class="modal-title">
+				<h2>${coin.symbol} <span class="gradient-text">${scoreInfo.text}</span></h2>
+				<span>${coin.name}</span>
+			</div>
+		</div>
+		
+		<div class="modal-stats-grid">
+			<div class="modal-stat">
+				<div class="stat-label">Cena</div>
+				<div class="stat-number">$${formatNumber(coin.price, 'price')}</div>
+			</div>
+			<div class="modal-stat">
+				<div class="stat-label">Zmiana 7D</div>
+				<div class="stat-number ${coin.priceChange7d >= 0 ? 'positive' : 'negative'}">
+					${formatNumber(coin.priceChange7d, 'percentage')}
+				</div>
+			</div>
+			<div class="modal-stat">
+				<div class="stat-label">Score</div>
+				<div class="stat-number">${formatNumber(momentum.totalScore, 'score')} / 100</div>
+			</div>
+			<div class="modal-stat">
+				<div class="stat-label">Ryzyko</div>
+				<div class="stat-number ${riskInfo.level === 'high' ? 'negative' : 'positive'}">
+					${formatNumber(momentum.riskScore, 'score')} / 100
+				</div>
+			</div>
+		</div>
+
+		<div class="modal-signals-list">
+			<h4>💡 Kluczowe Sygnały:</h4>
+			<ul>
+				${
+					momentum.signals && momentum.signals.length > 0
+						? momentum.signals.map((signal) => `<li>${signal}</li>`).join('')
+						: '<li>Brak konkretnych sygnałów.</li>'
+				}
+			</ul>
+		</div>
+	`;
+
+	modal.classList.add('visible');
+}
+
+/**
+ * Inicjalizuje logikę zamykania okna modalnego
+ */
+function initializeModal() {
+	const modal = document.getElementById('coin-details-modal');
+	const closeBtn = document.getElementById('modal-close-btn');
+
+	if (!modal || !closeBtn) return;
+
+	const hideModal = () => {
+		modal.classList.remove('visible');
+	};
+
+	// Zamykanie po kliknięciu przycisku 'X'
+	closeBtn.addEventListener('click', hideModal);
+
+	// Zamykanie po kliknięciu tła
+	modal.addEventListener('click', (e) => {
+		if (e.target === modal) {
+			hideModal();
+		}
+	});
+
+	// Zamykanie po naciśnięciu klawisza Escape
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && modal.classList.contains('visible')) {
+			hideModal();
+		}
+	});
 }
 
 /**
@@ -897,6 +988,7 @@ export {
 	createSimplifiedCoinCard,
 	switchToStrategy,
 	selectStrategy,
+	initializeModal,
 };
 
 // Make functions available globally for onclick handlers
