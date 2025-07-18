@@ -16,28 +16,36 @@
 	</head>
 
 	<body>
-		<header>
-			<div class="container">
+		<header class="modern-header">
+			<nav class="container">
 				<div class="header-content">
-					<div class="logo">₿ Alt Season Scanner</div>
-					<div class="nav-controls">
-						<a href="/charts" class="nav-btn"><span>Charts</span></a>
+					<div class="logo-section">
+						<div class="logo">₿ Alt Season Scanner</div>
+						<div class="tagline">Zaawansowane wykresy rynkowe</div>
+					</div>
+
+					<div class="nav-actions">
+						<button
+							class="nav-link"
+							id="theme-toggle"
+							aria-label="Toggle theme"
+						>
+							🌙
+						</button>
+						<a href="/" class="nav-link">🏠 Dashboard</a>
+						<button class="nav-link" onclick="refreshCharts()">
+							🔄 Odśwież
+						</button>
 						<div class="help-toggle-container">
-							<label for="help-toggle" class="help-label">Tryb Pomocy</label>
-							<label class="switch">
+							<label class="help-toggle">
 								<input type="checkbox" id="help-toggle" />
-								<span class="slider round"></span>
+								<span class="toggle-slider"></span>
+								<span class="toggle-label">Tryb Pomocy</span>
 							</label>
 						</div>
 					</div>
-					<div class="nav-buttons">
-						<a href="/" class="nav-btn"><span>Dashboard</span></a>
-						<button class="nav-btn" onclick="refreshCharts()">
-							<span>Refresh</span>
-						</button>
-					</div>
 				</div>
-			</div>
+			</nav>
 		</header>
 
 		<main class="container">
@@ -191,5 +199,6 @@
 		</main>
 
 		<script src="charts.js"></script>
+		<script src="main.js" type="module"></script>
 	</body>
 </html>

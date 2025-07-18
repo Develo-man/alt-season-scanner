@@ -989,6 +989,38 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ========================================
+// THEME TOGGLE LOGIC
+// ========================================
+document.addEventListener('DOMContentLoaded', () => {
+	const themeToggle = document.getElementById('theme-toggle');
+	if (themeToggle) {
+		// Sprawdź zapisany motyw lub preferencje systemowe
+		const currentTheme =
+			localStorage.getItem('theme') ||
+			(window.matchMedia('(prefers-color-scheme: dark)').matches
+				? 'dark'
+				: 'light');
+
+		document.documentElement.setAttribute('data-theme', currentTheme);
+		themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+		// Obsługa kliknięcia
+		themeToggle.addEventListener('click', () => {
+			let theme = document.documentElement.getAttribute('data-theme');
+			if (theme === 'dark') {
+				theme = 'light';
+				themeToggle.textContent = '🌙';
+			} else {
+				theme = 'dark';
+				themeToggle.textContent = '☀️';
+			}
+			document.documentElement.setAttribute('data-theme', theme);
+			localStorage.setItem('theme', theme);
+		});
+	}
+});
+
+// ========================================
 // EXPORTS AND GLOBAL FUNCTIONS
 // ========================================
 

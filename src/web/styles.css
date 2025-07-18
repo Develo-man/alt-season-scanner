@@ -57,6 +57,30 @@
 	--transition-slow: 0.5s ease;
 }
 
+html[data-theme='light'] {
+	--background: #f8fafc;
+	--surface: #ffffff;
+	--surface-light: #e2e8f0;
+	--border: #d1d5db;
+	--text-primary: #1f2937;
+	--text-secondary: #4b5563;
+	--text-muted: #6b7280;
+}
+
+html[data-theme='light'] body::before {
+	background:
+		radial-gradient(
+			circle at 20% 20%,
+			rgba(59, 130, 246, 0.05) 0%,
+			transparent 40%
+		),
+		radial-gradient(
+			circle at 80% 80%,
+			rgba(139, 92, 246, 0.03) 0%,
+			transparent 40%
+		);
+}
+
 /* ========================================
    RESET & BASE STYLES
    ======================================== */
@@ -2033,29 +2057,27 @@ h3 {
    ======================================== */
 
 @media (prefers-color-scheme: light) {
-	/* Optional light mode overrides if needed */
-	:root {
-		--background: #ffffff;
-		--surface: #f8fafc;
+	:root:not([data-theme]) {
+		--background: #f8fafc;
+		--surface: #ffffff;
 		--surface-light: #e2e8f0;
 		--border: #d1d5db;
-		--border-light: #9ca3af;
 		--text-primary: #1f2937;
 		--text-secondary: #4b5563;
 		--text-muted: #6b7280;
 	}
 
-	body::before {
+	:root:not([data-theme]) body::before {
 		background:
 			radial-gradient(
 				circle at 20% 20%,
-				rgba(59, 130, 246, 0.1) 0%,
-				transparent 50%
+				rgba(59, 130, 246, 0.05) 0%,
+				transparent 40%
 			),
 			radial-gradient(
 				circle at 80% 80%,
-				rgba(139, 92, 246, 0.05) 0%,
-				transparent 50%
+				rgba(139, 92, 246, 0.03) 0%,
+				transparent 40%
 			);
 	}
 }
@@ -3097,4 +3119,144 @@ h3 {
 .rec-strategy-reason {
 	font-size: 0.875rem;
 	color: var(--text-muted);
+}
+
+/* ========================================
+   CHARTS PAGE STYLES
+   ======================================== */
+
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: var(--space-lg);
+	margin-bottom: var(--space-2xl);
+}
+
+.stat-card {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: var(--space-lg);
+	text-align: center;
+}
+
+.stat-label {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+	margin-bottom: var(--space-sm);
+	font-weight: 500;
+}
+
+.stat-value {
+	font-size: 2rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	line-height: 1.2;
+}
+
+.stat-change {
+	font-size: 0.875rem;
+	font-weight: 500;
+	margin-top: var(--space-xs);
+}
+
+.stat-change.positive {
+	color: var(--accent-green);
+}
+
+.stat-change.negative {
+	color: var(--accent-red);
+}
+
+.charts-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr); /* Tworzy siatkę z dwiema kolumnami */
+	gap: var(--space-lg);
+}
+
+.chart-container {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: var(--space-lg);
+	display: flex;
+	flex-direction: column;
+}
+
+.chart-container.full-width {
+	grid-column: 1 / -1; /* Ten element zajmie całą szerokość siatki */
+}
+
+/* Domyślnie elementy zajmują jedną kolumnę, więc half-width nie jest konieczne, ale dodaję dla jasności */
+.chart-container.half-width {
+	grid-column: span 1;
+}
+
+.chart-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: var(--space-lg);
+}
+
+.chart-title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.chart-subtitle {
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}
+
+.timeframe-selector {
+	display: flex;
+	gap: var(--space-sm);
+	background: var(--background);
+	padding: var(--space-xs);
+	border-radius: var(--radius-md);
+}
+
+.timeframe-btn {
+	background: transparent;
+	border: none;
+	color: var(--text-secondary);
+	padding: var(--space-xs) var(--space-sm);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	font-weight: 500;
+	transition: var(--transition-normal);
+}
+
+.timeframe-btn:hover {
+	background: var(--surface-light);
+	color: var(--text-primary);
+}
+
+.timeframe-btn.active {
+	background: var(--primary-blue);
+	color: white;
+}
+
+.chart-wrapper {
+	flex-grow: 1;
+	position: relative;
+	min-height: 300px; /* Domyślna wysokość */
+}
+
+.chart-wrapper.tall {
+	min-height: 400px; /* Wyższy wrapper dla większych wykresów */
+}
+
+/* Poprawki dla urządzeń mobilnych */
+@media (max-width: 768px) {
+	.charts-grid {
+		grid-template-columns: 1fr; /* Jedna kolumna na mniejszych ekranach */
+	}
+
+	.chart-container.full-width,
+	.chart-container.half-width {
+		grid-column: 1 / -1;
+	}
 }

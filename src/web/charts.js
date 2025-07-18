@@ -1111,34 +1111,37 @@ function generateMockDominanceHistory() {
 	return history;
 }
 
-// Initialize on load
-document.addEventListener('DOMContentLoaded', initCharts);
+// ========================================
+// THEME TOGGLE LOGIC
+// ========================================
+document.addEventListener('DOMContentLoaded', () => {
+	const themeToggle = document.getElementById('theme-toggle');
+	if (themeToggle) {
+		// Sprawdź zapisany motyw lub preferencje systemowe
+		const currentTheme =
+			localStorage.getItem('theme') ||
+			(window.matchMedia('(prefers-color-scheme: dark)').matches
+				? 'dark'
+				: 'light');
 
-function debugChartsData() {
-	console.log('🔍 Debug danych wykresów:');
-	console.log('scannerData:', scannerData);
-	console.log('strategies:', scannerData?.strategies?.length || 0);
+		document.documentElement.setAttribute('data-theme', currentTheme);
+		themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
 
-	if (scannerData?.strategies) {
-		scannerData.strategies.forEach((strategy, i) => {
-			console.log(
-				`Strategy ${i}: ${strategy.name}, coins: ${strategy.topCoins?.length || 0}`
-			);
+		// Obsługa kliknięcia
+		themeToggle.addEventListener('click', () => {
+			let theme = document.documentElement.getAttribute('data-theme');
+			if (theme === 'dark') {
+				theme = 'light';
+				themeToggle.textContent = '🌙';
+			} else {
+				theme = 'dark';
+				themeToggle.textContent = '☀️';
+			}
+			document.documentElement.setAttribute('data-theme', theme);
+			localStorage.setItem('theme', theme);
 		});
 	}
+});
 
-	const allCoins = getAllCoinsFromStrategies(scannerData);
-	console.log('All coins:', allCoins.length);
-	console.log('First coin:', allCoins[0]);
-}
-
-// Dodaj do window dla łatwego debugowania
-window.debugChartsData = debugChartsData;
-window.regenerateChartMockData = () => {
-	scannerData = generateMockData();
-	console.log('🔄 Mock data wygenerowane, odświeżam wykresy...');
-	createMomentumChart();
-	createVolumeChart();
-	createRiskRewardChart();
-	updateStats();
-};
+// Initialize on load
+document.addEventListener('DOMContentLoaded', initCharts);
