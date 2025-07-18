@@ -717,7 +717,7 @@ function showMoreCoins(strategyKey) {
 window.showMoreCoins = showMoreCoins;
 
 /**
- * Pokazuje okno modalne ze szczegółami monety (NOWA WERSJA)
+ * Pokazuje okno modalne ze szczegółami monety
  */
 function showCoinDetails(symbol) {
 	// Znajdź wszystkie monety ze wszystkich strategii
@@ -788,42 +788,134 @@ function showCoinDetails(symbol) {
 }
 
 /**
- * Inicjalizuje logikę zamykania okna modalnego
+ * Inicjalizuje logikę zamykania dla WSZYSTKICH okien modalnych
  */
 function initializeModal() {
-	const modal = document.getElementById('coin-details-modal');
-	const closeBtn = document.getElementById('modal-close-btn');
+	// --- Logika dla okna "Więcej szczegółów" ---
+	const detailsModal = document.getElementById('coin-details-modal');
+	const detailsCloseBtn = document.getElementById('modal-close-btn');
 
-	if (!modal || !closeBtn) return;
+	if (detailsModal && detailsCloseBtn) {
+		const hideDetailsModal = () => detailsModal.classList.remove('visible');
+		detailsCloseBtn.addEventListener('click', hideDetailsModal);
+		detailsModal.addEventListener('click', (e) => {
+			if (e.target === detailsModal) hideDetailsModal();
+		});
+	}
 
-	const hideModal = () => {
-		modal.classList.remove('visible');
-	};
+	// --- Logika dla okna "DEX Info" ---
+	const dexModal = document.getElementById('dex-info-modal');
+	const dexCloseBtn = document.getElementById('dex-modal-close-btn');
 
-	// Zamykanie po kliknięciu przycisku 'X'
-	closeBtn.addEventListener('click', hideModal);
+	if (dexModal && dexCloseBtn) {
+		const hideDexModal = () => dexModal.classList.remove('visible');
+		dexCloseBtn.addEventListener('click', hideDexModal);
+		dexModal.addEventListener('click', (e) => {
+			if (e.target === dexModal) hideDexModal();
+		});
+	}
 
-	// Zamykanie po kliknięciu tła
-	modal.addEventListener('click', (e) => {
-		if (e.target === modal) {
-			hideModal();
-		}
-	});
-
-	// Zamykanie po naciśnięciu klawisza Escape
+	// --- Wspólna logika dla zamykania klawiszem Escape ---
 	document.addEventListener('keydown', (e) => {
-		if (e.key === 'Escape' && modal.classList.contains('visible')) {
-			hideModal();
+		if (e.key === 'Escape') {
+			if (detailsModal && detailsModal.classList.contains('visible')) {
+				detailsModal.classList.remove('visible');
+			}
+			if (dexModal && dexModal.classList.contains('visible')) {
+				dexModal.classList.remove('visible');
+			}
 		}
 	});
 }
 
 /**
- * Show DEX information
+ * Pokazuje okno modalne z informacjami DEX
  */
 function showDEXInfo(symbol) {
-	console.log(`Showing DEX info for: ${symbol}`);
-	alert(`DEX informacje dla ${symbol} - tutaj byłyby dane o płynności na DEX`);
+	const allCoins = window.appState.scannerResults.strategies.flatMap(
+		(s) => s.topCoins
+	);
+	const coin = allCoins.find((c) => c.symbol === symbol);
+
+	if (!coin || !coin.dexData || !coin.dexData.hasDEXData) {
+		alert(`Brak dostępnych danych DEX dla ${symbol}.`);
+		return;
+	}
+
+	const modal = document.getElementById('dex-info-modal');
+	const modalBody = document.getElementById('dex-modal-body');
+	const dexData = coin.dexData;
+	const dexSignals = (coin.momentum.signals || []).filter((s) =>
+		['💧', '🟢', '🔴', '✅', '⚠️', '🌐', '🔥', '🎯'].some((emoji) =>
+			s.startsWith(emoji)
+		)
+	);
+
+	modalBody.innerHTML = `
+        <div class="modal-header">
+            <div class="coin-rank">🏪</div>
+            <div class="modal-title">
+                <h2>Analiza DEX dla ${coin.symbol}</h2>
+                <span>Dane z giełd zdecentralizowanych</span>
+            </div>
+        </div>
+
+        <div class="modal-stats-grid">
+            <div class="modal-stat">
+                <div class="stat-label">Score Płynności</div>
+                <div class="stat-number">${dexData.liquidityScore || 'N/A'}/100</div>
+            </div>
+            <div class="modal-stat">
+                <div class="stat-label">Jakość Wolumenu</div>
+                <div class="stat-number">${dexData.volumeQualityScore || 'N/A'}/100</div>
+            </div>
+            <div class="modal-stat">
+                <div class="stat-label">Presja Kupna</div>
+                <div class="stat-number">${dexData.buyPressure || 'N/A'}%</div>
+            </div>
+             <div class="modal-stat">
+                <div class="stat-label">Liczba Giełd DEX</div>
+                <div class="stat-number">${dexData.uniqueDEXes || 'N/A'}</div>
+            </div>
+        </div>
+
+        <div class="modal-signals-list">
+            <h4>💡 Sygnały z DEX:</h4>
+            <ul>
+                ${dexSignals.length > 0 ? dexSignals.map((s) => `<li>${s}</li>`).join('') : '<li>Brak sygnałów.</li>'}
+            </ul>
+        </div>
+
+        ${
+					dexData.topPairs && dexData.topPairs.length > 0
+						? `
+        <div class="dex-pairs-list">
+            <h4>🔝 Główne Pary Handlowe:</h4>
+            <ul>
+                ${dexData.topPairs
+									.map(
+										(pair) => `
+                    <li class="dex-pair-item">
+                        <div class="dex-pair-header">
+                            <span>${pair.dex}</span>
+                            <span class="dex-pair-chain">${pair.chain}</span>
+                        </div>
+                        <div class="dex-pair-stats">
+                            <span>Wolumen 24h: <strong>${pair.volume24h}</strong></span>
+                            <span>Płynność: <strong>${pair.liquidity}</strong></span>
+                        </div>
+                    </li>
+                `
+									)
+									.join('')}
+            </ul>
+        </div>
+        `
+						: ''
+				}
+    `;
+
+	modal.classList.add('visible');
 }
 
 // ========================================

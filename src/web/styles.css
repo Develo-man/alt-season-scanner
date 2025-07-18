@@ -3370,3 +3370,43 @@ h3 {
 	border-left: 3px solid var(--primary-blue);
 	font-size: 0.875rem;
 }
+
+.dex-pairs-list {
+	list-style: none;
+	padding-left: 0;
+	margin-top: var(--space-lg);
+}
+
+.dex-pairs-list h4 {
+	margin-bottom: var(--space-md);
+}
+
+.dex-pair-item {
+	background: var(--background);
+	padding: var(--space-md);
+	border-radius: var(--radius-md);
+	margin-bottom: var(--space-sm);
+	border: 1px solid var(--border);
+}
+
+.dex-pair-header {
+	display: flex;
+	justify-content: space-between;
+	font-weight: 600;
+	margin-bottom: var(--space-sm);
+}
+
+.dex-pair-chain {
+	font-size: 0.8em;
+	color: var(--text-muted);
+	background: var(--surface-light);
+	padding: 2px 6px;
+	border-radius: var(--radius-sm);
+}
+
+.dex-pair-stats {
+	display: flex;
+	justify-content: space-between;
+	font-size: 0.875rem;
+	color: var(--text-secondary);
+}

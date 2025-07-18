@@ -983,12 +983,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	setTimeout(monitorPerformance, 1000);
 
 	// Set up service worker if available
-	if ('serviceWorker' in navigator) {
-		navigator.serviceWorker
-			.register('/sw.js')
-			.then((registration) => console.log('📱 Service Worker registered'))
-			.catch((error) => console.log('Service Worker registration failed'));
-	}
+	// if ('serviceWorker' in navigator) {
+	// 	navigator.serviceWorker
+	// 		.register('/sw.js')
+	// 		.then((registration) => console.log('📱 Service Worker registered'))
+	// 		.catch((error) => console.log('Service Worker registration failed'));
+	// }
 });
 
 // ========================================
