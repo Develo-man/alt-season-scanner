@@ -53,10 +53,22 @@ async function initCharts() {
 
 		// Setup event listeners
 		setupEventListeners();
+
+		initializeHelpMode();
 	} catch (error) {
 		console.error('Error initializing charts:', error);
 	} finally {
 		showLoading(false);
+	}
+}
+
+// --- Inicjalizacja Trybu Pomocy ---
+function initializeHelpMode() {
+	const helpToggle = document.getElementById('help-toggle');
+	if (helpToggle) {
+		helpToggle.addEventListener('change', () => {
+			document.body.classList.toggle('help-mode-active');
+		});
 	}
 }
 
