@@ -258,6 +258,8 @@ function calculateMomentumScore(
 	// NEW: Calculate DEX score
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
 
+	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
+
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
 
@@ -290,8 +292,9 @@ function calculateMomentumScore(
 		priceScore * enhancedWeights.price +
 			volumeScore * enhancedWeights.volume +
 			positionScore * enhancedWeights.position +
-			devScore * 0.1 +
-			dexScore * enhancedWeights.dex -
+			devScore * 0.05 +
+			dexScore * enhancedWeights.dex +
+			vpScore * 0.2 -
 			riskScore * enhancedWeights.risk
 	);
 
@@ -359,18 +362,18 @@ function calculateMomentumScore(
 	if (coin.volumeProfile) {
 		const vp = coin.volumeProfile;
 		const currentPrice = coin.price;
-		const pocPrice = vp.pointOfControl.price;
-		const priceVsPOC = ((currentPrice - pocPrice) / pocPrice) * 100;
+		const pocPrice = coin.volumeProfile.pointOfControl.price;
+		const priceVsPOC = ((coin.price - pocPrice) / pocPrice) * 100;
 
 		// Price vs POC signals
 		if (Math.abs(priceVsPOC) < 2) {
 			signals.push(
-				`📍 Cena przy POC ($${pocPrice.toFixed(4)}) - kluczowy poziom`
+				`🎯 Cena przy kluczowym poziomie POC ($${pocPrice.toFixed(4)})`
 			);
-		} else if (priceVsPOC > 10) {
-			signals.push('📈 Cena znacznie powyżej POC - możliwy powrót');
-		} else if (priceVsPOC < -10) {
-			signals.push('📉 Cena znacznie poniżej POC - potencjał wzrostu');
+		} else if (priceVsPOC > 0 && priceVsPOC < 5) {
+			signals.push('📈 Pozytywny retest POC - potencjał wzrostowy');
+		} else if (coin.price > coin.volumeProfile.valueArea.high) {
+			signals.push('⬆️ Cena powyżej Strefy Wartości - silne momentum');
 		}
 
 		// Value Area signals
@@ -435,7 +438,8 @@ function calculateMomentumScore(
 			priceMomentum: `${priceScore}/70`,
 			volumeActivity: `${volumeScore}/100`,
 			marketPosition: `${positionScore}/60`,
-			dexMetrics: `${dexScore}/100`, // NEW
+			volumeProfile: `${vpScore}/40`,
+			dexMetrics: `${dexScore}/100`,
 			riskFactor: `${riskScore}/100`,
 			accumulation: accumulationData ? `${accumulationData.score}/100` : 'N/A',
 		},
@@ -543,6 +547,49 @@ function getTopByCategory(coins, category, limit = 5) {
 		default:
 			return ranked.slice(0, limit);
 	}
+}
+
+/**
+ * Oblicza punktację na podstawie pozycji ceny względem jej profilu wolumenu.
+ * @param {Object} volumeProfile - Dane profilu wolumenu z funkcji getVolumeProfile.
+ * @param {number} currentPrice - Aktualna cena monety.
+ * @returns {number} Wynik od 0 do 40.
+ */
+function calculateVolumeProfileScore(volumeProfile, currentPrice) {
+	if (!volumeProfile || !currentPrice) {
+		return 0;
+	}
+
+	const pocPrice = volumeProfile.pointOfControl.price;
+	const valueAreaHigh = volumeProfile.valueArea.high;
+	const valueAreaLow = volumeProfile.valueArea.low;
+
+	let score = 0;
+
+	// 1. Cena jest w Strefie Wartości (Value Area) - sygnał "uczciwej ceny" i stabilności.
+	if (currentPrice >= valueAreaLow && currentPrice <= valueAreaHigh) {
+		score += 20; // Solidna baza punktowa
+	}
+
+	// 2. Pozycja ceny względem POC (najważniejszy poziom)
+	const priceVsPOC = ((currentPrice - pocPrice) / pocPrice) * 100; // Różnica w %
+
+	if (priceVsPOC > 0 && priceVsPOC <= 5) {
+		// Cena tuż nad POC (0-5%) - bardzo byczy sygnał, udany retest wsparcia.
+		score += 20;
+	} else if (priceVsPOC > 5 && priceVsPOC <= 15) {
+		// Cena konsoliduje się powyżej POC (5-15%) - wciąż byczo.
+		score += 10;
+	} else if (priceVsPOC < 0 && priceVsPOC >= -5) {
+		// Cena tuż poniżej POC (0 do -5%) - może testować opór, sygnał neutralny.
+		score += 5;
+	} else if (priceVsPOC < -15) {
+		// Cena daleko poniżej POC - potencjalna strefa akumulacji, ale wymaga potwierdzenia.
+		score += 10; // Bonus za potencjalne niedowartościowanie.
+	}
+
+	// Ogranicz wynik do 40 punktów.
+	return Math.min(score, 40);
 }
 
 module.exports = {
