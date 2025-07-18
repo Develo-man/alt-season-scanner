@@ -31,6 +31,16 @@
 		<header>
 			<nav class="container">
 				<div class="logo">₿ Alt Season Scanner</div>
+				<div class="nav-controls">
+					<a href="/charts" class="nav-btn"><span>Charts</span></a>
+					<div class="help-toggle-container">
+						<label for="help-toggle" class="help-label">Tryb Pomocy</label>
+						<label class="switch">
+							<input type="checkbox" id="help-toggle" />
+							<span class="slider round"></span>
+						</label>
+					</div>
+				</div>
 				<ul class="nav-links">
 					<li><a href="#dashboard">Dashboard</a></li>
 					<li><a href="/charts">Charts</a></li>
@@ -91,6 +101,25 @@
 			<section class="sector-analysis-section">
 				<div class="section-header">
 					<h2>Analiza Sektorów</h2>
+				</div>
+				<div class="section-header">
+					<h2>WARUNKI RYNKOWE</h2>
+					<span
+						class="help-icon"
+						data-help="Kluczowe wskaźniki pokazujące ogólną kondycję rynku. Analizuj je przed podjęciem decyzji."
+						>?</span
+					>
+				</div>
+
+				<div class="strategy-tabs-header">
+					<h2>
+						🎯 Strategie Tradingowe
+						<span
+							class="help-icon"
+							data-help="Każda strategia automatycznie filtruje monety według innych kryteriów. Wybierz tę, która pasuje do aktualnych warunków rynkowych."
+							>?</span
+						>
+					</h2>
 				</div>
 				<div id="sector-analysis-grid"></div>
 			</section>

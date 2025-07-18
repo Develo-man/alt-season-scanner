@@ -19,7 +19,17 @@
 		<header>
 			<div class="container">
 				<div class="header-content">
-					<div class="logo">Alt Season Scanner - Charts</div>
+					<div class="logo">₿ Alt Season Scanner</div>
+					<div class="nav-controls">
+						<a href="/charts" class="nav-btn"><span>Charts</span></a>
+						<div class="help-toggle-container">
+							<label for="help-toggle" class="help-label">Tryb Pomocy</label>
+							<label class="switch">
+								<input type="checkbox" id="help-toggle" />
+								<span class="slider round"></span>
+							</label>
+						</div>
+					</div>
 					<div class="nav-buttons">
 						<a href="/" class="nav-btn"><span>Dashboard</span></a>
 						<button class="nav-btn" onclick="refreshCharts()">
@@ -61,7 +71,14 @@
 				<div class="chart-container full-width">
 					<div class="chart-header">
 						<div>
-							<h2 class="chart-title">Bitcoin Dominance Trend</h2>
+							<h2 class="chart-title">
+								Bitcoin Dominance Trend
+								<span
+									class="help-icon"
+									data-help="Śledzi udział Bitcoina w rynku. Spadający trend poniżej 55% to dobry sygnał dla altcoinów."
+									>?</span
+								>
+							</h2>
 							<p class="chart-subtitle">Track BTC market share over time</p>
 						</div>
 						<div class="timeframe-selector">
@@ -97,7 +114,14 @@
 				<div class="chart-container half-width">
 					<div class="chart-header">
 						<div>
-							<h2 class="chart-title">Top 10 Momentum Leaders</h2>
+							<h2 class="chart-title">
+								Top 10 Momentum Leaders
+								<span
+									class="help-icon"
+									data-help="Szybki podgląd monet z najlepszym wynikiem momentum. Zielone słupki (score > 60) to najgorętsze okazje."
+									>?</span
+								>
+							</h2>
 							<p class="chart-subtitle">7-day performance vs momentum score</p>
 						</div>
 					</div>
@@ -123,7 +147,14 @@
 				<div class="chart-container full-width">
 					<div class="chart-header">
 						<div>
-							<h2 class="chart-title">Risk vs Reward Matrix</h2>
+							<h2 class="chart-title">
+								Risk vs Reward Matrix
+								<span
+									class="help-icon"
+									data-help="Znajdź monety w 'sweet spot' (lewy górny róg): wysoka nagroda (wysoki score) i niskie ryzyko. Unikaj prawego dolnego rogu."
+									>?</span
+								>
+							</h2>
 							<p class="chart-subtitle">
 								Find the best risk-adjusted opportunities
 							</p>

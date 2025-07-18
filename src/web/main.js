@@ -37,10 +37,20 @@ const elements = {
 	coinsGrid: document.getElementById('coins-grid'),
 };
 
+// --- Inicjalizacja Trybu Pomocy ---
+function initializeHelpMode() {
+	const helpToggle = document.getElementById('help-toggle');
+	if (helpToggle) {
+		helpToggle.addEventListener('change', () => {
+			document.body.classList.toggle('help-mode-active');
+		});
+	}
+}
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
 	loadData();
 	initializeStrategyHelp();
+	initializeHelpMode();
 
 	// Auto refresh every 5 minutes
 	setInterval(loadData, 5 * 60 * 1000);
