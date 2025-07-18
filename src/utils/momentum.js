@@ -13,35 +13,52 @@ const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
  * @returns {Object} Obiekt z wagami dla poszczególnych składników oceny.
  */
 function getDynamicWeights(marketConditions) {
-	const baseWeights = { price: 0.35, volume: 0.35, position: 0.3, risk: 0.25 };
-
+	const weights = {
+		price: 0.35,
+		volume: 0.35,
+		position: 0.3,
+		risk: 0.25, // Standardowa waga ryzyka
+	};
 	if (
 		!marketConditions ||
 		!marketConditions.btcDominance ||
 		!marketConditions.fearAndGreed
 	) {
-		return baseWeights;
+		return weights;
 	}
 
 	const { btcDominance, fearAndGreed } = marketConditions;
+	const fngValue = fearAndGreed.value;
 
-	// Warunek 1: Hossa na altach (niska dominacja BTC, wysoka chciwość)
-	if (btcDominance < 55 && fearAndGreed.value > 65) {
-		return { price: 0.45, volume: 0.3, position: 0.25, risk: 0.25 };
+	// === Dynamiczne Wagi Główne (na podstawie dominacji BTC) ===
+	if (btcDominance < 55) {
+		// Hossa na altach - cena jest kluczowa
+		weights.price = 0.45;
+		weights.volume = 0.3;
+		weights.position = 0.25;
+	} else if (btcDominance > 60) {
+		// Sezon Bitcoina - szukamy siły we względnym wolumenie
+		weights.price = 0.25;
+		weights.volume = 0.45;
+		weights.position = 0.3;
 	}
 
-	// Warunek 2: Sezon Bitcoina (wysoka dominacja BTC, strach)
-	if (btcDominance > 60 && fearAndGreed.value < 40) {
-		return { price: 0.25, volume: 0.45, position: 0.3, risk: 0.25 };
+	// === Dynamiczna Waga Ryzyka (na podstawie Fear & Greed) ===
+	if (fngValue > 75) {
+		// EXTREME GREED: Rynek jest euforyczny, ignoruje ryzyko. My je podbijamy.
+		weights.risk = 0.45; // Znacząco zwiększamy wagę ryzyka
+		console.log(
+			'⚖️ Rynek w trybie "Extreme Greed". Zwiększono wagę ryzyka do 0.45.'
+		);
+	} else if (fngValue > 60) {
+		// GREED: Rynek jest chciwy, ryzyko jest niedoceniane.
+		weights.risk = 0.35; // Lekko zwiększamy wagę ryzyka
+	} else if (fngValue < 25) {
+		// EXTREME FEAR: Rynek jest w panice. Ryzyko jest już w cenach.
+		weights.risk = 0.2; // Lekko zmniejszamy wagę ryzyka, aby nagrodzić odważnych.
 	}
 
-	// Warunek 3: Rynek neutralny/boczny
-	if (btcDominance >= 55 && btcDominance <= 60) {
-		return { price: 0.3, volume: 0.4, position: 0.3, risk: 0.25 };
-	}
-
-	// Domyślne wagi, jeśli żaden warunek nie jest spełniony
-	return baseWeights;
+	return weights;
 }
 
 /**
