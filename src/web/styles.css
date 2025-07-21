@@ -3859,3 +3859,66 @@ button.nav-link {
 		padding: 8px;
 	}
 }
+/* Risk-Reward styles */
+.risk-reward-analysis {
+	margin: var(--space-lg) 0;
+	padding: var(--space-md);
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+}
+
+.risk-reward-summary {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: var(--space-md);
+}
+
+.rr-ratio {
+	font-size: 1.25rem;
+	font-weight: 800;
+	color: var(--accent-green);
+}
+
+.rr-ev {
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.risk-reward-bars .progress-bar {
+	height: 8px;
+	background: var(--surface-light);
+	border-radius: 4px;
+	margin: var(--space-xs) 0;
+}
+
+.upside .progress-fill {
+	background: var(--accent-green);
+}
+
+.downside .progress-fill {
+	background: var(--accent-red);
+}
+
+.rr-recommendation {
+	text-align: center;
+	padding: var(--space-md);
+	background: rgba(255, 255, 255, 0.02);
+	border-radius: var(--radius-sm);
+}
+
+.rr-cell {
+	text-align: center;
+	cursor: pointer;
+}
+
+.rr-ratio {
+	display: block;
+	font-weight: 700;
+	color: var(--accent-green);
+}
+
+.rr-ev {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}

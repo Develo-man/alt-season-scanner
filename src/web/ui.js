@@ -210,7 +210,7 @@ function renderStrategyPreviews(strategies) {
 						<p class="strategy-description">${config.explanation || strategy.description}</p>
 					</div>
 				</div>
-				
+
 				<div class="strategy-stats">
 					<div class="stat-item">
 						<span class="stat-value">${strategy.binanceCandidates || 0}</span>
@@ -225,11 +225,11 @@ function renderStrategyPreviews(strategies) {
 						<span class="stat-label">Top (≥60)</span>
 					</div>
 				</div>
-				
+
 				<button class="strategy-action">
 					Sprawdź ${config.name || strategy.name} →
 				</button>
-				
+
 				${strategy.isRecommended ? '<div class="recommended-badge">Rekomendowana</div>' : ''}
 			</div>
 		`;
@@ -286,18 +286,18 @@ function createCoinTableRow(coin, strategy) {
                     ${actionSignal.signal || '🟡 OBSERWUJ'}
                 </div>
             </td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn primary" onclick="showCoinDetails('${coin.symbol}')">
-                        📊 Szczegóły
-                    </button>
-                    ${
-											coin.dexData?.hasDEXData
-												? `<button class="action-btn secondary" onclick="showDEXInfo('${coin.symbol}')">🏪 DEX</button>`
-												: `<button class="action-btn secondary" disabled title="Brak danych DEX">🏪 DEX</button>`
-										}
-                </div>
-            </td>
+<td class="hide-mobile">
+    ${
+			coin.momentum.riskReward
+				? `
+        <div class="rr-cell" title="${generateRiskRewardTooltip(coin)}">
+            <span class="rr-ratio">1:${coin.momentum.riskReward.riskRewardRatio.toFixed(1)}</span>
+            <span class="rr-ev">${coin.momentum.riskReward.expectedValue.netExpectedValue}% EV</span>
+        </div>
+    `
+				: '<span class="rr-na">N/A</span>'
+		}
+</td>
         </tr>
     `;
 }
@@ -400,7 +400,7 @@ function renderEnhancedStrategies(strategies) {
                 ${strategies
 									.map(
 										(strategy, index) => `
-                    <button 
+                    <button
                         class="strategy-tab ${index === 0 ? 'active' : ''} ${strategy.isRecommended ? 'recommended' : ''}"
                         data-strategy="${strategy.key}"
                         onclick="switchToStrategy('${strategy.key}')"
@@ -414,12 +414,12 @@ function renderEnhancedStrategies(strategies) {
 									)
 									.join('')}
             </div>
-            
+
             <div class="strategy-content">
                 ${strategies
 									.map(
 										(strategy, index) => `
-                    <div 
+                    <div
                         class="strategy-panel ${index === 0 ? 'active' : ''}"
                         data-strategy="${strategy.key}"
                     >
@@ -475,14 +475,13 @@ function renderStrategyTable(strategy) {
                 </div>
             </div>
 
-            <!-- DODAJ WRAPPER dla tabeli -->
             <div class="table-wrapper">
                 <table class="crypto-table">
                     <thead>
                         <tr>
                             <th>Coin</th>
                             <th class="sortable" data-sort="score">
-                                Score 
+                                Score
                                 <span class="sort-icon">↕️</span>
                             </th>
                             <th class="sortable" data-sort="price">
@@ -505,8 +504,9 @@ function renderStrategyTable(strategy) {
                                 Ryzyko
                                 <span class="sort-icon">↕️</span>
                             </th>
-                            <th class="hide-mobile">Timing</th>
-                            <th>Akcje</th>
+<th class="hide-mobile">Timing</th>
+<th class="hide-mobile">Risk/Reward</th> 
+<th>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -706,7 +706,7 @@ function showCoinDetails(symbol) {
 				<span>${coin.name}</span>
 			</div>
 		</div>
-		
+
 		<div class="modal-stats-grid">
 			<div class="modal-stat">
 				<div class="stat-label">Cena</div>
@@ -1428,14 +1428,32 @@ function isElementInViewport(el) {
 	);
 }
 
+/**
+ * Generate risk-reward tooltip
+ */
+function generateRiskRewardTooltip(coin) {
+	const rr = coin.momentum.riskReward;
+	if (!rr) return 'Brak danych Risk-Reward';
+
+	const reasons = [
+		`⚖️ RISK-REWARD: 1:${rr.riskRewardRatio.toFixed(1)}`,
+		`📈 Potencjalny zysk: +${rr.upside.percent}%`,
+		`📉 Potencjalne ryzyko: -${rr.downside.percent}%`,
+		`🎯 Expected Value: ${rr.expectedValue.netExpectedValue}%`,
+		`📊 Szanse sukcesu: ${(rr.successProbability * 100).toFixed(0)}%`,
+		'',
+		`💡 REKOMENDACJA: ${rr.recommendation.action}`,
+		rr.recommendation.reasoning,
+	];
+
+	return reasons.join('\n');
+}
+
 // ========================================
 // EXPORTS AND GLOBAL FUNCTIONS
 // ========================================
 
 export {
-	renderEnhancedResults,
-	setLoadingState,
-	displayError,
 	formatNumber,
 	getScoreInterpretation,
 	initializeModal,

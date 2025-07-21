@@ -6,6 +6,7 @@ const { calculateMomentumScoreWithDEX } = require('./accumulation');
 const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
 const { calculateTimingScore, getTimingMultiplier } = require('./timing');
 const { generateActionSignal } = require('./actionSignals');
+const { calculateRiskReward } = require('./riskReward');
 
 /**
  * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
@@ -299,6 +300,7 @@ function calculateMomentumScore(
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
 	const actionSignal = generateActionSignal(coin, marketConditions);
+	const riskReward = calculateRiskReward(coin, marketConditions, '30d');
 
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
@@ -489,6 +491,7 @@ function calculateMomentumScore(
 		originalScore: initialTotalScore,
 		timingMultiplier: timingMultiplier,
 		actionSignal: actionSignal,
+		riskReward: riskReward,
 		breakdown: {
 			priceMomentum: `${priceScore}/70`,
 			volumeActivity: `${volumeScore}/100`,
