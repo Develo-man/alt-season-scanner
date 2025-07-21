@@ -300,7 +300,6 @@ function calculateMomentumScore(
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
 	const actionSignal = generateActionSignal(coin, marketConditions);
 
-
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
 

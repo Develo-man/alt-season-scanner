@@ -275,9 +275,9 @@ function createSimplifiedCoinCard(coin, strategy) {
 	if (momentum.riskScore < 40) reasons.push('Stosunkowo bezpieczny');
 	if (coin.sector && coin.sector !== 'Unknown')
 		reasons.push(`Sektor: ${coin.sector}`);
-	
+
 	if (timing.signals && timing.signals.length > 0) {
-		reasons.push(...timing.signals.slice(0, 2)); 
+		reasons.push(...timing.signals.slice(0, 2));
 	}
 
 	return `
@@ -368,9 +368,11 @@ function createSimplifiedCoinCard(coin, strategy) {
     <div class="signal-details">
         <strong>Co robić:</strong> ${coin.momentum.actionSignal?.entryStrategy || 'Brak konkretnej strategii'}
     </div>
-    ${coin.momentum.actionSignal?.positionSize !== '0%' ? 
-        `<div class="position-size">💰 Pozycja: ${coin.momentum.actionSignal.positionSize}</div>` : ''
-    }
+    ${
+			coin.momentum.actionSignal?.positionSize !== '0%'
+				? `<div class="position-size">💰 Pozycja: ${coin.momentum.actionSignal.positionSize}</div>`
+				: ''
+		}
 </div>
 
 <!-- Action Buttons -->
@@ -378,11 +380,15 @@ function createSimplifiedCoinCard(coin, strategy) {
     <button class="action-btn primary" onclick="showCoinDetails('${coin.symbol}')">
         📊 Więcej szczegółów
     </button>
-    ${coin.dexData?.hasDEXData ? `
+    ${
+			coin.dexData?.hasDEXData
+				? `
         <button class="action-btn secondary" onclick="showDEXInfo('${coin.symbol}')">
             🏪 DEX Info
         </button>
-    ` : ''}
+    `
+				: ''
+		}
 </div>
 
 			${

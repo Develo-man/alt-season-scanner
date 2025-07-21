@@ -32,20 +32,23 @@ const MARKET_DATA_CACHE_TTL = 15 * 60 * 1000; // 15 minut
  * @returns {Array} An array of unique coin objects.
  */
 function getAllCoinsFromStrategies(strategyResults) {
-    const allCoins = [];
-    const seenSymbols = new Set();
+	const allCoins = [];
+	const seenSymbols = new Set();
 
-    Object.values(strategyResults).forEach(strategy => {
-        if (strategy.enrichedCandidates && Array.isArray(strategy.enrichedCandidates)) {
-            strategy.enrichedCandidates.forEach(coin => {
-                if (!seenSymbols.has(coin.symbol)) {
-                    seenSymbols.add(coin.symbol);
-                    allCoins.push(coin);
-                }
-            });
-        }
-    });
-    return allCoins;
+	Object.values(strategyResults).forEach((strategy) => {
+		if (
+			strategy.enrichedCandidates &&
+			Array.isArray(strategy.enrichedCandidates)
+		) {
+			strategy.enrichedCandidates.forEach((coin) => {
+				if (!seenSymbols.has(coin.symbol)) {
+					seenSymbols.add(coin.symbol);
+					allCoins.push(coin);
+				}
+			});
+		}
+	});
+	return allCoins;
 }
 // --- Główna funkcja skanera ---
 
