@@ -4753,3 +4753,77 @@ button.nav-link {
 		transform: translateX(-50%) translateY(0);
 	}
 }
+/* ========================================
+   STYLE DLA ON-CHAIN FLOWS
+   ======================================== */
+
+/* Ikona przepływów w tabeli */
+.flow-icon {
+	font-size: 1rem;
+	margin-right: var(--space-xs);
+	vertical-align: middle;
+}
+
+.flow-icon.outflow {
+	filter: drop-shadow(0 0 4px var(--accent-green));
+}
+
+.flow-icon.inflow {
+	filter: drop-shadow(0 0 4px var(--accent-red));
+}
+
+/* Sekcja przepływów w oknie modalnym */
+.modal-onchain-flows {
+	margin-top: var(--space-lg);
+	padding-top: var(--space-lg);
+	border-top: 1px solid var(--border);
+}
+
+.modal-onchain-flows h4 {
+	margin-bottom: var(--space-md);
+	color: var(--text-primary);
+}
+
+.flow-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: var(--space-md);
+}
+
+.flow-item {
+	background: var(--background);
+	padding: var(--space-md);
+	border-radius: var(--radius-md);
+	text-align: center;
+	border: 1px solid var(--border);
+}
+
+.flow-label {
+	display: block;
+	font-size: 0.75rem;
+	color: var(--text-muted);
+	margin-bottom: var(--space-sm);
+	font-weight: 500;
+}
+
+.flow-value {
+	display: block;
+	font-size: 1.25rem;
+	font-weight: 700;
+}
+
+.inflow-text {
+	color: var(--accent-red);
+}
+
+.outflow-text {
+	color: var(--accent-green);
+}
+
+.flow-value.positive {
+	color: var(--accent-green);
+}
+
+.flow-value.negative {
+	color: var(--accent-red);
+}

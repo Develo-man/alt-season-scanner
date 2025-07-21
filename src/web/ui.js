@@ -277,11 +277,11 @@ function createCoinTableRow(coin, strategy) {
                     <div class="volume-fill" style="width: ${Math.min((coin.volumeToMcap || 0) * 500, 100)}%"></div>
                 </div>
             </td>
-            <td class="hide-mobile">
-                <span class="risk-${getRiskLevel(momentum.riskScore)}" title="${generateRiskTooltip(coin)}">
-                    ${getRiskIcon(momentum.riskScore)} ${getRiskText(momentum.riskScore)} (${momentum.riskScore || 0})
-                </span>
-            </td>
+<td class="hide-mobile">
+    <span class="risk-${getRiskLevel(momentum.riskScore)}" title="${generateRiskTooltip(coin)}">
+        ${getFlowIcon(momentum.flowScore)} ${getRiskText(momentum.riskScore)} (${momentum.riskScore || 0})
+    </span>
+</td>
             <td class="hide-mobile">
                 <div class="timing-signal timing-${getTimingClass(actionSignal)}" title="${actionSignal.entryStrategy || 'Brak strategii'}">
                     ${actionSignal.signal || '🟡 OBSERWUJ'}
@@ -1009,8 +1009,6 @@ function showMoreCoins(strategyKey) {
 	button.parentElement.style.display = 'none';
 }
 
-window.showMoreCoins = showMoreCoins;
-
 /**
  * Pokazuje okno modalne ze szczegółami monety
  */
@@ -1030,7 +1028,7 @@ function showCoinDetails(symbol) {
 	const modal = document.getElementById('coin-details-modal');
 	const modalBody = document.getElementById('modal-body');
 	const momentum = coin.momentum || {};
-	const timing = momentum.timing || {}; // FIXED: Define the 'timing' variable
+	const timing = momentum.timing || {};
 
 	const scoreInfo = getScoreInterpretation(momentum.totalScore || 0);
 	const riskInfo = getScoreInterpretation(momentum.riskScore || 0, 'risk');
@@ -1104,7 +1102,33 @@ ${
 				}
 			</ul>
 		</div>
-	`;
+
+        ${
+					coin.flowData && coin.flowData.inflow_24h_usd !== undefined
+						? `
+        <div class="modal-onchain-flows">
+            <h4>Przepływy On-Chain (24h)</h4>
+            <div class="flow-grid">
+                <div class="flow-item">
+                    <span class="flow-label inflow-text">Wpływy na giełdy</span>
+                    <strong class="flow-value">$${formatNumber(coin.flowData.inflow_24h_usd, 'currency')}</strong>
+                </div>
+                <div class="flow-item">
+                    <span class="flow-label outflow-text">Odpływy z giełd</span>
+                    <strong class="flow-value">$${formatNumber(coin.flowData.outflow_24h_usd, 'currency')}</strong>
+                </div>
+                <div class="flow-item">
+                    <span class="flow-label">Netflow</span>
+                    <strong class="flow-value ${(coin.flowData.netflow_24h_usd || 0) >= 0 ? 'negative' : 'positive'}">
+                        $${formatNumber(coin.flowData.netflow_24h_usd, 'currency')}
+                    </strong>
+                </div>
+            </div>
+        </div>
+        `
+						: ''
+				}
+        `;
 
 	modal.classList.add('visible');
 }
@@ -1808,6 +1832,20 @@ function interpretRiskReward(ratio) {
 	if (ratio >= 1.5) return '🟡 Przeciętny stosunek - rozważ inne opcje';
 	if (ratio >= 1.0) return '🟠 Słaby stosunek - ryzyko = nagroda';
 	return '🔴 Bardzo zły stosunek - ryzykujesz więcej niż możesz zyskać!';
+}
+
+/**
+ * Zwraca ikonę na podstawie Flow Score.
+ * @param {number} flowScore Wynik od 0 do 100.
+ * @returns {string} Emoji ikony.
+ */
+function getFlowIcon(flowScore) {
+	if (!flowScore) return '';
+	if (flowScore >= 75)
+		return '<span class="flow-icon outflow" title="Znaczące odpływy z giełd (byczo)">📤</span>';
+	if (flowScore <= 25)
+		return '<span class="flow-icon inflow" title="Znaczące wpływy na giełdy (niedźwiedzio)">📥</span>';
+	return '';
 }
 
 // ========================================

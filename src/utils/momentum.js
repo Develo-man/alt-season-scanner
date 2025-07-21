@@ -7,6 +7,7 @@ const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
 const { calculateTimingScore, getTimingMultiplier } = require('./timing');
 const { generateActionSignal } = require('./actionSignals');
 const { calculateRiskReward } = require('./riskReward');
+const { calculateFlowScore, generateFlowSignals } = require('./flowAnalysis'); // DODAJ TEN IMPORT
 
 /**
  * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
@@ -297,6 +298,12 @@ function calculateMomentumScore(
 	const positionScore = calculatePositionScore(coin);
 	const riskScore = calculateRiskScore(coin);
 	const devScore = calculateDeveloperScore(coin);
+	const flowScore = calculateFlowScore(coin.flowData, coin);
+	const riskFromFlows = (50 - flowScore) * 0.6; // Skala od -24 do +24 (waga 0.6)
+	const finalRiskScore = Math.round(
+		Math.max(0, Math.min(100, riskScore + riskFromFlows))
+	);
+
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
 	const actionSignal = generateActionSignal(coin, marketConditions);
@@ -349,8 +356,14 @@ function calculateMomentumScore(
 	const timingMultiplier = getTimingMultiplier(timingAnalysis.timingScore);
 
 	// Adjust total score based on timing
-	const totalScore = initialTotalScore * timingMultiplier;
-
+	const totalScore = Math.max(
+		0,
+		priceScore * weights.price +
+			volumeScore * weights.volume +
+			positionScore * weights.position +
+			devScore * 0.05 -
+			finalRiskScore * weights.risk
+	);
 	// Determine category (enhanced with DEX consideration)
 	let category = 'NEUTRAL';
 	let emoji = '😐';
@@ -467,6 +480,9 @@ function calculateMomentumScore(
 	});
 	signals.push(...baseSignals);
 
+	const flowSignals = generateFlowSignals(coin.flowData, flowScore);
+	signals.push(...flowSignals);
+
 	if (coin.dexData) {
 		const dexSignals = generateDEXSignals(coin.dexData, coin);
 		signals.push(...dexSignals.slice(0, 2));
@@ -482,6 +498,8 @@ function calculateMomentumScore(
 		volumeScore,
 		positionScore,
 		devScore,
+		riskScore: finalRiskScore,
+		flowScore: flowScore,
 		riskScore,
 		dexScore,
 		accumulation: accumulationData,
@@ -501,7 +519,7 @@ function calculateMomentumScore(
 			riskFactor: `${riskScore}/100`,
 			accumulation: accumulationData ? `${accumulationData.score}/100` : 'N/A',
 		},
-		signals: signals,
+		signals: signals.filter(Boolean).slice(0, 5),
 	};
 }
 

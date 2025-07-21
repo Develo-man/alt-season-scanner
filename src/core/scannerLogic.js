@@ -184,11 +184,14 @@ async function runScanner() {
 			// Add DEX data
 			coin.dexData = dexAnalytics[coin.symbol] || null;
 
+			const { getOnChainData } = require('../apis/santiment'); // ZMIEŃ NAZWE PLIKU JEŚLI TRZEBA
+
 			const promises = {
 				devData: getCoinDeveloperData(coin.id),
 				pressureData: null,
 				smartVolume: null,
 				volumeProfile: null,
+				flowData: getOnChainData(coin.id),
 			};
 
 			if (coin.binance && coin.binance.mainPair) {
@@ -203,6 +206,7 @@ async function runScanner() {
 			coin.pressureData = results[1];
 			coin.smartVolume = results[2];
 			coin.volumeProfile = results[3];
+			coin.flowData = results[4];
 
 			return coin;
 		});
