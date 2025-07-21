@@ -246,6 +246,9 @@ function createSimplifiedCoinCard(coin, strategy) {
 	const momentum = coin.momentum || {};
 	const score = parseFloat(momentum.totalScore || 0);
 	const scoreInfo = getScoreInterpretation(score, 'momentum');
+	const timing = momentum.timing || {};
+	const timingScore = timing.timingScore || 50;
+	const timingRecommendation = timing.recommendation || { action: 'UNKNOWN' };
 	const riskInfo = getScoreInterpretation(momentum.riskScore || 0, 'risk');
 	const priceChange7d = coin.priceChange7d || 0;
 
@@ -310,21 +313,34 @@ function createSimplifiedCoinCard(coin, strategy) {
 						${formatNumber(priceChange7d, 'percentage')}
 					</span>
 				</div>
-				<div class="metric-row">
-					<span class="metric-label">${riskInfo.emoji} Ryzyko:</span>
-					<span class="metric-value risk-${riskInfo.level}">
-						${riskInfo.text}
-					</span>
-				</div>
+<div class="metric-row">
+    <span class="metric-label">${riskInfo.emoji} Ryzyko:</span>
+    <span class="metric-value risk-${riskInfo.level} tooltip-trigger" 
+          data-tooltip="${generateRiskTooltip(coin)}">
+        ${riskInfo.text}
+        <span class="tooltip-icon">?</span>
+    </span>
+</div>
 				<div class="metric-row">
 					<span class="metric-label">💧 Aktywność:</span>
 					<span class="metric-value">
 						${formatNumber((coin.volumeToMcap || 0) * 100, 'percentage')}
 					</span>
 				</div>
-			</div>
+<div class="metric-row">
+    <span class="metric-label">⏰ Timing:</span>
+    <span class="metric-value ${timingScore > 60 ? 'positive' : timingScore < 40 ? 'negative' : ''} tooltip-trigger"
+          data-tooltip="${generateTimingTooltip(coin)}">
+        ${timingScore}/100
+        <span class="tooltip-icon">?</span>
+    </span>
+</div>
+			
 
 			<!-- Why Interesting Section -->
+			if (timing.signals && timing.signals.length > 0) {
+    reasons.push(...timing.signals.slice(0, 2)); // Max 2 timing signals
+}
 			${
 				reasons.length > 0
 					? `
@@ -556,6 +572,10 @@ function renderStrategyPanel(strategy) {
 						<span class="stat-number">${formatNumber(performance.avgRisk || 0, 'score')}/100</span>
 						<span class="stat-label">Średnie ryzyko</span>
 					</div>
+					<div class="stat-box">
+    <span class="stat-number">${calculateAverageTimingScore(strategy.topCoins)}</span>
+    <span class="stat-label">Średni timing</span>
+</div>
 				</div>
 			</div>
 		</div>
@@ -771,6 +791,32 @@ function showCoinDetails(symbol) {
 				</div>
 			</div>
 		</div>
+		${
+			timing.recommendation
+				? `
+    <div class="timing-recommendation">
+        <h4>⏰ Timing Analysis:</h4>
+        <div class="timing-card ${timing.recommendation.action.toLowerCase().includes('buy') ? 'positive' : 'warning'}">
+            <span class="timing-action">${timing.recommendation.action}</span>
+            <span class="timing-reason">${timing.recommendation.reason}</span>
+        </div>
+    </div>
+`
+				: ''
+		}
+
+${
+	timing.signals && timing.signals.length > 0
+		? `
+    <div class="timing-signals">
+        <h4>📊 Timing Signals:</h4>
+        <ul>
+            ${timing.signals.map((signal) => `<li>${signal}</li>`).join('')}
+        </ul>
+    </div>
+`
+		: ''
+}
 
 		<div class="modal-signals-list">
 			<h4>💡 Kluczowe Sygnały:</h4>
@@ -1070,7 +1116,146 @@ export function displayError(elements) {
 }
 
 // ========================================
-// UTILITY EXPORTS
+// HELPER FUNCTIONS
+// ========================================
+
+/**
+ * Calculate average timing score for coins
+ */
+function calculateAverageTimingScore(coins) {
+	if (!coins || coins.length === 0) return 0;
+
+	const timingScores = coins
+		.map((coin) => coin.momentum?.timing?.timingScore || 50)
+		.filter((score) => score > 0);
+
+	if (timingScores.length === 0) return 50;
+
+	const avg =
+		timingScores.reduce((sum, score) => sum + score, 0) / timingScores.length;
+	return Math.round(avg);
+}
+
+/**
+ * Generate detailed risk explanation tooltip
+ */
+function generateRiskTooltip(coin) {
+	const momentum = coin.momentum || {};
+	const riskScore = momentum.riskScore || 50;
+	const reasons = [];
+
+	// Podstawowe wyjaśnienie
+	if (riskScore > 70) {
+		reasons.push('🔴 WYSOKIE RYZYKO:');
+	} else if (riskScore > 40) {
+		reasons.push('🟡 ŚREDNIE RYZYKO:');
+	} else {
+		reasons.push('🟢 NISKIE RYZYKO:');
+	}
+
+	// Konkretne powody ryzyka
+	if (coin.rank > 100) {
+		reasons.push('• Niska pozycja w rankingu (#' + coin.rank + ')');
+	}
+
+	if (Math.abs(coin.priceChange24h || 0) > 15) {
+		reasons.push(
+			'• Duże wahania ceny (±' +
+				Math.abs(coin.priceChange24h).toFixed(1) +
+				'% w 24h)'
+		);
+	}
+
+	if ((coin.volumeToMcap || 0) < 0.02) {
+		reasons.push('• Niska płynność - trudno sprzedać');
+	}
+
+	if ((coin.priceChange7d || 0) > 50) {
+		reasons.push(
+			'• Może być po pumpie (+' +
+				coin.priceChange7d.toFixed(1) +
+				'% w tygodniu)'
+		);
+	}
+
+	if (coin.developerData && coin.developerData.commit_count_4_weeks === 0) {
+		reasons.push('• Brak aktywności programistów');
+	}
+
+	// Pozytywne czynniki
+	if (riskScore < 40) {
+		if (coin.rank <= 50) reasons.push('• Top 50 - sprawdzony projekt');
+		if ((coin.volumeToMcap || 0) > 0.05) reasons.push('• Dobra płynność');
+		if (coin.binance?.isListed) reasons.push('• Dostępny na Binance');
+	}
+
+	// Jeśli brak konkretnych powodów
+	if (reasons.length === 1) {
+		if (riskScore > 70) {
+			reasons.push('• Połączenie wielu czynników ryzyka');
+		} else if (riskScore < 40) {
+			reasons.push('• Stabilny projekt z dobrymi fundamentami');
+		} else {
+			reasons.push('• Standardowe ryzyko dla altcoina');
+		}
+	}
+
+	return reasons.join('\n');
+}
+
+/**
+ * Generate timing explanation tooltip
+ */
+function generateTimingTooltip(coin) {
+	const timing = coin.momentum?.timing || {};
+	const timingScore = timing.timingScore || 50;
+	const reasons = [];
+
+	// Wyjaśnienie ogólne
+	if (timingScore > 70) {
+		reasons.push('🟢 DOSKONAŁY TIMING:');
+	} else if (timingScore > 50) {
+		reasons.push('🟡 DOBRY TIMING:');
+	} else {
+		reasons.push('🔴 ZŁY TIMING:');
+	}
+
+	// Używaj breakdown jeśli dostępny
+	if (timing.breakdown) {
+		const b = timing.breakdown;
+
+		if (b.macro > 70) reasons.push('• Świetne warunki rynkowe dla altów');
+		else if (b.macro < 40)
+			reasons.push('• Słabe warunki rynkowe (BTC dominuje)');
+
+		if (b.coin > 70) reasons.push('• Coin w idealnym momencie');
+		else if (b.coin < 40) reasons.push('• Coin może być przegrzany');
+
+		if (b.sector > 70)
+			reasons.push('• Sektor ' + (coin.sector || 'Unknown') + ' ma momentum');
+		else if (b.sector < 40)
+			reasons.push('• Sektor ' + (coin.sector || 'Unknown') + ' słaby');
+
+		if (b.technical > 70) reasons.push('• Doskonałe poziomy techniczne');
+		else if (b.technical < 40) reasons.push('• Słabe poziomy techniczne');
+	}
+
+	// Rekomendacja
+	if (timing.recommendation) {
+		reasons.push('📋 REKOMENDACJA: ' + timing.recommendation.action);
+		reasons.push('   ' + timing.recommendation.reason);
+	}
+
+	// Fallback jeśli brak danych
+	if (reasons.length === 1) {
+		reasons.push('• Brak szczegółowych danych timing');
+	}
+
+	return reasons.join('\n');
+}
+
+// ========================================
+// EXPORTS AND GLOBAL FUNCTIONS
 // ========================================
 
 export {
@@ -1083,9 +1268,9 @@ export {
 	initializeModal,
 };
 
-// Make functions available globally for onclick handlers
 window.switchToStrategy = switchToStrategy;
 window.selectStrategy = selectStrategy;
 window.showMoreCoins = showMoreCoins;
 window.showCoinDetails = showCoinDetails;
 window.showDEXInfo = showDEXInfo;
+window.switchToStrategy = switchToStrategy;

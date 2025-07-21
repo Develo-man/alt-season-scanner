@@ -190,7 +190,8 @@ async function runScanner() {
 	for (const [key, strategy] of Object.entries(strategyResults)) {
 		const rankedCoins = rankByMomentum(
 			strategy.enrichedCandidates,
-			marketConditions
+			marketConditions,
+			{ allCoins: getAllCoinsFromStrategies(strategyResults) }
 		);
 		strategyResults[key].rankedCoins = rankedCoins;
 		strategyResults[key].topCoin = rankedCoins[0] || null;

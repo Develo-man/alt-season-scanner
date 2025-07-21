@@ -4,6 +4,7 @@
  */
 const { calculateMomentumScoreWithDEX } = require('./accumulation');
 const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
+const { calculateTimingScore, getTimingMultiplier } = require('./timing');
 
 /**
  * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
@@ -300,6 +301,17 @@ function calculateMomentumScore(
 
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
 
+	// timing analysis
+	const timingAnalysis = calculateTimingScore(
+		coin,
+		marketConditions,
+		additionalData.allCoins
+	);
+	const timingMultiplier = getTimingMultiplier(timingAnalysis.timingScore);
+
+	// Adjust total score based on timing
+	const timingAdjustedScore = totalScore * timingMultiplier;
+
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
 
@@ -475,6 +487,9 @@ function calculateMomentumScore(
 		accumulation: accumulationData,
 		category,
 		emoji,
+		timing: timingAnalysis,
+		originalScore: totalScore,
+		timingMultiplier: timingMultiplier,
 		breakdown: {
 			priceMomentum: `${priceScore}/70`,
 			volumeActivity: `${volumeScore}/100`,
