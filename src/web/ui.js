@@ -239,171 +239,67 @@ function renderStrategyPreviews(strategies) {
 	container.innerHTML = previewsHTML;
 }
 
-/**
- * Create simplified, user-friendly coin card
- */
-function createSimplifiedCoinCard(coin, strategy) {
+function createCoinTableRow(coin, strategy) {
 	const momentum = coin.momentum || {};
 	const score = parseFloat(momentum.totalScore || 0);
 	const scoreInfo = getScoreInterpretation(score, 'momentum');
 	const timing = momentum.timing || {};
-	const timingScore = timing.timingScore || 50;
-	const timingRecommendation = timing.recommendation || { action: 'UNKNOWN' };
-	const riskInfo = getScoreInterpretation(momentum.riskScore || 0, 'risk');
-	const priceChange7d = coin.priceChange7d || 0;
-
-	// Determine priority level
-	let priorityLevel = 'low';
-	let priorityText = 'Obserwuj';
-	let priorityEmoji = '👀';
-
-	if (score >= 70) {
-		priorityLevel = 'high';
-		priorityText = 'TOP OKAZJA';
-		priorityEmoji = '🔥';
-	} else if (score >= 50) {
-		priorityLevel = 'medium';
-		priorityText = 'Interesująca';
-		priorityEmoji = '👍';
-	}
-
-	// Simple explanation why this coin is interesting
-	const reasons = [];
-	if (score >= 60) reasons.push('Wysoki momentum score');
-	if (priceChange7d > 20) reasons.push('Silny wzrost w tygodniu');
-	if (coin.volumeToMcap > 0.3) reasons.push('Bardzo aktywny handel');
-	if (momentum.riskScore < 40) reasons.push('Stosunkowo bezpieczny');
-	if (coin.sector && coin.sector !== 'Unknown')
-		reasons.push(`Sektor: ${coin.sector}`);
-
-	if (timing.signals && timing.signals.length > 0) {
-		reasons.push(...timing.signals.slice(0, 2));
-	}
+	const actionSignal = momentum.actionSignal || {};
 
 	return `
-		<div class="coin-card modern-card" data-priority="${priorityLevel}">
-			<div class="priority-badge priority-${priorityLevel}">
-				<span class="priority-emoji">${priorityEmoji}</span>
-				<span class="priority-text">${priorityText}</span>
-			</div>
-
-			<div class="coin-header">
-				<div class="coin-info">
-					<div class="coin-rank">#${coin.rank || '?'}</div>
-					<div class="coin-identity">
-						<h3>${coin.symbol}</h3>
-						<span class="coin-name">${coin.name || 'Unknown'}</span>
-					</div>
-				</div>
-				<div class="score-display">
-					<div class="score-circle score-${scoreInfo.level}">
-						${formatNumber(score, 'score')}
-					</div>
-					<span class="score-label">${scoreInfo.text}</span>
-				</div>
-			</div>
-
-			<div class="key-metrics">
-				<div class="metric-row">
-					<span class="metric-label">💰 Cena:</span>
-					<span class="metric-value">${formatNumber(coin.price, 'price')}</span>
-				</div>
-				<div class="metric-row">
-					<span class="metric-label">📈 Zmiana 7D:</span>
-					<span class="metric-value ${priceChange7d >= 0 ? 'positive' : 'negative'}">
-						${formatNumber(priceChange7d, 'percentage')}
-					</span>
-				</div>
-<div class="metric-row">
-    <span class="metric-label">${riskInfo.emoji} Ryzyko:</span>
-    <span class="metric-value risk-${riskInfo.level} tooltip-trigger" 
-          data-tooltip="${generateRiskTooltip(coin)}">
-        ${riskInfo.text}
-        <span class="tooltip-icon">?</span>
-    </span>
-</div>
-				<div class="metric-row">
-					<span class="metric-label">💧 Aktywność:</span>
-					<span class="metric-value">
-						${formatNumber((coin.volumeToMcap || 0) * 100, 'percentage')}
-					</span>
-				</div>
-<div class="metric-row">
-    <span class="metric-label">⏰ Timing:</span>
-    <span class="metric-value ${timingScore > 60 ? 'positive' : timingScore < 40 ? 'negative' : ''} tooltip-trigger"
-          data-tooltip="${generateTimingTooltip(coin)}">
-        ${timingScore}/100
-        <span class="tooltip-icon">?</span>
-    </span>
-</div>
-			</div>
-
-			${/* FIXED: The broken 'if' statement was removed from here */ ''}
-			${
-				reasons.length > 0
-					? `
-				<div class="why-interesting">
-					<h4>💡 Dlaczego warto zwrócić uwagę?</h4>
-					<ul class="reason-list">
-						${reasons
-							.slice(0, 3)
-							.map(
-								(reason) => `
-							<li class="reason-item">✓ ${reason}</li>
-						`
-							)
-							.join('')}
-					</ul>
-				</div>
-			`
-					: ''
-			}
-
-<!-- Action Signal - główny sygnał -->
-<div class="action-signal action-${coin.momentum.actionSignal?.action?.toLowerCase() || 'watch'}">
-    <div class="signal-main">
-        <span class="signal-text">${coin.momentum.actionSignal?.signal || '🟡 OBSERWUJ'}</span>
-        <span class="signal-confidence">${coin.momentum.actionSignal?.confidence || 'LOW'} CONFIDENCE</span>
-    </div>
-    <div class="signal-details">
-        <strong>Co robić:</strong> ${coin.momentum.actionSignal?.entryStrategy || 'Brak konkretnej strategii'}
-    </div>
-${
-	coin.momentum.actionSignal?.positionSize &&
-	coin.momentum.actionSignal.positionSize !== '0%'
-		? `<div class="position-size">💰 Pozycja: ${coin.momentum.actionSignal.positionSize}</div>`
-		: ''
-}
-</div>
-
-<!-- Action Buttons -->
-<div class="card-actions">
-    <button class="action-btn primary" onclick="showCoinDetails('${coin.symbol}')">
-        📊 Więcej szczegółów
-    </button>
-    ${
-			coin.dexData?.hasDEXData
-				? `
-        <button class="action-btn secondary" onclick="showDEXInfo('${coin.symbol}')">
-            🏪 DEX Info
-        </button>
-    `
-				: ''
-		}
-</div>
-
-			${
-				momentum.riskScore >= 70
-					? `
-				<div class="risk-warning">
-					<span class="warning-icon">⚠️</span>
-					<span class="warning-text">Wysokie ryzyko - ${riskInfo.advice}</span>
-				</div>
-			`
-					: ''
-			}
-		</div>
-	`;
+        <tr class="coin-row" data-symbol="${coin.symbol}">
+            <td>
+                <div class="coin-info">
+                    <span class="coin-rank">#${coin.rank || '?'}</span>
+                    <div class="coin-icon">${coin.symbol.charAt(0)}</div>
+                    <div class="coin-details">
+                        <span class="coin-symbol">${coin.symbol}</span>
+                        <span class="coin-name">${coin.name || 'Unknown'}</span>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <span class="score-badge score-${scoreInfo.level}" title="Momentum Score: ${score}/100">
+                    ${scoreInfo.emoji} ${formatNumber(score, 'score')}
+                </span>
+            </td>
+            <td class="price-cell">$${formatNumber(coin.price, 'price')}</td>
+            <td class="${coin.priceChange24h >= 0 ? 'change-positive' : 'change-negative'}">
+                ${formatNumber(coin.priceChange24h || 0, 'percentage')}
+            </td>
+            <td class="${coin.priceChange7d >= 0 ? 'change-positive' : 'change-negative'}">
+                ${formatNumber(coin.priceChange7d || 0, 'percentage')}
+            </td>
+            <td class="hide-mobile">
+                <div>${formatNumber((coin.volumeToMcap || 0) * 100, 'percentage')}</div>
+                <div class="volume-bar">
+                    <div class="volume-fill" style="width: ${Math.min((coin.volumeToMcap || 0) * 500, 100)}%"></div>
+                </div>
+            </td>
+            <td class="hide-mobile">
+                <span class="risk-${getRiskLevel(momentum.riskScore)}" title="${generateRiskTooltip(coin)}">
+                    ${getRiskIcon(momentum.riskScore)} ${getRiskText(momentum.riskScore)} (${momentum.riskScore || 0})
+                </span>
+            </td>
+            <td class="hide-mobile">
+                <div class="timing-signal timing-${getTimingClass(actionSignal)}" title="${actionSignal.entryStrategy || 'Brak strategii'}">
+                    ${actionSignal.signal || '🟡 OBSERWUJ'}
+                </div>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn primary" onclick="showCoinDetails('${coin.symbol}')">
+                        📊 Szczegóły
+                    </button>
+                    ${
+											coin.dexData?.hasDEXData
+												? `<button class="action-btn secondary" onclick="showDEXInfo('${coin.symbol}')">🏪 DEX</button>`
+												: `<button class="action-btn secondary" disabled title="Brak danych DEX">🏪 DEX</button>`
+										}
+                </div>
+            </td>
+        </tr>
+    `;
 }
 
 /**
@@ -494,154 +390,147 @@ function renderEnhancedStrategies(strategies) {
 	const container = document.getElementById('strategies-container');
 	if (!container || !strategies) return;
 
-	// First render strategy previews
+	// First render strategy previews (keep existing preview cards)
 	renderStrategyPreviews(strategies);
 
-	// Then render full strategy tabs
+	// Then render strategy tabs with tables
 	const tabsHTML = `
-		<div class="strategy-tabs">
-			<div class="strategy-tabs-header">
-				<h2>🎯 Analiza Strategii</h2>
-				<p>Każda strategia znajduje inne okazje - wybierz tę, która pasuje do Twojego stylu</p>
-				<div class="strategy-selector">
-					${strategies
-						.map(
-							(strategy, index) => `
-						<button 
-							class="strategy-tab ${index === 0 ? 'active' : ''} ${strategy.isRecommended ? 'recommended' : ''}"
-							data-strategy="${strategy.key}"
-							onclick="switchToStrategy('${strategy.key}')"
-						>
-							<span class="strategy-emoji">${STRATEGY_CONFIG[strategy.key]?.emoji || '📊'}</span>
-							<div class="strategy-info">
-								<span class="strategy-name">${STRATEGY_CONFIG[strategy.key]?.name || strategy.name}</span>
-								<span class="strategy-count">${strategy.binanceCandidates || 0} monet</span>
-							</div>
-							${strategy.isRecommended ? '<span class="recommended-badge">Rekomendowana</span>' : ''}
-						</button>
-					`
-						)
-						.join('')}
-				</div>
-			</div>
-			
-			<div class="strategy-content">
-				${strategies
-					.map(
-						(strategy, index) => `
-					<div 
-						class="strategy-panel ${index === 0 ? 'active' : ''}"
-						data-strategy="${strategy.key}"
-					>
-						${renderStrategyPanel(strategy)}
-					</div>
-				`
-					)
-					.join('')}
-			</div>
-		</div>
-	`;
+        <div class="strategy-tabs-container">
+            <div class="strategy-tabs">
+                ${strategies
+									.map(
+										(strategy, index) => `
+                    <button 
+                        class="strategy-tab ${index === 0 ? 'active' : ''} ${strategy.isRecommended ? 'recommended' : ''}"
+                        data-strategy="${strategy.key}"
+                        onclick="switchToStrategy('${strategy.key}')"
+                    >
+                        <span class="strategy-emoji">${STRATEGY_CONFIG[strategy.key]?.emoji || '📊'}</span>
+                        <span class="strategy-name">${STRATEGY_CONFIG[strategy.key]?.name || strategy.name}</span>
+                        <span class="strategy-count">(${strategy.binanceCandidates || 0})</span>
+                        ${strategy.isRecommended ? '<span class="recommended-badge">⭐</span>' : ''}
+                    </button>
+                `
+									)
+									.join('')}
+            </div>
+            
+            <div class="strategy-content">
+                ${strategies
+									.map(
+										(strategy, index) => `
+                    <div 
+                        class="strategy-panel ${index === 0 ? 'active' : ''}"
+                        data-strategy="${strategy.key}"
+                    >
+                        ${renderStrategyTable(strategy)}
+                    </div>
+                `
+									)
+									.join('')}
+            </div>
+        </div>
+    `;
 
 	container.innerHTML = tabsHTML;
 
-	// Add scroll-to-view functionality
-	if (UI_CONFIG.animations.enabled) {
-		animateStrategyCards();
-	}
+	// Setup table interactions
+	setupTableInteractions();
+
+	// Add crypto background animation
+	initializeCryptoBackground();
 }
 
-/**
- * Render individual strategy panel with user-friendly explanations
- */
-function renderStrategyPanel(strategy) {
+function renderStrategyTable(strategy) {
 	const config = STRATEGY_CONFIG[strategy.key] || {};
 	const performance = strategy.performance || {};
 	const topCoins = strategy.topCoins || [];
 
 	return `
-		<div class="strategy-explanation">
-			<div class="explanation-card">
-				<div class="explanation-header">
-					<span class="explanation-emoji">${config.emoji}</span>
-					<div class="explanation-content">
-						<h3>${config.name}</h3>
-						<p>${config.explanation}</p>
-					</div>
-				</div>
-				
-				<div class="strategy-stats-row">
-					<div class="stat-box">
-						<span class="stat-number">${strategy.binanceCandidates || 0}</span>
-						<span class="stat-label">Znalezionych monet</span>
-					</div>
-					<div class="stat-box">
-						<span class="stat-number">${formatNumber(performance.avgScore || 0, 'score')}</span>
-						<span class="stat-label">Średni score</span>
-					</div>
-					<div class="stat-box">
-						<span class="stat-number">${performance.strongCandidates || 0}</span>
-						<span class="stat-label">Wysokie score (≥60)</span>
-					</div>
-					<div class="stat-box">
-						<span class="stat-number">${formatNumber(performance.avgRisk || 0, 'score')}/100</span>
-						<span class="stat-label">Średnie ryzyko</span>
-					</div>
-					<div class="stat-box">
-    <span class="stat-number">${calculateAverageTimingScore(strategy.topCoins)}</span>
-    <span class="stat-label">Średni timing</span>
-</div>
-				</div>
-			</div>
-		</div>
+        <div class="table-container">
+            <div class="table-header">
+                <h2>${config.emoji || '📊'} ${config.name || strategy.name}</h2>
+                <p>${config.explanation || strategy.description}</p>
+                <div class="table-stats">
+                    <div class="table-stat">
+                        <span class="table-stat-value">${strategy.binanceCandidates || 0}</span>
+                        <span class="table-stat-label">Kandydatów</span>
+                    </div>
+                    <div class="table-stat">
+                        <span class="table-stat-value">${formatNumber(performance.avgScore || 0, 'score')}</span>
+                        <span class="table-stat-label">Średni Score</span>
+                    </div>
+                    <div class="table-stat">
+                        <span class="table-stat-value">${performance.strongCandidates || 0}</span>
+                        <span class="table-stat-label">Wysokie Score (≥60)</span>
+                    </div>
+                    <div class="table-stat">
+                        <span class="table-stat-value">${formatNumber(performance.avgRisk || 0, 'score')}</span>
+                        <span class="table-stat-label">Średnie Ryzyko</span>
+                    </div>
+                    <div class="table-stat">
+                        <span class="table-stat-value">${calculateAverageTimingScore(topCoins)}</span>
+                        <span class="table-stat-label">Średni Timing</span>
+                    </div>
+                </div>
+            </div>
 
-		${
-			strategy.topCoin
-				? `
-			<div class="strategy-champion">
-				<h4>🏆 Champion strategii:</h4>
-				<div class="champion-display">
-					<div class="champion-info">
-						<span class="champion-symbol">${strategy.topCoin.symbol}</span>
-						<span class="champion-name">${strategy.topCoin.name}</span>
-					</div>
-					<div class="champion-metrics">
-						<span class="champion-score">${formatNumber(parseFloat(strategy.topCoin.momentum?.totalScore || 0), 'score')}</span>
-						<span class="champion-change ${strategy.topCoin.priceChange7d >= 0 ? 'positive' : 'negative'}">
-							${formatNumber(strategy.topCoin.priceChange7d || 0, 'percentage')}
-						</span>
-					</div>
-				</div>
-			</div>
-		`
-				: ''
-		}
+            <!-- DODAJ WRAPPER dla tabeli -->
+            <div class="table-wrapper">
+                <table class="crypto-table">
+                    <thead>
+                        <tr>
+                            <th>Coin</th>
+                            <th class="sortable" data-sort="score">
+                                Score 
+                                <span class="sort-icon">↕️</span>
+                            </th>
+                            <th class="sortable" data-sort="price">
+                                Cena
+                                <span class="sort-icon">↕️</span>
+                            </th>
+                            <th class="sortable" data-sort="change24h">
+                                24h %
+                                <span class="sort-icon">↕️</span>
+                            </th>
+                            <th class="sortable" data-sort="change7d">
+                                7d %
+                                <span class="sort-icon">↕️</span>
+                            </th>
+                            <th class="hide-mobile sortable" data-sort="volume">
+                                Volume/MCap
+                                <span class="sort-icon">↕️</span>
+                            </th>
+                            <th class="hide-mobile sortable" data-sort="risk">
+                                Ryzyko
+                                <span class="sort-icon">↕️</span>
+                            </th>
+                            <th class="hide-mobile">Timing</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${topCoins
+													.slice(0, 20)
+													.map((coin) => createCoinTableRow(coin, strategy))
+													.join('')}
+                    </tbody>
+                </table>
+            </div>
 
-		<div class="strategy-coins-section">
-			<div class="section-header">
-				<h4>💎 Najlepsze okazje w kategorii ${config.name}</h4>
-				<p>Posortowane według momentum score - im wyższy, tym lepiej</p>
-			</div>
-			
-			<div class="coins-grid">
-				${topCoins
-					.slice(0, 6)
-					.map((coin) => createSimplifiedCoinCard(coin, strategy))
-					.join('')}
-			</div>
-			
-			${
-				topCoins.length > 6
-					? `
-				<div class="show-more-section">
-					<button class="show-more-btn" onclick="showMoreCoins('${strategy.key}')">
-						Pokaż więcej monet z tej strategii (${topCoins.length - 6} pozostałych)
-					</button>
-				</div>
-			`
-					: ''
-			}
-		</div>
-	`;
+            ${
+							topCoins.length > 20
+								? `
+                <div class="table-footer">
+                    <button class="show-more-btn" onclick="showMoreTableRows('${strategy.key}')">
+                        Pokaż więcej monet (${topCoins.length - 20} pozostałych)
+                    </button>
+                </div>
+            `
+								: ''
+						}
+        </div>
+    `;
 }
 
 // ========================================
@@ -665,47 +554,79 @@ function selectStrategy(strategyKey) {
 }
 
 /**
- * Switch between strategy tabs
+ * Switch between strategy tabs - POPRAWIONA WERSJA
  */
 function switchToStrategy(strategyKey) {
-	// Update tab states
+	console.log(`🔄 Przełączam na strategię: ${strategyKey}`);
+
+	// Update tab states - USUŃ WSZYSTKIE active z tabów
 	document.querySelectorAll('.strategy-tab').forEach((tab) => {
 		tab.classList.remove('active');
 	});
-	document
-		.querySelector(`[data-strategy="${strategyKey}"]`)
-		?.classList.add('active');
 
-	// Update panel states
+	// Add active class TYLKO do klikniętego taba
+	const activeTab = document.querySelector(`[data-strategy="${strategyKey}"]`);
+	if (activeTab) {
+		activeTab.classList.add('active');
+		console.log(`✅ Aktywowano tab: ${strategyKey}`);
+	} else {
+		console.warn(`❌ Nie znaleziono taba dla: ${strategyKey}`);
+	}
+
+	// Update panel states - UKRYJ WSZYSTKIE panele
 	document.querySelectorAll('.strategy-panel').forEach((panel) => {
 		panel.classList.remove('active');
+		panel.style.display = 'none'; // Dodatkowe ukrycie
 	});
-	document
-		.querySelector(`.strategy-panel[data-strategy="${strategyKey}"]`)
-		?.classList.add('active');
+
+	// Show TYLKO wybrany panel
+	const activePanel = document.querySelector(
+		`.strategy-panel[data-strategy="${strategyKey}"]`
+	);
+	if (activePanel) {
+		activePanel.classList.add('active');
+		activePanel.style.display = 'block'; // Dodatkowe pokazanie
+
+		console.log(`✅ Aktywowano panel: ${strategyKey}`);
+
+		// Add entrance animation if enabled
+		if (UI_CONFIG.animations.enabled) {
+			activePanel.style.opacity = '0';
+			activePanel.style.transform = 'translateY(20px)';
+
+			requestAnimationFrame(() => {
+				activePanel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+				activePanel.style.opacity = '1';
+				activePanel.style.transform = 'translateY(0)';
+			});
+		}
+
+		// Re-setup table interactions for the newly shown table
+		setupTableInteractions();
+	} else {
+		console.warn(`❌ Nie znaleziono panelu dla: ${strategyKey}`);
+	}
+
+	// Update app state
+	if (window.appState) {
+		window.appState.currentStrategy = strategyKey;
+	}
 
 	// Analytics
 	if (typeof gtag !== 'undefined') {
 		gtag('event', 'strategy_switch', {
 			strategy: strategyKey,
+			source: 'tab_click',
 		});
 	}
 
-	// Add animation if enabled
-	if (UI_CONFIG.animations.enabled) {
-		const activePanel = document.querySelector(
-			`.strategy-panel[data-strategy="${strategyKey}"]`
-		);
-		if (activePanel) {
-			activePanel.style.opacity = '0';
-			activePanel.style.transform = 'translateY(20px)';
-
-			setTimeout(() => {
-				activePanel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-				activePanel.style.opacity = '1';
-				activePanel.style.transform = 'translateY(0)';
-			}, 50);
-		}
+	// Scroll strategy into view if not visible
+	const strategiesContainer = document.getElementById('strategies-container');
+	if (strategiesContainer && !isElementInViewport(strategiesContainer)) {
+		strategiesContainer.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start',
+		});
 	}
 }
 
@@ -743,6 +664,8 @@ function showMoreCoins(strategyKey) {
 		// Dodaj nowe karty do siatki
 		gridContainer.insertAdjacentHTML('beforeend', newCardsHTML);
 	}
+
+	showMoreTableRows(strategyKey);
 
 	// Ukryj przycisk po załadowaniu wszystkiego
 	button.parentElement.style.display = 'none';
@@ -1269,23 +1192,267 @@ function generateTimingTooltip(coin) {
 	return reasons.join('\n');
 }
 
+/**
+ * Get risk level class
+ */
+function getRiskLevel(riskScore) {
+	if (riskScore >= 70) return 'high';
+	if (riskScore >= 40) return 'medium';
+	return 'low';
+}
+
+/**
+ * Get risk icon
+ */
+function getRiskIcon(riskScore) {
+	if (riskScore >= 70) return '⚠️';
+	if (riskScore >= 40) return '⚡';
+	return '✅';
+}
+
+/**
+ * Get risk text
+ */
+function getRiskText(riskScore) {
+	if (riskScore >= 70) return 'Wysokie';
+	if (riskScore >= 40) return 'Średnie';
+	return 'Niskie';
+}
+
+/**
+ * Get timing class for styling
+ */
+function getTimingClass(actionSignal) {
+	if (!actionSignal?.action) return 'neutral';
+
+	const action = actionSignal.action.toLowerCase();
+	if (action.includes('buy')) return 'buy';
+	if (action.includes('wait') || action.includes('watch')) return 'wait';
+	if (action.includes('skip') || action.includes('avoid')) return 'avoid';
+	return 'neutral';
+}
+
+/**
+ * Setup table interactions (sorting, filtering, etc.)
+ */
+function setupTableInteractions() {
+	// Setup sorting
+	document.querySelectorAll('.sortable').forEach((header) => {
+		header.addEventListener('click', () => {
+			const sortBy = header.dataset.sort;
+			const table = header.closest('table');
+			sortTable(table, sortBy);
+		});
+	});
+
+	// Setup row hover effects
+	document.querySelectorAll('.coin-row').forEach((row) => {
+		row.addEventListener('mouseenter', () => {
+			row.style.background = 'rgba(59, 130, 246, 0.05)';
+			row.style.transform = 'translateX(4px)';
+		});
+
+		row.addEventListener('mouseleave', () => {
+			row.style.background = '';
+			row.style.transform = '';
+		});
+	});
+}
+
+/**
+ * Sort table by column
+ */
+function sortTable(table, sortBy) {
+	const tbody = table.querySelector('tbody');
+	const rows = Array.from(tbody.querySelectorAll('tr'));
+
+	// Determine sort direction
+	const currentSort = table.dataset.currentSort;
+	const currentDirection = table.dataset.sortDirection || 'asc';
+	const newDirection =
+		currentSort === sortBy && currentDirection === 'asc' ? 'desc' : 'asc';
+
+	// Sort rows
+	rows.sort((a, b) => {
+		let aVal, bVal;
+
+		switch (sortBy) {
+			case 'score':
+				aVal = parseFloat(
+					a.querySelector('.score-badge').textContent.match(/\d+/)[0]
+				);
+				bVal = parseFloat(
+					b.querySelector('.score-badge').textContent.match(/\d+/)[0]
+				);
+				break;
+			case 'price':
+				aVal = parseFloat(
+					a.querySelector('.price-cell').textContent.replace('$', '')
+				);
+				bVal = parseFloat(
+					b.querySelector('.price-cell').textContent.replace('$', '')
+				);
+				break;
+			case 'change24h':
+			case 'change7d':
+				const index = sortBy === 'change24h' ? 3 : 4;
+				aVal = parseFloat(a.children[index].textContent.replace('%', ''));
+				bVal = parseFloat(b.children[index].textContent.replace('%', ''));
+				break;
+			case 'volume':
+				aVal = parseFloat(a.children[5].textContent.replace('%', ''));
+				bVal = parseFloat(b.children[5].textContent.replace('%', ''));
+				break;
+			case 'risk':
+				aVal = parseFloat(a.children[6].textContent.match(/\d+/)[0]);
+				bVal = parseFloat(b.children[6].textContent.match(/\d+/)[0]);
+				break;
+			default:
+				return 0;
+		}
+
+		if (newDirection === 'asc') {
+			return aVal - bVal;
+		} else {
+			return bVal - aVal;
+		}
+	});
+
+	// Update table
+	rows.forEach((row) => tbody.appendChild(row));
+
+	// Update sort indicators
+	table.dataset.currentSort = sortBy;
+	table.dataset.sortDirection = newDirection;
+
+	// Update sort icons
+	table
+		.querySelectorAll('.sort-icon')
+		.forEach((icon) => (icon.textContent = '↕️'));
+	const activeHeader = table.querySelector(
+		`[data-sort="${sortBy}"] .sort-icon`
+	);
+	if (activeHeader) {
+		activeHeader.textContent = newDirection === 'asc' ? '↑' : '↓';
+	}
+}
+
+/**
+ * Show more table rows
+ */
+function showMoreTableRows(strategyKey) {
+	const strategy = window.appState.scannerResults.strategies.find(
+		(s) => s.key === strategyKey
+	);
+	if (!strategy || !strategy.topCoins) return;
+
+	const button = event.target;
+	button.textContent = 'Ładuję...';
+	button.disabled = true;
+
+	// Get coins to show (from 21 onwards)
+	const coinsToShow = strategy.topCoins.slice(20);
+
+	// Find table body
+	const tbody = button.closest('.table-container').querySelector('tbody');
+
+	if (tbody && coinsToShow.length > 0) {
+		// Add new rows
+		const newRowsHTML = coinsToShow
+			.map((coin) => createCoinTableRow(coin, strategy))
+			.join('');
+		tbody.insertAdjacentHTML('beforeend', newRowsHTML);
+
+		// Setup interactions for new rows
+		setupTableInteractions();
+	}
+
+	// Hide button
+	button.parentElement.style.display = 'none';
+}
+
+/**
+ * Initialize crypto background animation
+ */
+function initializeCryptoBackground() {
+	// Add crypto background if not exists
+	if (!document.getElementById('cryptoBackground')) {
+		const background = document.createElement('div');
+		background.id = 'cryptoBackground';
+		background.className = 'crypto-background';
+		document.body.insertBefore(background, document.body.firstChild);
+
+		// Start particle animation
+		createCryptoParticles();
+	}
+}
+
+/**
+ * Create animated crypto particles
+ */
+function createCryptoParticles() {
+	const background = document.getElementById('cryptoBackground');
+	if (!background) return;
+
+	const cryptoSymbols = ['₿', 'Ξ', '◊', '⟠', '◈', '⬡', '◇', '⬢', '⬟', '◎'];
+
+	setInterval(() => {
+		const particle = document.createElement('div');
+		particle.className = 'crypto-particle';
+		particle.textContent =
+			cryptoSymbols[Math.floor(Math.random() * cryptoSymbols.length)];
+		particle.style.left = Math.random() * 100 + '%';
+		particle.style.animationDuration = Math.random() * 10 + 15 + 's';
+		particle.style.fontSize = Math.random() * 20 + 20 + 'px';
+		particle.style.opacity = Math.random() * 0.1 + 0.05;
+
+		background.appendChild(particle);
+
+		// Remove particle after animation
+		setTimeout(() => {
+			if (particle.parentNode) {
+				particle.remove();
+			}
+		}, 25000);
+	}, 3000);
+}
+
+function isElementInViewport(el) {
+	const rect = el.getBoundingClientRect();
+	return (
+		rect.top >= 0 &&
+		rect.left >= 0 &&
+		rect.bottom <=
+			(window.innerHeight || document.documentElement.clientHeight) &&
+		rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+	);
+}
+
 // ========================================
 // EXPORTS AND GLOBAL FUNCTIONS
 // ========================================
 
 export {
+	renderEnhancedResults,
+	setLoadingState,
+	displayError,
 	formatNumber,
 	getScoreInterpretation,
-	getMarketPhaseInfo,
-	createSimplifiedCoinCard,
+	initializeModal,
+	renderStrategyTable,
+	createCoinTableRow,
+	setupTableInteractions,
+	sortTable,
+	initializeCryptoBackground,
+	getRiskLevel,
+	getRiskIcon,
+	getRiskText,
+	getTimingClass,
 	switchToStrategy,
 	selectStrategy,
-	initializeModal,
 };
 
-window.switchToStrategy = switchToStrategy;
 window.selectStrategy = selectStrategy;
 window.showMoreCoins = showMoreCoins;
 window.showCoinDetails = showCoinDetails;
 window.showDEXInfo = showDEXInfo;
-window.switchToStrategy = switchToStrategy;
