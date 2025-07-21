@@ -2824,3 +2824,67 @@ button.nav-link {
 		padding: var(--space-sm);
 	}
 }
+/* ========================================
+   ACTION SIGNALS
+   ======================================== */
+
+.action-signal {
+    margin: var(--space-lg) 0;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 2px solid;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.action-signal.action-buy_now,
+.action-signal.action-buy {
+    border-color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.action-signal.action-wait_for_dip,
+.action-signal.action-wait_better_timing,
+.action-signal.action-watch {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.action-signal.action-skip_high_risk,
+.action-signal.action-skip_weak {
+    border-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.signal-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+
+.signal-text {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.signal-confidence {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.signal-details {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: var(--space-xs);
+}
+
+.position-size {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-green);
+    text-align: right;
+}

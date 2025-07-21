@@ -5,6 +5,7 @@
 const { calculateMomentumScoreWithDEX } = require('./accumulation');
 const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
 const { calculateTimingScore, getTimingMultiplier } = require('./timing');
+const { generateActionSignal } = require('./actionSignals');
 
 /**
  * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
@@ -295,22 +296,10 @@ function calculateMomentumScore(
 	const positionScore = calculatePositionScore(coin);
 	const riskScore = calculateRiskScore(coin);
 	const devScore = calculateDeveloperScore(coin);
-
-	// Calculate DEX score
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
-
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
+	const actionSignal = generateActionSignal(coin, marketConditions);
 
-	// timing analysis
-	const timingAnalysis = calculateTimingScore(
-		coin,
-		marketConditions,
-		additionalData.allCoins
-	);
-	const timingMultiplier = getTimingMultiplier(timingAnalysis.timingScore);
-
-	// Adjust total score based on timing
-	const timingAdjustedScore = totalScore * timingMultiplier;
 
 	// Get dynamic weights
 	const weights = getDynamicWeights(marketConditions);
@@ -338,8 +327,8 @@ function calculateMomentumScore(
 		);
 	}
 
-	// Calculate weighted total with DEX component
-	const totalScore = Math.max(
+	// Calculate weighted total with DEX component first
+	const initialTotalScore = Math.max(
 		0,
 		priceScore * enhancedWeights.price +
 			volumeScore * enhancedWeights.volume +
@@ -349,6 +338,17 @@ function calculateMomentumScore(
 			vpScore * 0.2 -
 			riskScore * enhancedWeights.risk
 	);
+
+	// Then, perform timing analysis
+	const timingAnalysis = calculateTimingScore(
+		coin,
+		marketConditions,
+		additionalData.allCoins
+	);
+	const timingMultiplier = getTimingMultiplier(timingAnalysis.timingScore);
+
+	// Adjust total score based on timing
+	const totalScore = initialTotalScore * timingMultiplier;
 
 	// Determine category (enhanced with DEX consideration)
 	let category = 'NEUTRAL';
@@ -415,7 +415,6 @@ function calculateMomentumScore(
 		const vp = coin.volumeProfile;
 		const currentPrice = coin.price;
 		const pocPrice = coin.volumeProfile.pointOfControl.price;
-		const priceVsPOC = ((coin.price - pocPrice) / pocPrice) * 100;
 
 		// Price vs POC signals
 		if (coin.volumeProfile) {
@@ -488,8 +487,9 @@ function calculateMomentumScore(
 		category,
 		emoji,
 		timing: timingAnalysis,
-		originalScore: totalScore,
+		originalScore: initialTotalScore,
 		timingMultiplier: timingMultiplier,
+		actionSignal: actionSignal,
 		breakdown: {
 			priceMomentum: `${priceScore}/70`,
 			volumeActivity: `${volumeScore}/100`,

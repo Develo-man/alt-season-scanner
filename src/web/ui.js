@@ -275,16 +275,18 @@ function createSimplifiedCoinCard(coin, strategy) {
 	if (momentum.riskScore < 40) reasons.push('Stosunkowo bezpieczny');
 	if (coin.sector && coin.sector !== 'Unknown')
 		reasons.push(`Sektor: ${coin.sector}`);
+	
+	if (timing.signals && timing.signals.length > 0) {
+		reasons.push(...timing.signals.slice(0, 2)); 
+	}
 
 	return `
 		<div class="coin-card modern-card" data-priority="${priorityLevel}">
-			<!-- Priority Badge -->
 			<div class="priority-badge priority-${priorityLevel}">
 				<span class="priority-emoji">${priorityEmoji}</span>
 				<span class="priority-text">${priorityText}</span>
 			</div>
 
-			<!-- Coin Header -->
 			<div class="coin-header">
 				<div class="coin-info">
 					<div class="coin-rank">#${coin.rank || '?'}</div>
@@ -301,7 +303,6 @@ function createSimplifiedCoinCard(coin, strategy) {
 				</div>
 			</div>
 
-			<!-- Key Metrics (Simplified) -->
 			<div class="key-metrics">
 				<div class="metric-row">
 					<span class="metric-label">💰 Cena:</span>
@@ -335,12 +336,9 @@ function createSimplifiedCoinCard(coin, strategy) {
         <span class="tooltip-icon">?</span>
     </span>
 </div>
-			
+			</div>
 
-			<!-- Why Interesting Section -->
-			if (timing.signals && timing.signals.length > 0) {
-    reasons.push(...timing.signals.slice(0, 2)); // Max 2 timing signals
-}
+			${/* FIXED: The broken 'if' statement was removed from here */ ''}
 			${
 				reasons.length > 0
 					? `
@@ -361,23 +359,32 @@ function createSimplifiedCoinCard(coin, strategy) {
 					: ''
 			}
 
-			<!-- Action Buttons -->
-			<div class="card-actions">
-				<button class="action-btn primary" onclick="showCoinDetails('${coin.symbol}')">
-					📊 Więcej szczegółów
-				</button>
-				${
-					coin.dexData?.hasDEXData
-						? `
-					<button class="action-btn secondary" onclick="showDEXInfo('${coin.symbol}')">
-						🏪 DEX Info
-					</button>
-				`
-						: ''
-				}
-			</div>
+<!-- Action Signal - główny sygnał -->
+<div class="action-signal action-${coin.momentum.actionSignal?.action?.toLowerCase() || 'watch'}">
+    <div class="signal-main">
+        <span class="signal-text">${coin.momentum.actionSignal?.signal || '🟡 OBSERWUJ'}</span>
+        <span class="signal-confidence">${coin.momentum.actionSignal?.confidence || 'LOW'} CONFIDENCE</span>
+    </div>
+    <div class="signal-details">
+        <strong>Co robić:</strong> ${coin.momentum.actionSignal?.entryStrategy || 'Brak konkretnej strategii'}
+    </div>
+    ${coin.momentum.actionSignal?.positionSize !== '0%' ? 
+        `<div class="position-size">💰 Pozycja: ${coin.momentum.actionSignal.positionSize}</div>` : ''
+    }
+</div>
 
-			<!-- Risk Warning for High Risk Coins -->
+<!-- Action Buttons -->
+<div class="card-actions">
+    <button class="action-btn primary" onclick="showCoinDetails('${coin.symbol}')">
+        📊 Więcej szczegółów
+    </button>
+    ${coin.dexData?.hasDEXData ? `
+        <button class="action-btn secondary" onclick="showDEXInfo('${coin.symbol}')">
+            🏪 DEX Info
+        </button>
+    ` : ''}
+</div>
+
 			${
 				momentum.riskScore >= 70
 					? `
@@ -755,6 +762,7 @@ function showCoinDetails(symbol) {
 	const modal = document.getElementById('coin-details-modal');
 	const modalBody = document.getElementById('modal-body');
 	const momentum = coin.momentum || {};
+	const timing = momentum.timing || {}; // FIXED: Define the 'timing' variable
 
 	const scoreInfo = getScoreInterpretation(momentum.totalScore || 0);
 	const riskInfo = getScoreInterpretation(momentum.riskScore || 0, 'risk');
