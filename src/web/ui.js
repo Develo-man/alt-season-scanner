@@ -368,11 +368,12 @@ function createSimplifiedCoinCard(coin, strategy) {
     <div class="signal-details">
         <strong>Co robić:</strong> ${coin.momentum.actionSignal?.entryStrategy || 'Brak konkretnej strategii'}
     </div>
-    ${
-			coin.momentum.actionSignal?.positionSize !== '0%'
-				? `<div class="position-size">💰 Pozycja: ${coin.momentum.actionSignal.positionSize}</div>`
-				: ''
-		}
+${
+	coin.momentum.actionSignal?.positionSize &&
+	coin.momentum.actionSignal.positionSize !== '0%'
+		? `<div class="position-size">💰 Pozycja: ${coin.momentum.actionSignal.positionSize}</div>`
+		: ''
+}
 </div>
 
 <!-- Action Buttons -->

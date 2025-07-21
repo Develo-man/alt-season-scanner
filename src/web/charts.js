@@ -986,6 +986,12 @@ function generateMockData() {
 						: momentumScore > 40
 							? 'PROMISING'
 							: 'WEAK',
+				actionSignal: {
+					signal: '🟡 OBSERWUJ',
+					confidence: 'LOW',
+					entryStrategy: 'Brak konkretnej strategii',
+					positionSize: '0%',
+				},
 			},
 		});
 	});
