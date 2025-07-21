@@ -59,33 +59,6 @@ async function getTopCoins(limit = 100, currency = 'usd') {
 }
 
 /**
- * Get detailed coin data including 7d performance vs BTC
- * @param {string} coinId - CoinGecko coin ID
- * @returns {Promise<Object>} Detailed coin data
- */
-async function getCoinDetails(coinId) {
-	try {
-		const response = await rateLimitedCall(() =>
-			api.get(`/coins/${coinId}`, {
-				params: {
-					localization: false,
-					tickers: false,
-					market_data: true,
-					community_data: false,
-					developer_data: false,
-					sparkline: false,
-				},
-			})
-		);
-
-		return response.data;
-	} catch (error) {
-		console.error(`❌ Error fetching details for ${coinId}:`, error.message);
-		throw error;
-	}
-}
-
-/**
  * Get BTC dominance data
  * @returns {Promise<number>} BTC dominance percentage
  */
@@ -98,21 +71,6 @@ async function getBTCDominance() {
 		return btcDominance;
 	} catch (error) {
 		console.error('❌ Error fetching BTC dominance:', error.message);
-		throw error;
-	}
-}
-
-/**
- * Get trending coins (bonus feature)
- * @returns {Promise<Array>} Array of trending coins
- */
-async function getTrendingCoins() {
-	try {
-		const response = await rateLimitedCall(() => api.get('/search/trending'));
-
-		return response.data.coins.map((item) => item.item);
-	} catch (error) {
-		console.error('❌ Error fetching trending coins:', error.message);
 		throw error;
 	}
 }
@@ -237,9 +195,7 @@ async function test() {
 // Export functions
 module.exports = {
 	getTopCoins,
-	getCoinDetails,
 	getBTCDominance,
-	getTrendingCoins,
 	formatCoinData,
 	getTop100,
 	test,

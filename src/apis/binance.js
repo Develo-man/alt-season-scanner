@@ -273,22 +273,6 @@ async function getKlines(symbol, interval = '1d', limit = 14) {
 	}
 }
 
-async function batchProcess(items, batchSize, delayMs, processFn) {
-	const results = [];
-
-	for (let i = 0; i < items.length; i += batchSize) {
-		const batch = items.slice(i, i + batchSize);
-		const batchResults = await Promise.all(batch.map(processFn));
-		results.push(...batchResults);
-
-		if (i + batchSize < items.length) {
-			await new Promise((resolve) => setTimeout(resolve, delayMs));
-		}
-	}
-
-	return results;
-}
-
 /**
  * Oblicza presję kupna/sprzedaży na podstawie transakcji z zadanego okresu.
  * @param {string} symbol - Para handlowa, np. 'BTCUSDT'
@@ -644,7 +628,6 @@ module.exports = {
 	checkMultipleCoins,
 	test,
 	getKlines,
-	batchProcess,
 	getBuySellPressure,
 	getSmartVolumeAnalysis,
 	getVolumeProfile,

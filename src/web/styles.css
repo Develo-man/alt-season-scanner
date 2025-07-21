@@ -3907,18 +3907,849 @@ button.nav-link {
 	border-radius: var(--radius-sm);
 }
 
+/* ========================================
+   RISK-REWARD STYLES
+   ======================================== */
+
 .rr-cell {
 	text-align: center;
 	cursor: pointer;
+	padding: var(--space-sm);
+	border-radius: var(--radius-sm);
+	transition: var(--transition-normal);
+	min-width: 80px;
+}
+
+.rr-cell:hover {
+	background: rgba(255, 255, 255, 0.05);
+	transform: scale(1.05);
 }
 
 .rr-ratio {
 	display: block;
 	font-weight: 700;
-	color: var(--accent-green);
+	font-size: 0.9rem;
+	margin-bottom: var(--space-xs);
 }
 
 .rr-ev {
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+/* Risk-Reward Quality Classes */
+.rr-excellent .rr-ratio {
+	color: var(--accent-green);
+}
+
+.rr-good .rr-ratio {
+	color: var(--primary-blue);
+}
+
+.rr-average .rr-ratio {
+	color: var(--accent-yellow);
+}
+
+.rr-poor .rr-ratio {
+	color: var(--accent-red);
+}
+
+.rr-na {
+	color: var(--text-muted);
 	font-size: 0.8rem;
+}
+
+/* ========================================
+   RISK-REWARD MODAL STYLES
+   ======================================== */
+
+.risk-reward-summary {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--space-xl);
+	margin: var(--space-xl) 0;
+	padding: var(--space-lg);
+	background: rgba(255, 255, 255, 0.02);
+	border-radius: var(--radius-lg);
+}
+
+.rr-main-ratio,
+.rr-expected-value {
+	text-align: center;
+}
+
+.rr-big-number {
+	font-size: 2.5rem;
+	font-weight: 900;
+	margin: var(--space-md) 0;
+}
+
+.rr-big-number.excellent {
+	color: var(--accent-green);
+}
+
+.rr-big-number.good {
+	color: var(--primary-blue);
+}
+
+.rr-big-number.average {
+	color: var(--accent-yellow);
+}
+
+.rr-big-number.poor {
+	color: var(--accent-red);
+}
+
+.ev-number {
+	font-size: 2rem;
+	font-weight: 800;
+	margin: var(--space-md) 0;
+}
+
+.ev-number.positive {
+	color: var(--accent-green);
+}
+
+.ev-number.negative {
+	color: var(--accent-red);
+}
+
+.rr-interpretation {
+	font-size: 0.9rem;
 	color: var(--text-secondary);
+	font-weight: 500;
+	line-height: 1.4;
+}
+
+/* Risk-Reward Breakdown */
+.risk-reward-breakdown {
+	margin: var(--space-xl) 0;
+}
+
+.rr-section {
+	margin-bottom: var(--space-xl);
+	padding: var(--space-lg);
+	background: rgba(255, 255, 255, 0.02);
+	border-radius: var(--radius-md);
+	border-left: 4px solid;
+}
+
+.rr-section:first-child {
+	border-left-color: var(--accent-green);
+}
+
+.rr-section:last-child {
+	border-left-color: var(--accent-red);
+}
+
+.rr-bar-container {
+	display: flex;
+	align-items: center;
+	gap: var(--space-md);
+	margin: var(--space-md) 0;
+}
+
+.rr-bar {
+	flex: 1;
+	height: 12px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.rr-bar.upside .rr-bar-fill {
+	background: linear-gradient(90deg, var(--accent-green), #00d4aa);
+}
+
+.rr-bar.downside .rr-bar-fill {
+	background: linear-gradient(90deg, var(--accent-red), #dc2626);
+}
+
+.rr-bar-fill {
+	height: 100%;
+	transition: width 1s ease;
+	position: relative;
+}
+
+.rr-bar-fill::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.3),
+		transparent
+	);
+	animation: shimmer 2s infinite;
+}
+
+.rr-percentage {
+	font-weight: 700;
+	font-size: 1.1rem;
+	min-width: 60px;
+	text-align: right;
+}
+
+.rr-reasons {
+	list-style: none;
+	padding: 0;
+	margin-top: var(--space-md);
+}
+
+.rr-reasons li {
+	padding: var(--space-xs) 0;
+	color: var(--text-secondary);
+	font-size: 0.875rem;
+	border-left: 2px solid var(--border);
+	padding-left: var(--space-sm);
+	margin-bottom: var(--space-xs);
+}
+
+/* Probability Section */
+.probability-section {
+	margin: var(--space-xl) 0;
+	padding: var(--space-lg);
+	background: rgba(59, 130, 246, 0.1);
+	border-radius: var(--radius-md);
+	border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.probability-bar {
+	width: 100%;
+	height: 20px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 10px;
+	overflow: hidden;
+	margin: var(--space-md) 0;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.probability-fill {
+	height: 100%;
+	background: linear-gradient(
+		90deg,
+		var(--accent-red),
+		var(--accent-yellow),
+		var(--accent-green)
+	);
+	border-radius: 10px;
+	transition: width 1.5s ease;
+	position: relative;
+}
+
+.probability-fill::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.4),
+		transparent
+	);
+	animation: shimmer 3s infinite;
+}
+
+/* Recommendation Section */
+.rr-recommendation {
+	margin: var(--space-xl) 0;
+}
+
+.recommendation-card {
+	padding: var(--space-lg);
+	border-radius: var(--radius-lg);
+	border: 2px solid;
+	text-align: center;
+}
+
+.recommendation-card.excellent {
+	background: rgba(16, 185, 129, 0.1);
+	border-color: var(--accent-green);
+}
+
+.recommendation-card.good {
+	background: rgba(59, 130, 246, 0.1);
+	border-color: var(--primary-blue);
+}
+
+.recommendation-card.acceptable {
+	background: rgba(245, 158, 11, 0.1);
+	border-color: var(--accent-yellow);
+}
+
+.recommendation-card.poor,
+.recommendation-card.neutral {
+	background: rgba(239, 68, 68, 0.1);
+	border-color: var(--accent-red);
+}
+
+.position-size {
+	margin-top: var(--space-md);
+	padding: var(--space-md);
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: var(--radius-md);
+}
+
+/* ========================================
+   ACTION BUTTONS STYLES
+   ======================================== */
+
+.action-buttons {
+	display: flex;
+	gap: var(--space-xs);
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.action-btn {
+	padding: var(--space-xs) var(--space-sm);
+	border: none;
+	border-radius: var(--radius-sm);
+	font-size: 0.75rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: var(--transition-normal);
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-xs);
+	white-space: nowrap;
+	min-width: 60px;
+	justify-content: center;
+	box-shadow: var(--shadow-sm);
+}
+
+.action-btn:hover:not(:disabled) {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-md);
+}
+
+.action-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none !important;
+}
+
+/* Action Button Variants */
+.action-btn.primary {
+	background: var(--accent-green);
+	color: white;
+}
+
+.action-btn.primary:hover {
+	background: #059669;
+}
+
+.action-btn.secondary {
+	background: var(--accent-yellow);
+	color: #111827;
+}
+
+.action-btn.secondary:hover {
+	background: #d97706;
+}
+
+.action-btn.danger {
+	background: var(--accent-red);
+	color: white;
+}
+
+.action-btn.danger:hover {
+	background: #dc2626;
+}
+
+.action-btn.info {
+	background: var(--primary-blue);
+	color: white;
+	min-width: 32px;
+	padding: var(--space-xs);
+}
+
+.action-btn.info:hover {
+	background: var(--primary-blue-dark);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+	.risk-reward-summary {
+		grid-template-columns: 1fr;
+		gap: var(--space-lg);
+	}
+
+	.rr-big-number,
+	.ev-number {
+		font-size: 2rem;
+	}
+
+	.action-buttons {
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.action-btn {
+		width: 100%;
+		min-width: auto;
+	}
+
+	.rr-bar-container {
+		flex-direction: column;
+		gap: var(--space-sm);
+	}
+
+	.rr-percentage {
+		text-align: center;
+		min-width: auto;
+	}
+}
+
+@media (max-width: 480px) {
+	.rr-cell {
+		min-width: 60px;
+	}
+
+	.rr-ratio {
+		font-size: 0.8rem;
+	}
+
+	.rr-ev {
+		font-size: 0.7rem;
+	}
+}
+
+/* ========================================
+   NOWOCZESNE PRZYCISKI AKCJI - STYLES
+   ======================================== */
+
+/* Główny kontener akcji */
+.action-container {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-xs);
+	align-items: center;
+	min-width: 120px;
+}
+
+/* Główny przycisk akcji */
+.action-btn-main {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-xs);
+	padding: var(--space-sm) var(--space-md);
+	border: none;
+	border-radius: var(--radius-lg);
+	font-weight: 700;
+	cursor: pointer;
+	transition: all var(--transition-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	box-shadow: var(--shadow-sm);
+	backdrop-filter: blur(10px);
+	overflow: hidden;
+	width: 100%;
+	min-height: 64px;
+}
+
+/* Animowany gradient background */
+.action-btn-main::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.2),
+		transparent
+	);
+	transition: left 0.5s ease;
+}
+
+.action-btn-main:hover::before {
+	left: 100%;
+}
+
+/* Ikona przycisku */
+.btn-icon {
+	font-size: 1.25rem;
+	margin-bottom: var(--space-xs);
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Tekst główny */
+.btn-text {
+	font-size: 0.75rem;
+	font-weight: 800;
+	line-height: 1;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Podtytuł */
+.btn-subtitle {
+	font-size: 0.65rem;
+	opacity: 0.9;
+	font-weight: 500;
+	line-height: 1;
+	text-transform: none;
+	letter-spacing: normal;
+}
+
+/* ========================================
+   WARIANTY KOLORYSTYCZNE
+   ======================================== */
+
+/* BUY NOW - Zielony gradient */
+.action-btn-main.buy-now {
+	background: linear-gradient(135deg, #10b981, #059669, #047857);
+	color: white;
+	border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.action-btn-main.buy-now:hover {
+	transform: translateY(-3px) scale(1.02);
+	box-shadow:
+		0 8px 25px rgba(16, 185, 129, 0.4),
+		0 0 0 1px rgba(16, 185, 129, 0.6);
+	background: linear-gradient(135deg, #059669, #047857, #065f46);
+}
+
+.action-btn-main.buy-now.high {
+	animation: pulseSuccess 2s ease-in-out infinite;
+}
+
+/* BUY - Niebieski gradient */
+.action-btn-main.buy {
+	background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8);
+	color: white;
+	border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.action-btn-main.buy:hover {
+	transform: translateY(-3px) scale(1.02);
+	box-shadow:
+		0 8px 25px rgba(59, 130, 246, 0.4),
+		0 0 0 1px rgba(59, 130, 246, 0.6);
+	background: linear-gradient(135deg, #2563eb, #1d4ed8, #1e40af);
+}
+
+/* WAIT - Żółty gradient */
+.action-btn-main.wait {
+	background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+	color: #111827;
+	border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.action-btn-main.wait:hover {
+	transform: translateY(-2px) scale(1.01);
+	box-shadow:
+		0 6px 20px rgba(245, 158, 11, 0.3),
+		0 0 0 1px rgba(245, 158, 11, 0.6);
+	background: linear-gradient(135deg, #d97706, #b45309, #92400e);
+}
+
+/* SKIP - Czerwony gradient */
+.action-btn-main.skip {
+	background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);
+	color: white;
+	border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.action-btn-main.skip:hover {
+	transform: translateY(-2px) scale(1.01);
+	box-shadow:
+		0 6px 20px rgba(239, 68, 68, 0.3),
+		0 0 0 1px rgba(239, 68, 68, 0.6);
+	background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b);
+}
+
+/* WATCH - Szary gradient */
+.action-btn-main.watch {
+	background: linear-gradient(135deg, #6b7280, #4b5563, #374151);
+	color: white;
+	border: 1px solid rgba(107, 114, 128, 0.5);
+}
+
+.action-btn-main.watch:hover {
+	transform: translateY(-2px) scale(1.01);
+	box-shadow:
+		0 6px 20px rgba(107, 114, 128, 0.3),
+		0 0 0 1px rgba(107, 114, 128, 0.6);
+	background: linear-gradient(135deg, #4b5563, #374151, #1f2937);
+}
+
+/* ========================================
+   DODATKOWE PRZYCISKI (Mini)
+   ======================================== */
+
+.secondary-actions {
+	display: flex;
+	gap: var(--space-xs);
+	justify-content: center;
+}
+
+.action-btn-mini {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition: all var(--transition-normal);
+	backdrop-filter: blur(10px);
+	box-shadow: var(--shadow-sm);
+}
+
+.action-btn-mini .btn-icon {
+	font-size: 1rem;
+	margin: 0;
+}
+
+.action-btn-mini.details {
+	background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+	color: white;
+	border: 1px solid rgba(139, 92, 246, 0.5);
+}
+
+.action-btn-mini.details:hover {
+	transform: translateY(-2px) scale(1.1);
+	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.action-btn-mini.dex {
+	background: linear-gradient(135deg, #06b6d4, #0891b2);
+	color: white;
+	border: 1px solid rgba(6, 182, 212, 0.5);
+}
+
+.action-btn-mini.dex:hover {
+	transform: translateY(-2px) scale(1.1);
+	box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+}
+
+/* ========================================
+   KOMPAKTOWA WERSJA (Mobile/Narrow)
+   ======================================== */
+
+.action-container-compact {
+	display: flex;
+	gap: var(--space-xs);
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.action-btn-compact {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border: none;
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	transition: all var(--transition-normal);
+	font-size: 1rem;
+	backdrop-filter: blur(10px);
+	box-shadow: var(--shadow-sm);
+}
+
+.action-btn-compact:hover {
+	transform: translateY(-2px) scale(1.1);
+}
+
+/* Kolory dla kompaktowych przycisków */
+.action-btn-compact.buy {
+	background: linear-gradient(135deg, #10b981, #059669);
+	color: white;
+}
+
+.action-btn-compact.wait {
+	background: linear-gradient(135deg, #f59e0b, #d97706);
+	color: #111827;
+}
+
+.action-btn-compact.skip {
+	background: linear-gradient(135deg, #ef4444, #dc2626);
+	color: white;
+}
+
+.action-btn-compact.watch {
+	background: linear-gradient(135deg, #6b7280, #4b5563);
+	color: white;
+}
+
+.action-btn-compact.details {
+	background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+	color: white;
+}
+
+.action-btn-compact.dex {
+	background: linear-gradient(135deg, #06b6d4, #0891b2);
+	color: white;
+}
+
+/* ========================================
+   ANIMACJE I EFEKTY
+   ======================================== */
+
+@keyframes pulseSuccess {
+	0%,
+	100% {
+		box-shadow:
+			0 4px 12px rgba(16, 185, 129, 0.3),
+			0 0 0 0 rgba(16, 185, 129, 0.4);
+	}
+	50% {
+		box-shadow:
+			0 6px 20px rgba(16, 185, 129, 0.4),
+			0 0 0 8px rgba(16, 185, 129, 0);
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+/* Confidence indicators */
+.action-btn-main.high {
+	border-width: 2px;
+}
+
+.action-btn-main.medium {
+	border-width: 1px;
+}
+
+.action-btn-main.low {
+	opacity: 0.9;
+	border-style: dashed;
+}
+
+/* Loading state */
+.action-btn-main:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	transform: none !important;
+}
+
+.action-btn-main:disabled::before {
+	animation: shimmer 1.5s infinite;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.3),
+		transparent
+	);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 1200px) {
+	.action-container {
+		min-width: 100px;
+	}
+
+	.action-btn-main {
+		min-height: 56px;
+		padding: var(--space-xs) var(--space-sm);
+	}
+
+	.btn-text {
+		font-size: 0.7rem;
+	}
+
+	.btn-subtitle {
+		font-size: 0.6rem;
+	}
+}
+
+@media (max-width: 768px) {
+	/* Na mobile zawsze używaj kompaktowej wersji */
+	.action-container {
+		display: none;
+	}
+
+	.action-container-compact {
+		display: flex;
+	}
+
+	.action-btn-compact {
+		width: 32px;
+		height: 32px;
+		font-size: 0.9rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.action-btn-compact {
+		width: 28px;
+		height: 28px;
+		font-size: 0.8rem;
+	}
+
+	.secondary-actions {
+		gap: 2px;
+	}
+}
+
+/* ========================================
+   DARK/LIGHT THEME COMPATIBILITY
+   ======================================== */
+
+[data-theme='light'] .action-btn-main {
+	box-shadow:
+		0 2px 8px rgba(0, 0, 0, 0.1),
+		0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='light'] .action-btn-main:hover {
+	box-shadow:
+		0 8px 25px rgba(0, 0, 0, 0.15),
+		0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Tooltips enhancement */
+.action-btn-main[title]:hover::after,
+.action-btn-compact[title]:hover::after {
+	content: attr(title);
+	position: absolute;
+	bottom: 120%;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.9);
+	color: white;
+	padding: var(--space-sm) var(--space-md);
+	border-radius: var(--radius-md);
+	font-size: 0.8rem;
+	white-space: nowrap;
+	z-index: 1000;
+	animation: fadeInTooltip 0.3s ease;
+}
+
+@keyframes fadeInTooltip {
+	from {
+		opacity: 0;
+		transform: translateX(-50%) translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
 }

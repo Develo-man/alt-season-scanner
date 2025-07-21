@@ -245,6 +245,7 @@ function createCoinTableRow(coin, strategy) {
 	const scoreInfo = getScoreInterpretation(score, 'momentum');
 	const timing = momentum.timing || {};
 	const actionSignal = momentum.actionSignal || {};
+	const riskReward = momentum.riskReward || null;
 
 	return `
         <tr class="coin-row" data-symbol="${coin.symbol}">
@@ -286,20 +287,357 @@ function createCoinTableRow(coin, strategy) {
                     ${actionSignal.signal || '🟡 OBSERWUJ'}
                 </div>
             </td>
-<td class="hide-mobile">
-    ${
-			coin.momentum.riskReward
-				? `
-        <div class="rr-cell" title="${generateRiskRewardTooltip(coin)}">
-            <span class="rr-ratio">1:${coin.momentum.riskReward.riskRewardRatio.toFixed(1)}</span>
-            <span class="rr-ev">${coin.momentum.riskReward.expectedValue.netExpectedValue}% EV</span>
-        </div>
-    `
-				: '<span class="rr-na">N/A</span>'
-		}
-</td>
+            <td class="hide-mobile">
+                ${renderRiskRewardCell(riskReward, coin)}
+            </td>
+            <td>
+                ${renderActionButtons(coin)}
+            </td>
         </tr>
     `;
+}
+
+function renderRiskRewardCell(riskReward, coin) {
+	if (!riskReward) {
+		return '<span class="rr-na">N/A</span>';
+	}
+
+	const ratio = riskReward.riskRewardRatio;
+	const ev = parseFloat(riskReward.expectedValue.netExpectedValue);
+
+	// Określ klasę CSS na podstawie jakości ratio
+	let rrClass = 'rr-poor';
+	let rrIcon = '🔴';
+
+	if (ratio >= 2.5) {
+		rrClass = 'rr-excellent';
+		rrIcon = '🟢';
+	} else if (ratio >= 2.0) {
+		rrClass = 'rr-good';
+		rrIcon = '🟢';
+	} else if (ratio >= 1.5) {
+		rrClass = 'rr-average';
+		rrIcon = '🟡';
+	}
+
+	return `
+        <div class="rr-cell ${rrClass}" 
+             title="${generateRiskRewardTooltip(coin)}" 
+             onclick="showRiskRewardDetails('${coin.symbol}')">
+            <div class="rr-ratio">
+                ${rrIcon} 1:${ratio.toFixed(1)}
+            </div>
+            <div class="rr-ev ${ev > 0 ? 'positive' : 'negative'}">
+                ${ev > 0 ? '+' : ''}${ev.toFixed(1)}% EV
+            </div>
+        </div>
+    `;
+}
+
+function showRiskRewardDetails(symbol) {
+	const allCoins = window.appState.scannerResults.strategies.flatMap(
+		(s) => s.topCoins
+	);
+	const coin = allCoins.find((c) => c.symbol === symbol);
+
+	if (!coin?.momentum?.riskReward) {
+		alert(`Brak danych Risk-Reward dla ${symbol}`);
+		return;
+	}
+
+	const rr = coin.momentum.riskReward;
+	const modal = document.getElementById('coin-details-modal');
+	const modalBody = document.getElementById('modal-body');
+
+	modalBody.innerHTML = `
+        <div class="modal-header">
+            <div class="coin-rank">⚖️</div>
+            <div class="modal-title">
+                <h2>Risk-Reward Analysis: ${coin.symbol}</h2>
+                <span>Analiza ryzyka vs potencjalnej nagrody</span>
+            </div>
+        </div>
+
+        <div class="risk-reward-summary">
+            <div class="rr-main-ratio">
+                <h3>Stosunek Risk:Reward</h3>
+                <div class="rr-big-number ${getRiskRewardClass(rr.riskRewardRatio)}">
+                    1:${rr.riskRewardRatio.toFixed(2)}
+                </div>
+                <p class="rr-interpretation">${interpretRiskReward(rr.riskRewardRatio)}</p>
+            </div>
+            
+            <div class="rr-expected-value">
+                <h3>Expected Value</h3>
+                <div class="ev-number ${parseFloat(rr.expectedValue.netExpectedValue) > 0 ? 'positive' : 'negative'}">
+                    ${rr.expectedValue.netExpectedValue}%
+                </div>
+                <p>Matematyczne oczekiwanie zysku</p>
+            </div>
+        </div>
+
+        <div class="risk-reward-breakdown">
+            <div class="rr-section">
+                <h4>📈 Potencjalny Zysk (Upside)</h4>
+                <div class="rr-bar-container">
+                    <div class="rr-bar upside">
+                        <div class="rr-bar-fill" style="width: ${Math.min(rr.upside.percent * 2, 100)}%"></div>
+                    </div>
+                    <span class="rr-percentage">+${rr.upside.percent}%</span>
+                </div>
+                <ul class="rr-reasons">
+                    ${rr.upside.reasons.map((reason) => `<li>${reason}</li>`).join('')}
+                </ul>
+            </div>
+
+            <div class="rr-section">
+                <h4>📉 Potencjalne Ryzyko (Downside)</h4>
+                <div class="rr-bar-container">
+                    <div class="rr-bar downside">
+                        <div class="rr-bar-fill" style="width: ${Math.min(rr.downside.percent * 3, 100)}%"></div>
+                    </div>
+                    <span class="rr-percentage">-${rr.downside.percent}%</span>
+                </div>
+                <ul class="rr-reasons">
+                    ${rr.downside.reasons.map((reason) => `<li>${reason}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+
+        <div class="probability-section">
+            <h4>🎯 Prawdopodobieństwo Sukcesu</h4>
+            <div class="probability-bar">
+                <div class="probability-fill" style="width: ${rr.successProbability * 100}%"></div>
+            </div>
+            <p>${(rr.successProbability * 100).toFixed(0)}% szans na osiągnięcie zysku</p>
+        </div>
+
+        <div class="rr-recommendation">
+            <h4>💡 Rekomendacja</h4>
+            <div class="recommendation-card ${rr.recommendation.decision.toLowerCase()}">
+                <strong>${rr.recommendation.action}</strong>
+                <p>${rr.recommendation.reasoning}</p>
+                <div class="position-size">
+                    <span>💰 Sugerowana pozycja: <strong>${rr.recommendation.positionSize}</strong></span>
+                </div>
+            </div>
+        </div>
+    `;
+
+	modal.classList.add('visible');
+}
+function renderActionButtons(coin) {
+	const symbol = coin.symbol;
+	const actionSignal = coin.momentum?.actionSignal || {};
+	const momentum = coin.momentum || {};
+	const score = parseFloat(momentum.totalScore || 0);
+
+	// Główny przycisk akcji na podstawie sygnału
+	const action = actionSignal.action || 'WATCH';
+	const confidence = actionSignal.confidence || 'LOW';
+
+	// Określ główny przycisk
+	let primaryButton = getPrimaryActionButton(action, confidence, actionSignal);
+
+	// Dodatkowe przyciski (zawsze te same)
+	const secondaryButtons = `
+        <button class="action-btn-mini details" 
+                onclick="showCoinDetails('${symbol}')" 
+                title="Szczegółowa analiza ${symbol}">
+            <span class="btn-icon">📊</span>
+        </button>
+        ${
+					coin.dexData?.hasDEXData
+						? `
+            <button class="action-btn-mini dex" 
+                    onclick="showDEXInfo('${symbol}')" 
+                    title="Analiza DEX dla ${symbol}">
+                <span class="btn-icon">🏪</span>
+            </button>
+        `
+						: ''
+				}
+    `;
+
+	return `
+        <div class="action-container">
+            <div class="primary-action">
+                ${primaryButton}
+            </div>
+            <div class="secondary-actions">
+                ${secondaryButtons}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generuje główny przycisk akcji
+ */
+function getPrimaryActionButton(action, confidence, actionSignal) {
+	const positionSize = actionSignal.positionSize || '0%';
+
+	switch (action) {
+		case 'BUY_NOW':
+			return `
+                <button class="action-btn-main buy-now ${confidence.toLowerCase()}" 
+                        title="${actionSignal.entryStrategy || 'Kup teraz - silny sygnał'}">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">KUP TERAZ</span>
+                    <span class="btn-subtitle">${positionSize}</span>
+                </button>
+            `;
+
+		case 'BUY':
+			return `
+                <button class="action-btn-main buy ${confidence.toLowerCase()}" 
+                        title="${actionSignal.entryStrategy || 'Rozważ kupno'}">
+                    <span class="btn-icon">✅</span>
+                    <span class="btn-text">ROZWAŻ</span>
+                    <span class="btn-subtitle">${positionSize}</span>
+                </button>
+            `;
+
+		case 'WAIT_FOR_DIP':
+			return `
+                <button class="action-btn-main wait ${confidence.toLowerCase()}" 
+                        title="${actionSignal.entryStrategy || 'Poczekaj na lepszą cenę'}">
+                    <span class="btn-icon">⏳</span>
+                    <span class="btn-text">CZEKAJ NA DIP</span>
+                    <span class="btn-subtitle">Ustaw alert</span>
+                </button>
+            `;
+
+		case 'WAIT_BETTER_TIMING':
+			return `
+                <button class="action-btn-main wait ${confidence.toLowerCase()}" 
+                        title="${actionSignal.entryStrategy || 'Poczekaj na lepsze warunki'}">
+                    <span class="btn-icon">🕐</span>
+                    <span class="btn-text">CZEKAJ</span>
+                    <span class="btn-subtitle">Lepszy timing</span>
+                </button>
+            `;
+
+		case 'SKIP_HIGH_RISK':
+			return `
+                <button class="action-btn-main skip ${confidence.toLowerCase()}" 
+                        title="${actionSignal.reasoning || 'Za wysokie ryzyko'}">
+                    <span class="btn-icon">⚠️</span>
+                    <span class="btn-text">POMIŃ</span>
+                    <span class="btn-subtitle">Wysokie ryzyko</span>
+                </button>
+            `;
+
+		case 'SKIP_WEAK':
+			return `
+                <button class="action-btn-main skip ${confidence.toLowerCase()}" 
+                        title="${actionSignal.reasoning || 'Słabe sygnały'}">
+                    <span class="btn-icon">❌</span>
+                    <span class="btn-text">POMIŃ</span>
+                    <span class="btn-subtitle">Słabe sygnały</span>
+                </button>
+            `;
+
+		default: // WATCH
+			return `
+                <button class="action-btn-main watch ${confidence.toLowerCase()}" 
+                        title="${actionSignal.entryStrategy || 'Obserwuj rozwój sytuacji'}">
+                    <span class="btn-icon">👀</span>
+                    <span class="btn-text">OBSERWUJ</span>
+                    <span class="btn-subtitle">Śledź zmiany</span>
+                </button>
+            `;
+	}
+}
+
+/**
+ * KOMPAKTOWA WERSJA dla wąskich ekranów
+ */
+function renderCompactActionButtons(coin) {
+	const symbol = coin.symbol;
+	const actionSignal = coin.momentum?.actionSignal || {};
+	const action = actionSignal.action || 'WATCH';
+
+	// Tylko ikony z tooltipami
+	let mainIcon = getActionIcon(action);
+	let mainClass = getActionClass(action);
+
+	return `
+        <div class="action-container-compact">
+            <button class="action-btn-compact ${mainClass}" 
+                    title="${getActionTooltip(action, actionSignal)}">
+                ${mainIcon}
+            </button>
+            <button class="action-btn-compact details" 
+                    onclick="showCoinDetails('${symbol}')" 
+                    title="Szczegóły">
+                📊
+            </button>
+            ${
+							coin.dexData?.hasDEXData
+								? `
+                <button class="action-btn-compact dex" 
+                        onclick="showDEXInfo('${symbol}')" 
+                        title="DEX">
+                    🏪
+                </button>
+            `
+								: ''
+						}
+        </div>
+    `;
+}
+
+/**
+ * Helper functions
+ */
+function getActionIcon(action) {
+	const icons = {
+		BUY_NOW: '🚀',
+		BUY: '✅',
+		WAIT_FOR_DIP: '⏳',
+		WAIT_BETTER_TIMING: '🕐',
+		SKIP_HIGH_RISK: '⚠️',
+		SKIP_WEAK: '❌',
+		WATCH: '👀',
+	};
+	return icons[action] || '👀';
+}
+
+function getActionClass(action) {
+	if (action.includes('BUY')) return 'buy';
+	if (action.includes('WAIT')) return 'wait';
+	if (action.includes('SKIP')) return 'skip';
+	return 'watch';
+}
+
+function getActionTooltip(action, actionSignal) {
+	const tooltips = {
+		BUY_NOW: `🚀 KUP TERAZ - ${actionSignal.positionSize || '2-4%'}`,
+		BUY: `✅ ROZWAŻ KUPNO - ${actionSignal.positionSize || '1-3%'}`,
+		WAIT_FOR_DIP: '⏳ CZEKAJ NA DIP - Ustaw alert cenowy',
+		WAIT_BETTER_TIMING: '🕐 CZEKAJ NA LEPSZY TIMING',
+		SKIP_HIGH_RISK: '⚠️ POMIŃ - Za wysokie ryzyko',
+		SKIP_WEAK: '❌ POMIŃ - Słabe sygnały',
+		WATCH: '👀 OBSERWUJ - Śledź zmiany',
+	};
+	return tooltips[action] || 'Brak konkretnego sygnału';
+}
+
+/**
+ * RESPONSYWNA FUNKCJA - wybiera odpowiedni layout
+ */
+function renderResponsiveActionButtons(coin) {
+	// Użyj kompaktowej wersji na mobile lub gdy szerokość komórki jest mała
+	const isMobile = window.innerWidth < 768;
+	const isNarrowTable =
+		document.querySelector('.crypto-table')?.scrollWidth > window.innerWidth;
+
+	if (isMobile || isNarrowTable) {
+		return renderCompactActionButtons(coin);
+	} else {
+		return renderActionButtons(coin);
+	}
 }
 
 /**
@@ -504,9 +842,9 @@ function renderStrategyTable(strategy) {
                                 Ryzyko
                                 <span class="sort-icon">↕️</span>
                             </th>
-<th class="hide-mobile">Timing</th>
-<th class="hide-mobile">Risk/Reward</th> 
-<th>Akcje</th>
+                            <th class="hide-mobile">Timing</th>
+                            <th class="hide-mobile">Risk/Reward</th> 
+                            <th>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1449,6 +1787,29 @@ function generateRiskRewardTooltip(coin) {
 	return reasons.join('\n');
 }
 
+/**
+ * HELPER: Pobiera klasę CSS dla Risk-Reward ratio
+ */
+function getRiskRewardClass(ratio) {
+	if (ratio >= 2.5) return 'excellent';
+	if (ratio >= 2.0) return 'good';
+	if (ratio >= 1.5) return 'average';
+	return 'poor';
+}
+
+/**
+ * HELPER: Interpretuje Risk-Reward ratio w czytelny sposób
+ */
+function interpretRiskReward(ratio) {
+	if (ratio >= 3.0)
+		return '🔥 Doskonały stosunek - ryzykujesz mało, zyskujesz dużo!';
+	if (ratio >= 2.5) return '🟢 Bardzo dobry stosunek - warto rozważyć';
+	if (ratio >= 2.0) return '✅ Dobry stosunek - akceptowalne ryzyko';
+	if (ratio >= 1.5) return '🟡 Przeciętny stosunek - rozważ inne opcje';
+	if (ratio >= 1.0) return '🟠 Słaby stosunek - ryzyko = nagroda';
+	return '🔴 Bardzo zły stosunek - ryzykujesz więcej niż możesz zyskać!';
+}
+
 // ========================================
 // EXPORTS AND GLOBAL FUNCTIONS
 // ========================================
@@ -1474,3 +1835,6 @@ window.selectStrategy = selectStrategy;
 window.showMoreCoins = showMoreCoins;
 window.showCoinDetails = showCoinDetails;
 window.showDEXInfo = showDEXInfo;
+window.showRiskRewardDetails = showRiskRewardDetails;
+window.showMoreTableRows = showMoreTableRows;
+window.renderActionButtons = renderResponsiveActionButtons;
