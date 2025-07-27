@@ -1,4 +1,6 @@
 const axios = require('axios');
+const { getDevData, setDevData } = require('../core/cache');
+
 require('dotenv').config();
 
 // Configuration
@@ -131,6 +133,13 @@ async function getTop100() {
  * @returns {Promise<Object|null>} Obiekt z danymi deweloperskimi lub null w przypadku błędu.
  */
 async function getCoinDeveloperData(coinId) {
+	// Krok 1: Sprawdź cache
+	const cachedData = getDevData(coinId);
+	if (cachedData) {
+		console.log(`✅ Pobrano dane deweloperskie dla ${coinId} z CACHE.`);
+	}
+
+	// Krok 2: Jeśli nie ma w cache'u, pobierz z API
 	try {
 		const response = await rateLimitedCall(() =>
 			api.get(`/coins/${coinId}`, {
@@ -146,7 +155,7 @@ async function getCoinDeveloperData(coinId) {
 		);
 
 		if (response.data && response.data.developer_data) {
-			return {
+			const devData = {
 				forks: response.data.developer_data.forks,
 				stars: response.data.developer_data.stars,
 				subscribers: response.data.developer_data.subscribers,
@@ -154,6 +163,9 @@ async function getCoinDeveloperData(coinId) {
 					response.data.developer_data.pull_request_contributors,
 				commit_count_4_weeks: response.data.developer_data.commit_count_4_weeks,
 			};
+			// Krok 3: Zapisz pobrane dane w cache'u
+			setDevData(coinId, devData);
+			return devData;
 		}
 		return null;
 	} catch (error) {

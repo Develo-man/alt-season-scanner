@@ -150,69 +150,76 @@ async function runScanner() {
 		strategyResults[key].binanceCount = enrichedCandidates.length;
 	}
 
-	// --- Krok 5: DEX Analytics for top candidates from each strategy ---
-	const topCandidatesForDEX = [];
-	Object.values(strategyResults).forEach((strategy) => {
-		topCandidatesForDEX.push(
-			...strategy.enrichedCandidates.slice(0, 8).map((coin) => ({
-				symbol: coin.symbol,
-				contractAddress: coin.contractAddress,
-				strategy: coin.strategy,
-			}))
-		);
+	// --- Krok 5: Zbierz unikalne monety do wzbogacenia ---
+	const allEnrichedCoins = getAllCoinsFromStrategies(strategyResults);
+	const uniqueCoinsToEnrich = new Map();
+	allEnrichedCoins.forEach((coin) => {
+		if (!uniqueCoinsToEnrich.has(coin.symbol)) {
+			uniqueCoinsToEnrich.set(coin.symbol, coin);
+		}
+	});
+	const coinsToEnrichList = Array.from(uniqueCoinsToEnrich.values());
+	console.log(
+		`⚙️ Wzbogacam dane dla ${coinsToEnrichList.length} unikalnych monet...`
+	);
+
+	// --- Krok 6: Zoptymalizowane wzbogacanie danych (DEX, Klines, Santiment itp.) ---
+	const dexAnalytics = await batchAnalyzeDEX(
+		coinsToEnrichList.map((c) => ({
+			symbol: c.symbol,
+			contractAddress: c.contractAddress,
+		}))
+	);
+
+	const enrichmentPromises = coinsToEnrichList.map(async (coin) => {
+		coin.dexData = dexAnalytics[coin.symbol] || null;
+
+		const { getOnChainData } = require('../apis/santiment');
+		const promises = {
+			klines: null,
+			devData: getCoinDeveloperData(coin.id),
+			pressureData: null,
+			smartVolume: null,
+			volumeProfile: null,
+			flowData: process.env.SANTIMENT_API_KEY
+				? getOnChainData(coin.id)
+				: Promise.resolve(null), // <-- Sprawdzaj klucz API PRZED wywołaniem
+		};
+
+		if (coin.binance && coin.binance.mainPair) {
+			const mainPair = coin.binance.mainPair;
+			promises.klines = getKlines(mainPair, '1d', 14);
+			promises.pressureData = getBuySellPressure(mainPair, 60);
+			promises.smartVolume = getSmartVolumeAnalysis(mainPair, 24);
+			promises.volumeProfile = getVolumeProfile(mainPair, '1h', 24);
+		}
+
+		const results = await Promise.all(Object.values(promises));
+		coin.klines = results[0];
+		coin.developerData = results[1];
+		coin.pressureData = results[2];
+		coin.smartVolume = results[3];
+		coin.volumeProfile = results[4];
+		coin.flowData = results[5];
+
+		return coin;
 	});
 
-	const dexAnalytics = await batchAnalyzeDEX(topCandidatesForDEX);
+	const fullyEnrichedCoinsList = await Promise.all(enrichmentPromises);
+	const fullyEnrichedCoinsMap = new Map(
+		fullyEnrichedCoinsList.map((c) => [c.symbol, c])
+	);
 
-	// --- Krok 6: Wzbogacenie danych dla wszystkich monet (Klines) i top monet (reszta) ---
-	console.log(`⚙️ Wzbogacam dane dla kandydatów...`);
-
-	for (const [key, strategy] of Object.entries(strategyResults)) {
-		// Pobieramy klines DLA WSZYSTKICH monet w strategii
-		const klinesPromises = strategy.enrichedCandidates.map(async (coin) => {
-			if (coin.binance && coin.binance.mainPair) {
-				// Potrzebujemy 14 dni danych do obliczenia ATR
-				coin.klines = await getKlines(coin.binance.mainPair, '1d', 14);
+	// Zaktualizuj monety w każdej strategii o wzbogacone dane
+	Object.values(strategyResults).forEach((strategy) => {
+		strategy.enrichedCandidates.forEach((coin, index) => {
+			if (fullyEnrichedCoinsMap.has(coin.symbol)) {
+				strategy.enrichedCandidates[index] = fullyEnrichedCoinsMap.get(
+					coin.symbol
+				);
 			}
-			return coin;
 		});
-		await Promise.all(klinesPromises);
-
-		// Pobieramy pozostałe, cięższe dane tylko dla TOP 6
-		const topCoinsForFullEnrichment = strategy.enrichedCandidates.slice(0, 6);
-		const enrichmentPromises = topCoinsForFullEnrichment.map(async (coin) => {
-			// Add DEX data
-			coin.dexData = dexAnalytics[coin.symbol] || null;
-
-			const { getOnChainData } = require('../apis/santiment'); // ZMIEŃ NAZWE PLIKU JEŚLI TRZEBA
-
-			const promises = {
-				devData: getCoinDeveloperData(coin.id),
-				pressureData: null,
-				smartVolume: null,
-				volumeProfile: null,
-				flowData: getOnChainData(coin.id),
-			};
-
-			if (coin.binance && coin.binance.mainPair) {
-				const mainPair = coin.binance.mainPair;
-				promises.pressureData = getBuySellPressure(mainPair, 60);
-				promises.smartVolume = getSmartVolumeAnalysis(mainPair, 24);
-				promises.volumeProfile = getVolumeProfile(mainPair, '1h', 24);
-			}
-
-			const results = await Promise.all(Object.values(promises));
-			coin.developerData = results[0];
-			coin.pressureData = results[1];
-			coin.smartVolume = results[2];
-			coin.volumeProfile = results[3];
-			coin.flowData = results[4];
-
-			return coin;
-		});
-
-		await Promise.all(enrichmentPromises);
-	}
+	});
 	// --- Krok 7: Enhanced momentum calculation for each strategy ---
 	const marketConditions = { btcDominance, fearAndGreed };
 

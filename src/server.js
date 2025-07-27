@@ -1,17 +1,15 @@
 const express = require('express');
 const path = require('path');
-const resultsPath = path.join(__dirname, '..', 'result');
+const fs = require('fs');
 const { runScanner } = require('./core/scannerLogic');
 const { loadHistory } = require('./apis/btcDominance');
 
 const PORT = process.env.PORT || 3000;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 min
 
-const DEV_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 godziny
-const devDataCache = {};
-
 // Express application initialisation
 const app = express();
+app.use(express.static(webPath));
 
 app.use((req, res, next) => {
 	const origin = req.get('origin') || `http://localhost:${PORT}`;
@@ -29,15 +27,28 @@ app.use((req, res, next) => {
 });
 
 const webPath = path.join(__dirname, 'web');
+const resultsPath = path.join(__dirname, '..', 'results');
+const LATEST_RESULTS_FILE = path.join(resultsPath, 'latest.json');
 
-app.use(express.static(webPath));
 app.use('/results', express.static(resultsPath));
-
-// --- Logic app ---
 
 // Cache for scanner results
 let cachedResults = null;
 let lastScanTime = null;
+let isScanning = false;
+
+async function loadInitialCache() {
+	try {
+		const data = await fs.readFile(LATEST_RESULTS_FILE, 'utf8');
+		cachedResults = JSON.parse(data);
+		lastScanTime = new Date(cachedResults.lastUpdate).getTime();
+		console.log('✅ Wczytano ostatnie wyniki z pliku do cache.');
+	} catch (error) {
+		console.log(
+			'ℹ️ Nie znaleziono pliku z ostatnimi wynikami. Pierwsze uruchomienie będzie pełnym skanem.'
+		);
+	}
+}
 
 // --- (Routes) ---
 
@@ -54,7 +65,7 @@ app.get('/charts', (req, res) => {
 // Endpoint API for downloading scanner results
 app.get('/api/scanner-results', async (req, res, next) => {
 	try {
-		// Cache check
+		// Sprawdź cache
 		if (
 			cachedResults &&
 			lastScanTime &&
@@ -64,24 +75,36 @@ app.get('/api/scanner-results', async (req, res, next) => {
 			return res.json(cachedResults);
 		}
 
-		console.log('🔄 Uruchamiam skaner dla zapytania web...');
-		const { runScanner } = require('./core/scannerLogic');
+		// Sprawdź, czy skanowanie już trwa
+		if (isScanning) {
+			console.log('⏳ Skanowanie już w toku. Oczekuję na wyniki...');
+			// Prosty mechanizm oczekiwania, aby kolejne zapytania dostały świeże dane
+			const waitForScan = setInterval(() => {
+				if (!isScanning && cachedResults) {
+					clearInterval(waitForScan);
+					console.log('✅ Zakończono oczekiwanie, zwracam świeże wyniki.');
+					res.json(cachedResults);
+				}
+			}, 2000); // Sprawdzaj co 2 sekundy
+			return;
+		}
+
+		console.log('🚀 Uruchamiam nowy, pojedynczy skan dla zapytania web...');
+		isScanning = true; // ZABLOKUJ kolejne wywołania
+
 		const results = await runScanner();
 
-		// Update cache
+		// Zaktualizuj cache
 		cachedResults = results;
 		lastScanTime = Date.now();
+		isScanning = false; // ODBLOKUJ po zakończeniu
 
-		console.log('✅ Enhanced scanner completed:', {
-			strategies: results.strategies?.length || 0,
-			totalCandidates: results.stats?.totalUniqueCandidates || 0,
-			recommendedStrategy: results.marketStatus?.recommendedStrategy || 'none',
-		});
-
+		console.log('✅ Skaner zakończył pracę, wyniki zapisane w cache.');
 		res.json(results);
 	} catch (error) {
 		console.error('Błąd podczas uruchamiania skanera:', error);
-		next(error); //  Error transmission to global middleware
+		isScanning = false; // Zawsze odblokuj w razie błędu
+		next(error);
 	}
 });
 
@@ -108,10 +131,16 @@ app.use((err, req, res, next) => {
 });
 
 // Starting server
-app.listen(PORT, () => {
-	console.log(`🌐 Serwer działa pod adresem: http://localhost:${PORT}
-		
-		Naciśnij Ctrl+C, aby zatrzymać serwer.`);
+app.listen(PORT, async () => {
+	try {
+		await fs.mkdir(resultsPath, { recursive: true });
+		await loadInitialCache();
+	} catch (error) {
+		console.error('Błąd podczas inicjalizacji serwera:', error);
+	}
+	console.log(
+		`🌐 Serwer działa pod adresem: http://localhost:${PORT}\n\n\tNaciśnij Ctrl+C, aby zatrzymać serwer.`
+	);
 });
 
 // Handling correct closure
