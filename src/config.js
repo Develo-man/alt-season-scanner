@@ -69,6 +69,29 @@ const config = {
 			},
 			advice: 'Balanced approach - niższe ryzyko, stabilny wzrost',
 		},
+		HIGH_CAP_GEMS: {
+			name: '💎 HIGH-CAP GEMS',
+			description:
+				'Droższe alty (> $3), które mogą przyciągać kapitał, gdy rynek jest niepewny.',
+			emoji: '💎',
+			criteria: {
+				minPrice: 3,
+				maxPrice: 10000,
+				maxRank: 75,
+				minVolumeRatio: 0.02,
+				min7dChange: -15,
+				max7dChange: 100,
+			},
+			advice:
+				'Szukaj siły u liderów rynku, gdy altcoiny o niskiej kapitalizacji są zbyt ryzykowne.',
+		},
+	},
+
+	// Definiuje, które strategie uruchomić w zależności od fazy rynku
+	marketPhases: {
+		BITCOIN_SEASON: ['VALUE', 'BALANCED', 'HIGH_CAP_GEMS'], // Dominacja > 65%
+		TRANSITION: ['BALANCED', 'MOMENTUM', 'VALUE'], // 55% < Dominacja < 65%
+		ALT_SEASON: ['MOMENTUM', 'VALUE', 'BALANCED'], // Dominacja < 55%
 	},
 
 	// --- Ustawienia monitora dominacji BTC ---

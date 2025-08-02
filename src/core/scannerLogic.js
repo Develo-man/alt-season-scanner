@@ -85,19 +85,46 @@ async function runScanner() {
 		top100Data = fetchedTop100.coins;
 	}
 
-	// Wczytaj historię dominacji - to jest z pliku, więc nie potrzebuje cache
 	const history = await loadHistory();
 	const trendAnalysis = analyzeTrend(history);
 	const dominanceChange24h = trendAnalysis.changes['24h'];
 
-	// --- Krok 2: TRIPLE STRATEGY FILTERING ---
-	console.log('🎯 Uruchamiam analizę trzech strategii...');
+	// --- Krok 2: Określenie warunków rynkowych i wybór strategii ---
+	console.log('🎯 Określam warunki rynkowe i wybieram aktywne strategie...');
+	let condition, advice, recommendedStrategy, activeStrategies;
 
+	if (btcDominance > 65) {
+		condition = 'SEZON BITCOINA';
+		advice =
+			'Trudny czas dla altów - kapitał płynie do liderów. Dodatkowo analizuję droższe alty.';
+		recommendedStrategy = 'VALUE';
+		activeStrategies = config.marketPhases.BITCOIN_SEASON;
+	} else if (btcDominance > 55) {
+		condition = 'FAZA PRZEJŚCIOWA';
+		advice = 'Zmienny rynek - najlepsza będzie strategia BALANCED';
+		recommendedStrategy = 'BALANCED';
+		activeStrategies = config.marketPhases.TRANSITION;
+	} else {
+		condition = 'SEZON ALTCOINÓW';
+		advice = 'Doskonały czas na zagrania pod MOMENTUM. Skanuję tanie alty.';
+		recommendedStrategy = 'MOMENTUM';
+		activeStrategies = config.marketPhases.ALT_SEASON;
+	}
+
+	console.log(
+		`Aktualna faza: ${condition}. Aktywne strategie: ${activeStrategies.join(', ')}`
+	);
+
+	// --- Krok 3: Filtrowanie według aktywnych strategii ---
+	console.log('🎯 Uruchamiam filtrowanie według aktywnych strategii...');
 	const strategyResults = {};
 	const allCandidates = new Set(); // Unikalne monety ze wszystkich strategii
 
-	// Process each strategy
-	for (const [key, strategy] of Object.entries(config.strategies)) {
+	// Pętla po AKTYWNYCH strategiach
+	for (const key of activeStrategies) {
+		const strategy = config.strategies[key];
+		if (!strategy) continue;
+
 		console.log(`${strategy.emoji} Filtrowanie: ${strategy.name}`);
 
 		const candidates = filterAndSort(
@@ -116,22 +143,22 @@ async function runScanner() {
 			count: candidates.length,
 		};
 
-		// Add to master list
 		candidates.forEach((coin) => allCandidates.add(coin.symbol));
 		console.log(`   └─ Znaleziono ${candidates.length} kandydatów`);
 	}
 
 	console.log(`\n📊 Podsumowanie strategii:`);
-	console.log(`🚀 Momentum: ${strategyResults.MOMENTUM.count} monet`);
-	console.log(`💎 Value: ${strategyResults.VALUE.count} monet`);
-	console.log(`⚖️ Balanced: ${strategyResults.BALANCED.count} monet`);
-	console.log(`🎯 Unikalne monety: ${allCandidates.size}`);
+	Object.keys(strategyResults).forEach((key) => {
+		const strategy = strategyResults[key];
+		console.log(`${strategy.emoji} ${strategy.name}: ${strategy.count} monet`);
+	});
+	console.log(`🎯 Unikalne monety do dalszej analizy: ${allCandidates.size}`);
 
-	// --- Krok 3: Weryfikacja na Binance dla wszystkich kandydatów ---
+	// --- Krok 4: Weryfikacja na Binance dla wszystkich kandydatów ---
 	const uniqueSymbols = Array.from(allCandidates);
 	const binanceData = await checkMultipleCoins(uniqueSymbols);
 
-	// --- Krok 4: Wzbogacenie danych dla każdej strategii ---
+	// --- Krok 5: Wzbogacenie danych dla każdej strategii ---
 	for (const [key, strategy] of Object.entries(strategyResults)) {
 		const enrichedCandidates = strategy.candidates
 			.map((coin) => {
@@ -150,7 +177,7 @@ async function runScanner() {
 		strategyResults[key].binanceCount = enrichedCandidates.length;
 	}
 
-	// --- Krok 5: Zbierz unikalne monety do wzbogacenia ---
+	// --- Krok 6: Zbierz unikalne monety do wzbogacenia ---
 	const allEnrichedCoins = getAllCoinsFromStrategies(strategyResults);
 	const uniqueCoinsToEnrich = new Map();
 	allEnrichedCoins.forEach((coin) => {
@@ -163,7 +190,7 @@ async function runScanner() {
 		`⚙️ Wzbogacam dane dla ${coinsToEnrichList.length} unikalnych monet...`
 	);
 
-	// --- Krok 6: Zoptymalizowane wzbogacanie danych (DEX, Klines, Santiment itp.) ---
+	// --- Krok 7: Zoptymalizowane wzbogacanie danych (DEX, Klines, Santiment itp.) ---
 	const dexAnalytics = await batchAnalyzeDEX(
 		coinsToEnrichList.map((c) => ({
 			symbol: c.symbol,
@@ -183,7 +210,7 @@ async function runScanner() {
 			volumeProfile: null,
 			flowData: process.env.SANTIMENT_API_KEY
 				? getOnChainData(coin.id)
-				: Promise.resolve(null), // <-- Sprawdzaj klucz API PRZED wywołaniem
+				: Promise.resolve(null),
 		};
 
 		if (coin.binance && coin.binance.mainPair) {
@@ -210,7 +237,6 @@ async function runScanner() {
 		fullyEnrichedCoinsList.map((c) => [c.symbol, c])
 	);
 
-	// Zaktualizuj monety w każdej strategii o wzbogacone dane
 	Object.values(strategyResults).forEach((strategy) => {
 		strategy.enrichedCandidates.forEach((coin, index) => {
 			if (fullyEnrichedCoinsMap.has(coin.symbol)) {
@@ -220,8 +246,12 @@ async function runScanner() {
 			}
 		});
 	});
-	// --- Krok 7: Enhanced momentum calculation for each strategy ---
-	const marketConditions = { btcDominance, fearAndGreed };
+	// --- Krok 8: Obliczenia momentum i ranking ---
+	const marketConditions = {
+		btcDominance,
+		fearAndGreed,
+		dominanceChange: dominanceChange24h,
+	};
 
 	for (const [key, strategy] of Object.entries(strategyResults)) {
 		const rankedCoins = rankByMomentum(
@@ -232,27 +262,10 @@ async function runScanner() {
 		strategyResults[key].rankedCoins = rankedCoins;
 		strategyResults[key].topCoin = rankedCoins[0] || null;
 	}
-	// --- Krok 8: Cross-strategy analysis ---
+	// --- Krok 9: Analiza między-strategiczna ---
 	const crossStrategyAnalysis = analyzeCrossStrategies(strategyResults);
 
-	// --- Krok 9: Market condition analysis ---
-	let condition, advice, recommendedStrategy;
-	if (btcDominance > 65) {
-		condition = 'SEZON BITCOINA';
-		advice = 'Trudny czas dla altów - preferuj strategię VALUE';
-		recommendedStrategy = 'VALUE';
-	} else if (btcDominance > 55) {
-		condition = 'FAZA PRZEJŚCIOWA';
-		advice = 'Zmienny rynek - najlepsza będzie strategia BALANCED';
-		recommendedStrategy = 'BALANCED';
-	} else {
-		condition = 'SEZON ALTCOINÓW';
-		advice = 'Doskonały czas na zagrania pod MOMENTUM';
-		recommendedStrategy = 'MOMENTUM';
-	}
-
-	// Enhanced coin formatting with DEX priority
-	// --- Krok 10: Generate final results ---
+	// --- Krok 10: Generowanie finalnych wyników ---
 	return {
 		marketStatus: {
 			btcDominance: btcDominance.toFixed(2),
@@ -267,8 +280,6 @@ async function runScanner() {
 					}
 				: null,
 		},
-
-		// Strategy-specific results
 		strategies: Object.entries(strategyResults).map(([key, strategy]) => ({
 			key,
 			name: strategy.name,
@@ -283,18 +294,12 @@ async function runScanner() {
 			performance: calculateStrategyPerformance(strategy.rankedCoins || []),
 			isRecommended: key === recommendedStrategy,
 		})),
-
-		// Cross-strategy insights
 		crossStrategy: crossStrategyAnalysis,
-
-		// Traditional sector analysis (combined)
 		sectorAnalysis: analyzeSectors(
 			Object.values(strategyResults)
 				.flatMap((s) => s.rankedCoins || [])
-				.slice(0, 50) // Top 50 across all strategies
+				.slice(0, 50)
 		),
-
-		// Global stats
 		stats: {
 			totalAnalyzed: top100Data.length,
 			totalUniqueCandidates: allCandidates.size,
@@ -307,7 +312,6 @@ async function runScanner() {
 				])
 			),
 		},
-
 		lastUpdate: new Date().toISOString(),
 	};
 }
@@ -451,7 +455,6 @@ function formatLargeNumber(num) {
 function analyzeCrossStrategies(strategyResults) {
 	const coinOccurrences = new Map();
 
-	// Count occurrences across strategies
 	Object.entries(strategyResults).forEach(([strategyKey, strategy]) => {
 		(strategy.enrichedCandidates || []).forEach((coin) => {
 			if (!coinOccurrences.has(coin.symbol)) {
@@ -465,7 +468,6 @@ function analyzeCrossStrategies(strategyResults) {
 			const entry = coinOccurrences.get(coin.symbol);
 			entry.strategies.push(strategyKey);
 
-			// Add momentum score if available
 			if (coin.momentum?.totalScore) {
 				entry.totalScore = Math.max(
 					entry.totalScore,
@@ -475,13 +477,11 @@ function analyzeCrossStrategies(strategyResults) {
 		});
 	});
 
-	// Find multi-strategy coins
 	const multiStrategyCoins = Array.from(coinOccurrences.values())
 		.filter((entry) => entry.strategies.length > 1)
 		.sort((a, b) => b.totalScore - a.totalScore)
 		.slice(0, 10);
 
-	// Strategy overlap analysis
 	const overlaps = {};
 	const strategies = Object.keys(strategyResults);
 
@@ -500,7 +500,7 @@ function analyzeCrossStrategies(strategyResults) {
 			const intersection = [...coins1].filter((symbol) => coins2.has(symbol));
 			overlaps[`${strat1}_${strat2}`] = {
 				count: intersection.length,
-				coins: intersection.slice(0, 5), // Top 5 overlapping coins
+				coins: intersection.slice(0, 5),
 			};
 		}
 	}
@@ -529,7 +529,6 @@ function generateCrossStrategyInsights(multiStrategyCoins, overlaps) {
 		);
 	}
 
-	// Analyze overlaps
 	const maxOverlap = Math.max(...Object.values(overlaps).map((o) => o.count));
 	if (maxOverlap > 0) {
 		const bestOverlap = Object.entries(overlaps).find(
