@@ -128,6 +128,10 @@ function filterSleepingGiants(coin) {
  * @returns {boolean}
  */
 function applyFilters(coin, criteria = {}) {
+	// Zawsze dołączaj BTC
+	if (coin.symbol.toUpperCase() === 'BTC') {
+		return true;
+	}
 	const {
 		maxPrice = 3,
 		minPrice = 0.0001,

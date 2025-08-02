@@ -103,6 +103,20 @@ function displayCrossStrategyAnalysis(crossStrategy) {
 	}
 }
 
+//  funkcja do formatowania ceny
+function formatPrice(price) {
+	if (price >= 1000) {
+		return price.toLocaleString('en-US', {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
+	}
+	if (price < 1) {
+		return price.toFixed(4);
+	}
+	return price.toFixed(2);
+}
+
 /**
  * Display strategy details
  */
@@ -127,7 +141,9 @@ function displayStrategyDetails(strategy) {
 				`${coin.priceChange7d >= 0 ? '+' : ''}${(coin.priceChange7d || 0).toFixed(1)}%`.padEnd(
 					9
 				);
-			const price = `${coin.price.toFixed(4)}`.padEnd(9);
+			// const price = `${coin.price.toFixed(4)}`.padEnd(9);
+			const price = `$${formatPrice(coin.price)}`.padEnd(9);
+
 			const sector = coin.sector || 'Unknown';
 
 			console.log(
