@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises; // Use promises for async file operations
 const { runScanner } = require('./core/scannerLogic');
 const { loadHistory } = require('./apis/btcDominance');
 
@@ -9,6 +9,13 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 min
 
 // Express application initialisation
 const app = express();
+
+// Define paths
+const webPath = path.join(__dirname, 'web');
+const resultsPath = path.join(__dirname, '..', 'results');
+const LATEST_RESULTS_FILE = path.join(resultsPath, 'latest.json');
+
+// Serve static files from the 'web' directory
 app.use(express.static(webPath));
 
 app.use((req, res, next) => {
@@ -25,10 +32,6 @@ app.use((req, res, next) => {
 	}
 	next();
 });
-
-const webPath = path.join(__dirname, 'web');
-const resultsPath = path.join(__dirname, '..', 'results');
-const LATEST_RESULTS_FILE = path.join(resultsPath, 'latest.json');
 
 app.use('/results', express.static(resultsPath));
 
