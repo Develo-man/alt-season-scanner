@@ -1,12 +1,12 @@
 require('dotenv').config();
 
-// --- Importy zależności ---
 const cache = require('./cache');
 
 const {
 	getTop100,
-	getBTCDominance,
+	getGlobalMarketData,
 	getCoinDeveloperData,
+	getEthBtcChartData,
 } = require('../apis/coingecko');
 const {
 	checkMultipleCoins,
@@ -22,7 +22,11 @@ const { filterAndSort } = require('../utils/filters');
 const { rankByMomentum } = require('../utils/momentum');
 const { getSector } = require('../utils/sectors');
 const { analyzeSectors } = require('../utils/analysis');
-const { loadHistory, analyzeTrend } = require('../apis/btcDominance');
+const {
+	loadHistory,
+	analyzeTrend,
+	analyzeEthBtcTrend,
+} = require('../apis/btcDominance');
 const config = require('../config');
 const { getOnChainData } = require('../apis/santiment');
 const { analyzeStablecoinActivity } = require('../utils/stablecoinActivity');
@@ -67,12 +71,12 @@ async function runScanner() {
 	console.log('🔄 Uruchamiam rozszerzony skaner z DEX Analytics...');
 
 	// --- Krok 1: Pobranie danych rynkowych ---
-	let btcDominance = cache.get('btcDominance');
+	let globalMarketData = cache.get('globalMarketData');
 	let fearAndGreed = cache.get('fearAndGreed');
 	let top100Data = cache.get('top100Data');
 	let stablecoinActivity = cache.get('stablecoinActivity');
 
-	if (btcDominance && fearAndGreed && top100Data && stablecoinActivity) {
+	if (globalMarketData && fearAndGreed && top100Data && stablecoinActivity) {
 		console.log(
 			'✅ Pobrano podstawowe dane rynkowe i aktywność stablecoinów z CACHE.'
 		);
@@ -80,22 +84,26 @@ async function runScanner() {
 		console.log('📊 Pobieram świeże dane rynkowe z API...');
 		const [fetchedDominance, fetchedFnG, fetchedTop100, fetchedActivity] =
 			await Promise.all([
-				getBTCDominance(),
+				getGlobalMarketData(),
 				getFearAndGreedIndex(),
 				getTop100(),
 				getStablecoinActivity(),
 			]);
 
-		cache.set('btcDominance', fetchedDominance, MARKET_DATA_CACHE_TTL);
+		cache.set('globalMarketData', fetchedDominance, MARKET_DATA_CACHE_TTL);
 		cache.set('fearAndGreed', fetchedFnG, MARKET_DATA_CACHE_TTL);
 		cache.set('top100Data', fetchedTop100.coins, MARKET_DATA_CACHE_TTL);
 		cache.set('stablecoinActivity', fetchedActivity, MARKET_DATA_CACHE_TTL);
 
-		btcDominance = fetchedDominance;
+		globalMarketData = fetchedDominance;
 		fearAndGreed = fetchedFnG;
 		top100Data = fetchedTop100.coins;
 		stablecoinActivity = fetchedActivity;
 	}
+
+	const btcDominance = globalMarketData.market_cap_percentage.btc;
+	const totalMarketCap = globalMarketData.total_market_cap.usd;
+	const total2MarketCap = totalMarketCap * (1 - btcDominance / 100);
 
 	const marketActivity = analyzeStablecoinActivity(stablecoinActivity);
 
@@ -103,26 +111,37 @@ async function runScanner() {
 	const trendAnalysis = analyzeTrend(history);
 	const dominanceChange24h = trendAnalysis.changes['24h'];
 
+	const ethBtcHistory = await getEthBtcChartData();
+	const ethBtcTrend = analyzeEthBtcTrend(ethBtcHistory);
+
 	// --- Krok 2: Określenie warunków rynkowych i wybór strategii ---
 	console.log('🎯 Określam warunki rynkowe i wybieram aktywne strategie...');
 	let condition, advice, recommendedStrategy, activeStrategies;
 
-	if (btcDominance > 65) {
-		condition = 'SEZON BITCOINA';
+	if (btcDominance < 55 && ethBtcTrend.trend.includes('UP')) {
+		condition = 'POTWIERDZONY ALT SEASON';
 		advice =
-			'Trudny czas dla altów - kapitał płynie do liderów. Dodatkowo analizuję droższe alty.';
-		recommendedStrategy = 'VALUE';
-		activeStrategies = config.marketPhases.BITCOIN_SEASON;
-	} else if (btcDominance > 55) {
-		condition = 'FAZA PRZEJŚCIOWA';
-		advice = 'Zmienny rynek - najlepsza będzie strategia BALANCED';
-		recommendedStrategy = 'BALANCED';
-		activeStrategies = config.marketPhases.TRANSITION;
-	} else {
-		condition = 'SEZON ALTCOINÓW';
-		advice = 'Doskonały czas na zagrania pod MOMENTUM. Skanuję tanie alty.';
+			'Dominacja BTC niska, ETH rośnie. Idealne warunki dla strategii MOMENTUM.';
 		recommendedStrategy = 'MOMENTUM';
 		activeStrategies = config.marketPhases.ALT_SEASON;
+	} else if (btcDominance < 58) {
+		condition = 'POCZĄTEK ALT SEZONU';
+		advice = 'Dominacja BTC spada. Szukaj okazji pod MOMENTUM i BALANCED.';
+		recommendedStrategy = 'MOMENTUM';
+		activeStrategies = config.marketPhases.ALT_SEASON;
+	} else if (btcDominance > 65) {
+		condition = 'SEZON BITCOINA';
+		advice =
+			'Trudny czas dla altów. Szukaj okazji w strategii VALUE i obserwuj ETH/BTC.';
+		recommendedStrategy = 'VALUE';
+		activeStrategies = config.marketPhases.BITCOIN_SEASON;
+	} else {
+		// Pomiędzy 58 a 65
+		condition = 'FAZA PRZEJŚCIOWA';
+		advice =
+			'Zmienny rynek. Najlepsze podejście to BALANCED, ale obserwuj siłę ETH.';
+		recommendedStrategy = 'BALANCED';
+		activeStrategies = config.marketPhases.TRANSITION;
 	}
 
 	console.log(
@@ -283,7 +302,9 @@ async function runScanner() {
 	return {
 		marketStatus: {
 			btcDominance: btcDominance.toFixed(2),
+			total2MarketCap: total2MarketCap,
 			dominanceChange: `${dominanceChange24h}%`,
+			ethBtcTrend: ethBtcTrend,
 			condition,
 			advice,
 			recommendedStrategy,

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { getDevData, setDevData } = require('../core/cache');
+const cache = require('../core/cache');
 
 require('dotenv').config();
 
@@ -10,6 +11,8 @@ const API_KEY = process.env.COINGECKO_API_KEY;
 
 // Rate limiting - CoinGecko free tier allows 10-30 calls/minute
 const RATE_LIMIT_DELAY = 2000; // 2 seconds between calls to be safe
+
+const MARKET_DATA_CACHE_TTL = 15 * 60 * 1000; //  (15 minut)
 
 // Create axios instance with default config
 const api = axios.create({
@@ -61,18 +64,24 @@ async function getTopCoins(limit = 100, currency = 'usd') {
 }
 
 /**
- * Get BTC dominance data
- * @returns {Promise<number>} BTC dominance percentage
+ * Get global market data, including BTC dominance and total market cap.
+ * @returns {Promise<Object>} Global market data
  */
-async function getBTCDominance() {
+async function getGlobalMarketData() {
 	try {
 		const response = await rateLimitedCall(() => api.get('/global'));
+		const globalData = response.data.data;
 
-		const btcDominance = response.data.data.market_cap_percentage.btc;
-		console.log(`📈 Current BTC Dominance: ${btcDominance.toFixed(2)}%`);
-		return btcDominance;
+		console.log(
+			`📈 Current BTC Dominance: ${globalData.market_cap_percentage.btc.toFixed(2)}%`
+		);
+		console.log(
+			`💰 Total Market Cap: $${globalData.total_market_cap.usd.toLocaleString()}`
+		);
+
+		return globalData; // Zwracamy cały obiekt
 	} catch (error) {
-		console.error('❌ Error fetching BTC dominance:', error.message);
+		console.error('❌ Error fetching global market data:', error.message);
 		throw error;
 	}
 }
@@ -113,7 +122,7 @@ async function getTop100() {
 		const formattedCoins = coins.map(formatCoinData);
 
 		// Get BTC dominance for context
-		const btcDominance = await getBTCDominance();
+		const btcDominance = await getGlobalMarketData();
 
 		return {
 			coins: formattedCoins,
@@ -191,7 +200,7 @@ async function test() {
 
 		// Test 2: Get BTC dominance
 		console.log('\nTest 2: Fetching BTC dominance...');
-		await getBTCDominance();
+		await getGlobalMarketData();
 
 		// Test 3: Format data
 		console.log('\nTest 3: Testing data formatting...');
@@ -204,14 +213,51 @@ async function test() {
 	}
 }
 
+/**
+ * Pobiera dane historyczne dla pary ETH/BTC.
+ * @param {number} days - Liczba dni do pobrania.
+ * @returns {Promise<Array|null>} Tablica z danymi [timestamp, price] lub null.
+ */
+async function getEthBtcChartData(days = 90) {
+	const cacheKey = `eth_btc_chart_${days}d`;
+	const cachedData = cache.get(cacheKey);
+	if (cachedData) {
+		console.log(`✅ Pobrano dane ETH/BTC z CACHE.`);
+		return cachedData;
+	}
+
+	try {
+		console.log(`📊 Pobieram dane historyczne dla ETH/BTC...`);
+		const response = await rateLimitedCall(() =>
+			api.get('/coins/ethereum/market_chart', {
+				params: {
+					vs_currency: 'btc',
+					days: days,
+					interval: 'daily',
+				},
+			})
+		);
+
+		if (response.data && response.data.prices) {
+			cache.set(cacheKey, response.data.prices, MARKET_DATA_CACHE_TTL);
+			return response.data.prices;
+		}
+		return null;
+	} catch (error) {
+		console.error('❌ Błąd podczas pobierania danych ETH/BTC:', error.message);
+		return null;
+	}
+}
+
 // Export functions
 module.exports = {
 	getTopCoins,
-	getBTCDominance,
+	getGlobalMarketData,
 	formatCoinData,
 	getTop100,
 	test,
 	getCoinDeveloperData,
+	getEthBtcChartData,
 };
 
 // Run test if this file is executed directly

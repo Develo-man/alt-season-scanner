@@ -1,8 +1,3 @@
-/**
- * IMPROVED UI.JS - User-Friendly Interface for Alt Season Scanner
- * Focus: Clean, understandable, progressive disclosure
- */
-
 // ========================================
 // CONSTANTS AND CONFIGURATION
 // ========================================
@@ -76,6 +71,7 @@ function formatNumber(num, type = 'default') {
 		case 'score':
 			return Math.round(num);
 		case 'currency':
+			if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
 			if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
 			if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
 			if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
@@ -643,21 +639,11 @@ function renderResponsiveActionButtons(coin) {
 /**
  * Render market overview with user-friendly explanations
  */
-function renderMarketOverview(marketStatus) {
+function renderMarketOverview(marketStatus, elements) {
 	const dominance = parseFloat(marketStatus.btcDominance || 0);
 	const phaseInfo = getMarketPhaseInfo(dominance);
 
-	// Update DOM elements
-	const elements = {
-		btcDominance: document.getElementById('btc-dominance'),
-		marketPhase: document.getElementById('market-phase'),
-		fngValue: document.getElementById('fng-value'),
-		fngClassification: document.getElementById('fng-classification'),
-		opportunities: document.getElementById('opportunities'),
-		activityScore: document.getElementById('stablecoin-activity-score'),
-		activityPressure: document.getElementById('stablecoin-activity-pressure'),
-	};
-
+	// --- Dominacja Bitcoin ---
 	if (elements.btcDominance) {
 		elements.btcDominance.textContent = `${dominance.toFixed(1)}%`;
 	}
@@ -689,28 +675,47 @@ function renderMarketOverview(marketStatus) {
 		}
 	}
 
+	// --- Aktywność Stablecoinów  ---
 	if (
 		marketStatus.stablecoinActivity &&
 		elements.activityScore &&
 		elements.activityPressure
 	) {
 		const activity = marketStatus.stablecoinActivity;
-
 		elements.activityScore.textContent =
 			activity.score !== null ? `${activity.score}` : '--';
 		elements.activityPressure.textContent = `Presja Kupna: ${activity.buyPressure}%`;
-
-		// Dynamiczne kolorowanie na podstawie presji kupna
 		if (activity.buyPressure > 55) {
-			elements.activityScore.className = 'big-number greed'; // Zielony
+			elements.activityScore.className = 'big-number greed';
 		} else if (activity.buyPressure < 45) {
-			elements.activityScore.className = 'big-number fear'; // Czerwony
+			elements.activityScore.className = 'big-number fear';
 		} else {
-			elements.activityScore.className = 'big-number neutral'; // Żółty
+			elements.activityScore.className = 'big-number neutral';
 		}
 	}
 
-	// Update market recommendation
+	// --- Siła ETH vs BTC ---
+	if (marketStatus.ethBtcTrend && elements.ethBtcValue) {
+		const trendInfo = marketStatus.ethBtcTrend;
+		elements.ethBtcValue.textContent = trendInfo.currentValue || '--';
+		elements.ethBtcTrend.textContent = trendInfo.description || 'Brak danych';
+
+		if (trendInfo.trend.includes('UP')) {
+			elements.ethBtcValue.className = 'big-number greed'; // Zielony
+		} else if (trendInfo.trend.includes('DOWN')) {
+			elements.ethBtcValue.className = 'big-number fear'; // Czerwony
+		} else {
+			elements.ethBtcValue.className = 'big-number neutral'; // Żółty
+		}
+	}
+
+	// --- Kapitalizacja Altcoinów (TOTAL2) ---
+	if (marketStatus.total2MarketCap && elements.total2MarketCap) {
+		const formattedCap = formatNumber(marketStatus.total2MarketCap, 'currency');
+		elements.total2MarketCap.textContent = `$${formattedCap}`;
+	}
+
+	// --- Rekomendacja rynkowa ---
 	updateMarketRecommendation(marketStatus, phaseInfo);
 }
 
@@ -1349,7 +1354,7 @@ export function renderEnhancedResults(results, elements) {
 	console.log('🎨 Rendering enhanced user-friendly interface...');
 
 	// Render market overview
-	renderMarketOverview(results.marketStatus);
+	renderMarketOverview(results.marketStatus, elements);
 
 	// Update opportunities count
 	const allCoins = getAllCoinsFromStrategies(results);

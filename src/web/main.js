@@ -39,6 +39,11 @@ class AppState {
 			fngClassification: document.getElementById('fng-classification'),
 			opportunities: document.getElementById('opportunities'),
 
+			ethBtcValue: document.getElementById('eth-btc-value'),
+			ethBtcTrend: document.getElementById('eth-btc-trend'),
+
+			total2MarketCap: document.getElementById('total2-market-cap'),
+
 			// Market recommendation
 			marketAdvice: document.getElementById('market-advice'),
 			recommendedStrategy: document.getElementById('recommended-strategy'),
@@ -370,13 +375,10 @@ async function loadData(showLoader = true) {
  * Process and validate API data
  */
 function processApiData(rawData) {
-	// Validate basic structure
 	if (!rawData || typeof rawData !== 'object') {
 		throw new Error('Invalid data structure received');
 	}
-
-	// Ensure required fields exist
-	const processedData = {
+	return {
 		marketStatus: processMarketStatus(rawData.marketStatus),
 		strategies: processStrategies(rawData.strategies),
 		stats: rawData.stats || {},
@@ -384,8 +386,6 @@ function processApiData(rawData) {
 		sectorAnalysis: rawData.sectorAnalysis || [],
 		timestamp: new Date().toISOString(),
 	};
-
-	return processedData;
 }
 
 /**
@@ -399,9 +399,11 @@ function processMarketStatus(marketStatus) {
 			condition: 'UNKNOWN',
 			advice: 'Sprawdzam dane rynkowe...',
 			recommendedStrategy: null,
+			ethBtcTrend: null,
+			stablecoinActivity: null,
+			total2MarketCap: null,
 		};
 	}
-
 	return {
 		btcDominance: marketStatus.btcDominance || '0',
 		dominanceChange: marketStatus.dominanceChange || '0%',
@@ -409,6 +411,9 @@ function processMarketStatus(marketStatus) {
 		advice: marketStatus.advice || 'Analizuję warunki rynkowe...',
 		recommendedStrategy: marketStatus.recommendedStrategy || null,
 		fearAndGreed: marketStatus.fearAndGreed || null,
+		ethBtcTrend: marketStatus.ethBtcTrend || null,
+		stablecoinActivity: marketStatus.stablecoinActivity || null,
+		total2MarketCap: marketStatus.total2MarketCap || null,
 	};
 }
 
@@ -416,10 +421,7 @@ function processMarketStatus(marketStatus) {
  * Process strategies data
  */
 function processStrategies(strategies) {
-	if (!Array.isArray(strategies)) {
-		return [];
-	}
-
+	if (!Array.isArray(strategies)) return [];
 	return strategies.map((strategy) => ({
 		...strategy,
 		topCoins: Array.isArray(strategy.topCoins) ? strategy.topCoins : [],
@@ -972,23 +974,9 @@ function enhanceAccessibility() {
  */
 document.addEventListener('DOMContentLoaded', () => {
 	console.log('🎯 DOM loaded, initializing app...');
-
-	// Initialize the application
 	initializeApp();
-
-	// Enhance accessibility
 	enhanceAccessibility();
-
-	// Monitor performance
 	setTimeout(monitorPerformance, 1000);
-
-	// Set up service worker if available
-	// if ('serviceWorker' in navigator) {
-	// 	navigator.serviceWorker
-	// 		.register('/sw.js')
-	// 		.then((registration) => console.log('📱 Service Worker registered'))
-	// 		.catch((error) => console.log('Service Worker registration failed'));
-	// }
 });
 
 // ========================================
@@ -997,17 +985,13 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
 	const themeToggle = document.getElementById('theme-toggle');
 	if (themeToggle) {
-		// Sprawdź zapisany motyw lub preferencje systemowe
 		const currentTheme =
 			localStorage.getItem('theme') ||
 			(window.matchMedia('(prefers-color-scheme: dark)').matches
 				? 'dark'
 				: 'light');
-
 		document.documentElement.setAttribute('data-theme', currentTheme);
 		themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
-
-		// Obsługa kliknięcia
 		themeToggle.addEventListener('click', () => {
 			let theme = document.documentElement.getAttribute('data-theme');
 			if (theme === 'dark') {

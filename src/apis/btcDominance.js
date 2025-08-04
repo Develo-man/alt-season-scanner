@@ -414,6 +414,55 @@ function displayReport(report) {
 	);
 }
 
+/**
+ * Analizuje trend dla pary ETH/BTC.
+ * @param {Array} history - Dane historyczne w formacie [timestamp, price].
+ * @returns {Object} Obiekt z analizą trendu.
+ */
+function analyzeEthBtcTrend(history) {
+	if (!history || history.length < 30) {
+		return {
+			trend: 'UNKNOWN',
+			description: 'Za mało danych do analizy ETH/BTC',
+		};
+	}
+
+	const now = history[history.length - 1][1];
+	const day7 = history[history.length - 8][1];
+	const day30 = history[history.length - 31][1];
+
+	const change7d = ((now - day7) / day7) * 100;
+	const change30d = ((now - day30) / day30) * 100;
+
+	let trend, description;
+
+	if (change7d > 5 && change30d > 10) {
+		trend = 'STRONG_UP';
+		description =
+			'ETH wyraźnie umacnia się względem BTC. Bardzo dobry sygnał dla altów.';
+	} else if (change7d > 2 && change30d > 5) {
+		trend = 'UP';
+		description = 'ETH zyskuje na sile. Pozytywny sygnał dla altcoinów.';
+	} else if (change7d < -5 && change30d < -10) {
+		trend = 'STRONG_DOWN';
+		description = 'ETH mocno traci do BTC. Zły sygnał dla altów.';
+	} else if (change7d < -2 && change30d < -5) {
+		trend = 'DOWN';
+		description = 'ETH osłabia się. Kapitał może wracać do BTC.';
+	} else {
+		trend = 'SIDEWAYS';
+		description = 'ETH/BTC w konsolidacji. Rynek czeka na kierunek.';
+	}
+
+	return {
+		trend,
+		description,
+		change7d: change7d.toFixed(2) + '%',
+		change30d: change30d.toFixed(2) + '%',
+		currentValue: now.toFixed(5) + ' BTC',
+	};
+}
+
 // Export functions
 module.exports = {
 	getCurrentDominance,
@@ -424,6 +473,7 @@ module.exports = {
 	getHistoricalExtremes,
 	generateDominanceReport,
 	displayReport,
+	analyzeEthBtcTrend,
 };
 
 // Run report if executed directly
