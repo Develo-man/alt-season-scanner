@@ -14,6 +14,7 @@ const {
 	getSmartVolumeAnalysis,
 	getVolumeProfile,
 	getKlines,
+	getStablecoinActivity,
 } = require('../apis/binance');
 const { getFearAndGreedIndex } = require('../apis/fearAndGreed');
 const { batchAnalyzeDEX } = require('../apis/dexAnalytics');
@@ -23,6 +24,8 @@ const { getSector } = require('../utils/sectors');
 const { analyzeSectors } = require('../utils/analysis');
 const { loadHistory, analyzeTrend } = require('../apis/btcDominance');
 const config = require('../config');
+const { getOnChainData } = require('../apis/santiment');
+const { analyzeStablecoinActivity } = require('../utils/stablecoinActivity');
 
 const MARKET_DATA_CACHE_TTL = 15 * 60 * 1000; // 15 minut
 
@@ -56,6 +59,10 @@ function getAllCoinsFromStrategies(strategyResults) {
  * Uruchamia pełny proces skanowania kryptowalut i zwraca ustrukturyzowane wyniki.
  * @returns {Promise<Object>} Obiekt zawierający pełne wyniki skanowania.
  */
+/**
+ * Uruchamia pełny proces skanowania kryptowalut i zwraca ustrukturyzowane wyniki.
+ * @returns {Promise<Object>} Obiekt zawierający pełne wyniki skanowania.
+ */
 async function runScanner() {
 	console.log('🔄 Uruchamiam rozszerzony skaner z DEX Analytics...');
 
@@ -63,27 +70,34 @@ async function runScanner() {
 	let btcDominance = cache.get('btcDominance');
 	let fearAndGreed = cache.get('fearAndGreed');
 	let top100Data = cache.get('top100Data');
+	let stablecoinActivity = cache.get('stablecoinActivity');
 
-	if (btcDominance && fearAndGreed && top100Data) {
-		console.log('✅ Pobrano podstawowe dane rynkowe z CACHE.');
+	if (btcDominance && fearAndGreed && top100Data && stablecoinActivity) {
+		console.log(
+			'✅ Pobrano podstawowe dane rynkowe i aktywność stablecoinów z CACHE.'
+		);
 	} else {
 		console.log('📊 Pobieram świeże dane rynkowe z API...');
-		const [fetchedDominance, fetchedFnG, fetchedTop100] = await Promise.all([
-			getBTCDominance(),
-			getFearAndGreedIndex(),
-			getTop100(),
-		]);
+		const [fetchedDominance, fetchedFnG, fetchedTop100, fetchedActivity] =
+			await Promise.all([
+				getBTCDominance(),
+				getFearAndGreedIndex(),
+				getTop100(),
+				getStablecoinActivity(),
+			]);
 
-		// Zapisz świeże dane do cache
 		cache.set('btcDominance', fetchedDominance, MARKET_DATA_CACHE_TTL);
 		cache.set('fearAndGreed', fetchedFnG, MARKET_DATA_CACHE_TTL);
-		// W getTop100 zwracany jest obiekt, bierzemy z niego `coins`
 		cache.set('top100Data', fetchedTop100.coins, MARKET_DATA_CACHE_TTL);
+		cache.set('stablecoinActivity', fetchedActivity, MARKET_DATA_CACHE_TTL);
 
 		btcDominance = fetchedDominance;
 		fearAndGreed = fetchedFnG;
 		top100Data = fetchedTop100.coins;
+		stablecoinActivity = fetchedActivity;
 	}
+
+	const marketActivity = analyzeStablecoinActivity(stablecoinActivity);
 
 	const history = await loadHistory();
 	const trendAnalysis = analyzeTrend(history);
@@ -118,9 +132,8 @@ async function runScanner() {
 	// --- Krok 3: Filtrowanie według aktywnych strategii ---
 	console.log('🎯 Uruchamiam filtrowanie według aktywnych strategii...');
 	const strategyResults = {};
-	const allCandidates = new Set(); // Unikalne monety ze wszystkich strategii
+	const allCandidates = new Set();
 
-	// Pętla po AKTYWNYCH strategiach
 	for (const key of activeStrategies) {
 		const strategy = config.strategies[key];
 		if (!strategy) continue;
@@ -168,7 +181,7 @@ async function runScanner() {
 					sector: getSector(coin.symbol),
 					binance: binanceInfo,
 					isOnBinance: binanceInfo?.isListed,
-					strategy: key, // Tag coin with strategy
+					strategy: key,
 				};
 			})
 			.filter((coin) => coin.isOnBinance);
@@ -201,7 +214,6 @@ async function runScanner() {
 	const enrichmentPromises = coinsToEnrichList.map(async (coin) => {
 		coin.dexData = dexAnalytics[coin.symbol] || null;
 
-		const { getOnChainData } = require('../apis/santiment');
 		const promises = {
 			klines: null,
 			devData: getCoinDeveloperData(coin.id),
@@ -246,6 +258,7 @@ async function runScanner() {
 			}
 		});
 	});
+
 	// --- Krok 8: Obliczenia momentum i ranking ---
 	const marketConditions = {
 		btcDominance,
@@ -262,6 +275,7 @@ async function runScanner() {
 		strategyResults[key].rankedCoins = rankedCoins;
 		strategyResults[key].topCoin = rankedCoins[0] || null;
 	}
+
 	// --- Krok 9: Analiza między-strategiczna ---
 	const crossStrategyAnalysis = analyzeCrossStrategies(strategyResults);
 
@@ -279,6 +293,7 @@ async function runScanner() {
 						classification: fearAndGreed.classification,
 					}
 				: null,
+			stablecoinActivity: marketActivity,
 		},
 		strategies: Object.entries(strategyResults).map(([key, strategy]) => ({
 			key,

@@ -654,6 +654,8 @@ function renderMarketOverview(marketStatus) {
 		fngValue: document.getElementById('fng-value'),
 		fngClassification: document.getElementById('fng-classification'),
 		opportunities: document.getElementById('opportunities'),
+		activityScore: document.getElementById('stablecoin-activity-score'),
+		activityPressure: document.getElementById('stablecoin-activity-pressure'),
 	};
 
 	if (elements.btcDominance) {
@@ -684,6 +686,27 @@ function renderMarketOverview(marketStatus) {
 			} else {
 				elements.fngValue.className = 'big-number neutral';
 			}
+		}
+	}
+
+	if (
+		marketStatus.stablecoinActivity &&
+		elements.activityScore &&
+		elements.activityPressure
+	) {
+		const activity = marketStatus.stablecoinActivity;
+
+		elements.activityScore.textContent =
+			activity.score !== null ? `${activity.score}` : '--';
+		elements.activityPressure.textContent = `Presja Kupna: ${activity.buyPressure}%`;
+
+		// Dynamiczne kolorowanie na podstawie presji kupna
+		if (activity.buyPressure > 55) {
+			elements.activityScore.className = 'big-number greed'; // Zielony
+		} else if (activity.buyPressure < 45) {
+			elements.activityScore.className = 'big-number fear'; // Czerwony
+		} else {
+			elements.activityScore.className = 'big-number neutral'; // Żółty
 		}
 	}
 

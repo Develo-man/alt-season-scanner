@@ -620,6 +620,58 @@ function verifyListingStatus(symbols, exchangeInfo) {
 	return results;
 }
 
+/**
+ * Pobiera i agreguje aktywność (wolumen kupna/sprzedaży) dla kluczowych par ze stablecoinami.
+ * @returns {Promise<Object|null>}
+ */
+async function getStablecoinActivity() {
+	console.log('💧 Analizuję aktywność na parach ze stablecoinami...');
+	const keyPairs = [
+		'BTCUSDT',
+		'ETHUSDT',
+		'SOLUSDT',
+		'BNBUSDT',
+		'XRPUSDT',
+		'DOGEUSDT',
+		'ADAUSDT',
+		'AVAXUSDT',
+		'LINKUSDT',
+		'DOTUSDT',
+	];
+
+	let totalBuyVolume = 0;
+	let totalSellVolume = 0;
+	let totalTrades = 0;
+
+	const promises = keyPairs.map((pair) => getBuySellPressure(pair, 60 * 24)); // 24h
+	const results = await Promise.all(promises);
+
+	results.forEach((result) => {
+		if (result) {
+			totalBuyVolume += result.buyVolume;
+			totalSellVolume += result.sellVolume;
+			totalTrades += result.tradesCount;
+		}
+	});
+
+	if (totalTrades === 0) {
+		console.warn('⚠️ Nie udało się pobrać danych o aktywności stablecoinów.');
+		return null;
+	}
+
+	const totalVolume = totalBuyVolume + totalSellVolume;
+	console.log(
+		`✅ Analiza zakończona. Całkowity wolumen: ${formatUSD(totalVolume)}, Presja kupna: ${((totalBuyVolume / totalVolume) * 100).toFixed(1)}%`
+	);
+
+	return {
+		totalBuyVolume,
+		totalSellVolume,
+		totalVolume,
+		totalTrades,
+	};
+}
+
 module.exports = {
 	getExchangeInfo,
 	checkIfListed,
@@ -633,6 +685,7 @@ module.exports = {
 	getVolumeProfile,
 	formatUSD,
 	verifyListingStatus,
+	getStablecoinActivity,
 };
 
 // Run test if this file is executed directly
