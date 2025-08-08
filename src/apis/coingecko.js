@@ -249,6 +249,46 @@ async function getEthBtcChartData(days = 90) {
 	}
 }
 
+/**
+ * Pobiera dane historyczne dla globalnej kapitalizacji rynkowej.
+ * @param {number} days - Liczba dni do pobrania.
+ * @returns {Promise<Array|null>} Tablica z danymi [timestamp, market_cap].
+ */
+async function getGlobalMarketHistory(days = 90) {
+	const cacheKey = `global_market_history_${days}d`;
+	const cachedData = cache.get(cacheKey);
+	if (cachedData) {
+		console.log(`✅ Pobrano historię kapitalizacji rynku z CACHE.`);
+		return cachedData;
+	}
+
+	try {
+		console.log(`📊 Pobieram historię kapitalizacji całego rynku...`);
+		// Używamy danych bitcoina, ponieważ zawierają one ogólną kapitalizację rynku
+		const response = await rateLimitedCall(() =>
+			api.get('/coins/bitcoin/market_chart', {
+				params: {
+					vs_currency: 'usd',
+					days: days,
+					interval: 'daily',
+				},
+			})
+		);
+
+		if (response.data && response.data.market_caps) {
+			cache.set(cacheKey, response.data.market_caps, MARKET_DATA_CACHE_TTL);
+			return response.data.market_caps;
+		}
+		return null;
+	} catch (error) {
+		console.error(
+			'❌ Błąd podczas pobierania historii kapitalizacji rynku:',
+			error.message
+		);
+		return null;
+	}
+}
+
 // Export functions
 module.exports = {
 	getTopCoins,
@@ -258,6 +298,7 @@ module.exports = {
 	test,
 	getCoinDeveloperData,
 	getEthBtcChartData,
+	getGlobalMarketHistory,
 };
 
 // Run test if this file is executed directly

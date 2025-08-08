@@ -43,6 +43,9 @@ class AppState {
 			ethBtcTrend: document.getElementById('eth-btc-trend'),
 
 			total2MarketCap: document.getElementById('total2-market-cap'),
+			total2MarketCapStatus: document.querySelector(
+				'#total2-market-cap + .status-text'
+			),
 
 			// Market recommendation
 			marketAdvice: document.getElementById('market-advice'),
@@ -402,6 +405,7 @@ function processMarketStatus(marketStatus) {
 			ethBtcTrend: null,
 			stablecoinActivity: null,
 			total2MarketCap: null,
+			total2Trend: null,
 		};
 	}
 	return {
@@ -414,6 +418,7 @@ function processMarketStatus(marketStatus) {
 		ethBtcTrend: marketStatus.ethBtcTrend || null,
 		stablecoinActivity: marketStatus.stablecoinActivity || null,
 		total2MarketCap: marketStatus.total2MarketCap || null,
+		total2Trend: marketStatus.total2Trend || null,
 	};
 }
 

@@ -713,6 +713,11 @@ function renderMarketOverview(marketStatus, elements) {
 	if (marketStatus.total2MarketCap && elements.total2MarketCap) {
 		const formattedCap = formatNumber(marketStatus.total2MarketCap, 'currency');
 		elements.total2MarketCap.textContent = `$${formattedCap}`;
+
+		if (marketStatus.total2Trend && elements.total2MarketCapStatus) {
+			elements.total2MarketCapStatus.textContent =
+				marketStatus.total2Trend.description;
+		}
 	}
 
 	// --- Rekomendacja rynkowa ---

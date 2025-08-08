@@ -7,6 +7,7 @@ const {
 	getGlobalMarketData,
 	getCoinDeveloperData,
 	getEthBtcChartData,
+	getGlobalMarketHistory,
 } = require('../apis/coingecko');
 const {
 	checkMultipleCoins,
@@ -57,6 +58,58 @@ function getAllCoinsFromStrategies(strategyResults) {
 	});
 	return allCoins;
 }
+
+/**
+ * Analizuje trend kapitalizacji altcoinów (TOTAL2).
+ * @param {Array} globalMarketHistory - Historia kapitalizacji całego rynku.
+ * @param {Array} btcDominanceHistory - Historia dominacji BTC.
+ * @returns {Object} Obiekt z interpretacją trendu.
+ */
+function analyzeTotal2Trend(globalMarketHistory, btcDominanceHistory) {
+	if (
+		!globalMarketHistory ||
+		globalMarketHistory.length < 30 ||
+		!btcDominanceHistory ||
+		btcDominanceHistory.length < 30
+	) {
+		return {
+			trend: 'UNKNOWN',
+			description: 'Brak wystarczających danych do analizy trendu TOTAL2.',
+		};
+	}
+
+	// Bierzemy dane z ostatnich 30 dni
+	const last30DaysCaps = globalMarketHistory.slice(-30);
+	const last30DaysDoms = btcDominanceHistory.slice(-30);
+
+	// Obliczamy wartości TOTAL2 dla ostatniego i 7. dnia od końca
+	const currentTotalCap = last30DaysCaps[last30DaysCaps.length - 1][1];
+	const currentBtcDom = last30DaysDoms[last30DaysDoms.length - 1].btc;
+	const currentTotal2 = currentTotalCap * (1 - currentBtcDom / 100);
+
+	const weekAgoTotalCap = last30DaysCaps[last30DaysCaps.length - 8][1];
+	const weekAgoBtcDom = last30DaysDoms[last30DaysDoms.length - 8].btc;
+	const weekAgoTotal2 = weekAgoTotalCap * (1 - weekAgoBtcDom / 100);
+
+	const change7d = ((currentTotal2 - weekAgoTotal2) / weekAgoTotal2) * 100;
+
+	let description = 'Rynek w konsolidacji.';
+	if (change7d > 10) {
+		description = 'Dynamiczny wzrost. Kapitał płynie do altcoinów.';
+	} else if (change7d > 3) {
+		description = 'Umiarkowany wzrost. Pozytywny sentyment.';
+	} else if (change7d < -10) {
+		description = 'Wyraźny spadek. Kapitał odpływa z altcoinów.';
+	} else if (change7d < -3) {
+		description = 'Lekki spadek. Rynek wykazuje słabość.';
+	}
+
+	return {
+		change7d: change7d.toFixed(1) + '%',
+		description: description,
+	};
+}
+
 // --- Główna funkcja skanera ---
 
 /**
@@ -113,6 +166,9 @@ async function runScanner() {
 
 	const ethBtcHistory = await getEthBtcChartData();
 	const ethBtcTrend = analyzeEthBtcTrend(ethBtcHistory);
+
+	const globalMarketHistory = await getGlobalMarketHistory();
+	const total2Trend = analyzeTotal2Trend(globalMarketHistory, history);
 
 	// --- Krok 2: Określenie warunków rynkowych i wybór strategii ---
 	console.log('🎯 Określam warunki rynkowe i wybieram aktywne strategie...');
@@ -315,6 +371,7 @@ async function runScanner() {
 					}
 				: null,
 			stablecoinActivity: marketActivity,
+			total2Trend: total2Trend,
 		},
 		strategies: Object.entries(strategyResults).map(([key, strategy]) => ({
 			key,
