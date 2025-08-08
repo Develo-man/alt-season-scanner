@@ -197,17 +197,16 @@ function calculatePositionScore(coin) {
 function calculateRiskScore(coin, marketConditions = {}, klines = []) {
 	let risk = 0;
 
-	// 1. Ryzyko zmienności (Volatility Risk) - NOWOŚĆ
-	// Wykorzystujemy funkcję, którą już masz w src/utils/accumulation.js
+	// 1. Ryzyko zmienności (Volatility Risk) - ULEPSZONE
 	if (klines && klines.length >= 14) {
 		const atr14 = require('./accumulation').calculateATR(klines);
 		const price = coin.price;
 		if (price > 0) {
-			const atrPercentage = (atr14 / price) * 100;
-			if (atrPercentage > 20)
-				risk += 30; // Dzienna zmienność > 20% to bardzo dużo
-			else if (atrPercentage > 10) risk += 15;
-			else if (atrPercentage > 5) risk += 5;
+			const atrPercentage = (atr14 / price) * 100; // Zmienność jako % ceny
+			if (atrPercentage > 15)
+				risk += 30; // Dzienna zmienność > 15% to bardzo dużo
+			else if (atrPercentage > 8) risk += 15;
+			else if (atrPercentage > 4) risk += 5;
 		}
 	}
 
@@ -281,17 +280,11 @@ function calculateDeveloperScore(coin) {
 }
 
 /**
- * Calculate comprehensive momentum score
+ * Calculate comprehensive momentum score with a "Quality" multiplier.
  * @param {Object} coin - Complete coin data with Binance info
  * @param {Object} [marketConditions={}] - Optional market conditions data
  * @param {Object} [additionalData={}] - Optional data for accumulation
- * @returns {Object} Detailed scoring breakdown
- */
-/**
- * Calculate comprehensive momentum score with DEX integration
- * @param {Object} coin - Complete coin data with Binance info
- * @param {Object} [marketConditions={}] - Optional market conditions data
- * @param {Object} [additionalData={}] - Optional data for accumulation
+ * @param {Array} [sectorAnalysis=[]] - Pre-calculated sector analysis data
  * @returns {Object} Detailed scoring breakdown
  */
 function calculateMomentumScore(
@@ -317,53 +310,28 @@ function calculateMomentumScore(
 	const riskScore = calculateRiskScore(coin);
 	const devScore = calculateDeveloperScore(coin);
 	const flowScore = calculateFlowScore(coin.flowData, coin);
-	const riskFromFlows = (50 - flowScore) * 0.6; // Skala od -24 do +24 (waga 0.6)
+	const riskFromFlows = (50 - flowScore) * 0.6; // Scale from -24 to +24
 	const finalRiskScore = Math.round(
 		Math.max(0, Math.min(100, riskScore + riskFromFlows))
 	);
-
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
-	const actionSignal = generateActionSignal(coin, marketConditions);
-	const riskReward = calculateRiskReward(coin, marketConditions, '30d');
 
-	// Get dynamic weights
-	const weights = getDynamicWeights(marketConditions);
+	// Step 1: Calculate "Raw Market Strength" (max ~100)
+	// Combines price action, volume, and DEX activity.
+	const rawStrength = priceScore * 0.5 + volumeScore * 0.35 + dexScore * 0.15;
 
-	// Enhanced weighting with DEX component
-	const enhancedWeights = {
-		...weights,
-		dex: 0.15,
-	};
+	// Step 2: Calculate "Quality & Safety Multiplier" (ranges approx. 0.5 to 1.5)
+	// A score of 50 in each category results in a multiplier of 1.0.
+	// Lower risk and better position/dev activity increase the multiplier.
+	const qualityMultiplier =
+		1 +
+		(positionScore - 50) / 100 -
+		(finalRiskScore - 50) / 100 +
+		devScore / 200;
 
-	// Adjust other weights to accommodate DEX
-	Object.keys(enhancedWeights).forEach((key) => {
-		if (key !== 'dex') {
-			enhancedWeights[key] *= 0.85; // Reduce by 15% to make room for DEX
-		}
-	});
-
-	// Calculate accumulation if data provided
-	let accumulationData = null;
-	if (additionalData && additionalData.klines && additionalData.whaleData) {
-		accumulationData = calculateMomentumScoreWithDEX(
-			coin,
-			additionalData.klines,
-			additionalData.whaleData
-		);
-	}
-
-	// Calculate weighted total with DEX component first
-	const initialTotalScore = Math.max(
-		0,
-		priceScore * enhancedWeights.price +
-			volumeScore * enhancedWeights.volume +
-			positionScore * enhancedWeights.position +
-			devScore * 0.05 +
-			dexScore * enhancedWeights.dex +
-			vpScore * 0.2 -
-			riskScore * enhancedWeights.risk
-	);
+	// Step 3: Calculate the base score by applying the quality multiplier
+	let baseScore = rawStrength * Math.max(0.5, Math.min(1.5, qualityMultiplier));
 
 	// Then, perform timing analysis
 	const timingAnalysis = calculateTimingScore(
@@ -374,55 +342,60 @@ function calculateMomentumScore(
 	const timingMultiplier = getTimingMultiplier(timingAnalysis.timingScore);
 
 	// Adjust total score based on timing
-	const totalScore = Math.max(
-		0,
-		priceScore * weights.price +
-			volumeScore * weights.volume +
-			positionScore * weights.position +
-			devScore * 0.05 -
-			finalRiskScore * weights.risk
-	);
+	let timedScore = baseScore * timingMultiplier;
 
+	// Apply sector multiplier
 	let sectorMultiplier = 1.0;
-	let finalScore = totalScore;
+	let finalScore = timedScore;
 
 	if (coin.sector && coin.sector !== 'Unknown' && sectorAnalysis.length > 0) {
 		const sectorData = sectorAnalysis.find((s) => s.name === coin.sector);
 		if (sectorData) {
 			const sectorAvgScore = sectorData.averageScore;
-			// Jeśli sektor jest "gorący" (średnia ocena > 60), daj bonus
 			if (sectorAvgScore > 65) {
 				sectorMultiplier = 1.15; // +15% bonus
 				signals.push(`🔥 Gorący sektor: ${coin.sector} (+15%)`);
 			} else if (sectorAvgScore > 58) {
 				sectorMultiplier = 1.07; // +7% bonus
 				signals.push(`📈 Sektor w trendzie: ${coin.sector} (+7%)`);
-			}
-			// Jeśli sektor jest "zimny" (średnia ocena < 45), daj karę
-			else if (sectorAvgScore < 45) {
-				sectorMultiplier = 0.9; // -10% kara
+			} else if (sectorAvgScore < 45) {
+				sectorMultiplier = 0.9; // -10% penalty
 				signals.push(`❄️ Zimny sektor: ${coin.sector} (-10%)`);
 			}
 			finalScore *= sectorMultiplier;
 		}
 	}
-	// Determine category (enhanced with DEX consideration)
+
+	// Calculate accumulation and apply bonus if significant
+	let accumulationData = null;
+	if (additionalData && additionalData.klines && additionalData.whaleData) {
+		accumulationData = calculateMomentumScoreWithDEX(
+			coin,
+			additionalData.klines,
+			additionalData.whaleData
+		);
+		if (accumulationData && accumulationData.score > 75) {
+			finalScore *= 1.15; // +15% bonus for extreme accumulation
+			signals.push('🔥 Wykryto ekstremalną akumulację Smart Money (+15%)');
+		}
+	}
+
+	// Determine category based on the final score
 	let category = 'NEUTRAL';
 	let emoji = '😐';
-
-	if (totalScore >= 70) {
+	if (finalScore >= 70) {
 		category = 'HOT';
 		emoji = '🔥';
-	} else if (totalScore >= 60) {
+	} else if (finalScore >= 60) {
 		category = 'STRONG';
 		emoji = '💪';
-	} else if (totalScore >= 50) {
+	} else if (finalScore >= 50) {
 		category = 'PROMISING';
 		emoji = '🌟';
-	} else if (totalScore >= 40) {
+	} else if (finalScore >= 40) {
 		category = 'INTERESTING';
 		emoji = '👀';
-	} else if (totalScore >= 30) {
+	} else if (finalScore >= 30) {
 		category = 'NEUTRAL';
 		emoji = '😐';
 	} else {
@@ -430,137 +403,89 @@ function calculateMomentumScore(
 		emoji = '💤';
 	}
 
-	// Smart Volume signals (existing code)
+	// --- Generate all signals ---
+
+	// Smart Volume signals
 	if (coin.smartVolume) {
 		const sv = coin.smartVolume;
-
-		// Market character signals
 		if (sv.marketCharacter.includes('Whale')) {
 			signals.push('🐋 Wieloryby aktywne - duże transakcje dominują');
 		} else if (sv.marketCharacter.includes('Retail')) {
 			signals.push('👥 Retail FOMO - małe transakcje dominują');
 		}
-
-		// Average trade size signals
-		const avgTradeUSD = parseFloat(sv.avgTradeSize);
-		if (avgTradeUSD > 50000) {
-			signals.push('💰 Bardzo duża średnia transakcja (>$50k)');
-		} else if (avgTradeUSD < 1000 && coin.priceChange7d > 30) {
-			signals.push('⚠️ Retail pump - niska średnia transakcja + duży wzrost');
-		}
-
-		// Whale percentage signals
 		const whalePercent = parseFloat(sv.categories.whale.volumePercent);
-		const retailPercent =
-			parseFloat(sv.categories.retail.volumePercent) +
-			parseFloat(sv.categories.micro.volumePercent);
-
 		if (whalePercent > 50 && coin.priceChange24h < 5) {
 			signals.push(
 				'🎯 Cicha akumulacja - wieloryby kupują bez pompowania ceny'
 			);
 		}
-
-		if (retailPercent > 70 && coin.priceChange24h > 10) {
-			signals.push('🚨 Retail euphoria - może być blisko szczytu');
-		}
 	}
 
-	// Volume Profile signals (existing code)
+	// Volume Profile signals
 	if (coin.volumeProfile) {
 		const vp = coin.volumeProfile;
 		const currentPrice = coin.price;
-		const pocPrice = coin.volumeProfile.pointOfControl.price;
-
-		// Price vs POC signals
-		if (coin.volumeProfile) {
-			const vp = coin.volumeProfile;
-			const currentPrice = coin.price;
-			const pocPrice = coin.volumeProfile.pointOfControl.price;
-			if (Math.abs(((currentPrice - pocPrice) / pocPrice) * 100) < 2) {
-				signals.push(
-					`🎯 Cena przy kluczowym poziomie POC ($${pocPrice.toFixed(4)})`
-				);
-			} else if (currentPrice > vp.valueArea.high) {
-				signals.push('⬆️ Cena powyżej Strefy Wartości - silne momentum');
-			}
-		}
-
-		// Value Area signals
-		if (currentPrice >= vp.valueArea.low && currentPrice <= vp.valueArea.high) {
-			signals.push('✅ Cena w Value Area - zrównoważony poziom');
-		} else if (currentPrice > vp.valueArea.high) {
-			signals.push('⬆️ Cena powyżej Value Area - momentum wzrostowe');
-		} else if (currentPrice < vp.valueArea.low) {
-			signals.push('⬇️ Cena poniżej Value Area - szukaj wsparcia');
+		const pocPrice = vp.pointOfControl.price;
+		if (Math.abs(((currentPrice - pocPrice) / pocPrice) * 100) < 2) {
+			signals.push(
+				`🎯 Cena przy kluczowym poziomie POC ($${pocPrice.toFixed(4)})`
+			);
 		}
 	}
 
-	// Combined Smart Volume + Price Action signals (existing code)
-	if (coin.smartVolume && coin.volumeProfile) {
-		const whalePercent = parseFloat(
-			coin.smartVolume.categories.whale.volumePercent
-		);
-		const priceNearPOC =
-			Math.abs(
-				((coin.price - coin.volumeProfile.pointOfControl.price) /
-					coin.volumeProfile.pointOfControl.price) *
-					100
-			) < 5;
-
-		if (whalePercent > 40 && priceNearPOC && coin.priceChange24h < 3) {
-			signals.push('🎯 Setup idealny - wieloryby przy kluczowym poziomie');
-		}
-	}
-
-	// Generate base signals
+	// Base signals
 	const baseSignals = generateSignals(coin, {
 		priceScore,
 		volumeScore,
 		positionScore,
-		riskScore,
+		riskScore: finalRiskScore,
 	});
 	signals.push(...baseSignals);
 
+	// Flow signals
 	const flowSignals = generateFlowSignals(coin.flowData, flowScore);
 	signals.push(...flowSignals);
 
+	// DEX signals
 	if (coin.dexData) {
 		const dexSignals = generateDEXSignals(coin.dexData, coin);
-		signals.push(...dexSignals.slice(0, 2));
+		signals.push(...dexSignals.slice(0, 2)); // Limit to top 2 signals
 	}
 
+	// Accumulation signals
 	if (accumulationData && accumulationData.signals.length > 0) {
 		signals.push(...accumulationData.signals.slice(0, 2));
 	}
 
+	// Generate final action and risk-reward analysis
+	const actionSignal = generateActionSignal(coin, marketConditions);
+	const riskReward = calculateRiskReward(coin, marketConditions, '30d');
+
 	return {
-		totalScore: finalScore.toFixed(2),
-		originalScore: totalScore.toFixed(2),
-		sectorMultiplier: sectorMultiplier,
+		totalScore: Math.min(100, finalScore).toFixed(2),
+		originalScore: baseScore.toFixed(2),
+		sectorMultiplier: sectorMultiplier.toFixed(2),
+		timingMultiplier: timingMultiplier.toFixed(2),
 		priceScore,
 		volumeScore,
 		positionScore,
 		devScore,
 		riskScore: finalRiskScore,
-		flowScore: flowScore,
-		riskScore,
+		flowScore,
 		dexScore,
 		accumulation: accumulationData,
 		category,
 		emoji,
 		timing: timingAnalysis,
-		originalScore: initialTotalScore,
-		timingMultiplier: timingMultiplier,
-		actionSignal: actionSignal,
-		riskReward: riskReward,
+		actionSignal,
+		riskReward,
 		breakdown: {
-			priceMomentum: `${priceScore}/70`,
-			volumeActivity: `${volumeScore}/100`,
-			marketPosition: `${positionScore}/60`,
-			volumeProfile: `${vpScore}/40`,
-			dexMetrics: `${dexScore}/100`,
-			riskFactor: `${riskScore}/100`,
+			priceMomentum: `${priceScore.toFixed(0)}/70`,
+			volumeActivity: `${volumeScore.toFixed(0)}/100`,
+			marketPosition: `${positionScore.toFixed(0)}/60`,
+			volumeProfile: `${vpScore.toFixed(0)}/40`,
+			dexMetrics: `${dexScore.toFixed(0)}/100`,
+			riskFactor: `${finalRiskScore}/100`,
 			accumulation: accumulationData ? `${accumulationData.score}/100` : 'N/A',
 		},
 		signals: signals.filter(Boolean).slice(0, 5),
@@ -629,8 +554,8 @@ function generateSignals(coin, scores) {
 function rankByMomentum(
 	coins,
 	marketConditions,
-	additionalData = {}, // Poprawnie przyjmujemy trzeci argument
-	sectorAnalysis = [] // Poprawnie przyjmujemy czwarty argument
+	additionalData = {},
+	sectorAnalysis = []
 ) {
 	return coins
 		.map((coin) => ({

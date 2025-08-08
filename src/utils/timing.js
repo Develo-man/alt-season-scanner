@@ -1,9 +1,4 @@
 /**
- * TIMING ANALYSIS - sprawdza czy to dobry moment na zakup
- * Skopiuj i wklej do src/utils/timing.js
- */
-
-/**
  * GŁÓWNA FUNKCJA - sprawdza timing dla konkretnego coina
  */
 function calculateTimingScore(coin, marketConditions, allCoins = []) {
@@ -23,10 +18,10 @@ function calculateTimingScore(coin, marketConditions, allCoins = []) {
 
 	// Średnia ważona
 	const finalScore =
-		macroScore * 0.3 +
-		coinScore * 0.3 +
-		sectorScore * 0.2 +
-		technicalScore * 0.2;
+		macroScore * 0.3 + // Warunki ogólne (waga bez zmian)
+		coinScore * 0.2 + // Kondycja monety (mniejsza waga)
+		sectorScore * 0.15 + // Kondycja sektora (mniejsza waga)
+		technicalScore * 0.35; // Technika (większa waga)
 
 	const signals = generateTimingSignals(
 		macroScore,
@@ -102,6 +97,24 @@ function calculateMacroTiming(marketConditions) {
 		else if (change > 1) score -= 10; // Dominacja rośnie = bad for alts
 	}
 
+	// Altcoin Season Index
+	if (marketConditions.altcoinIndex && marketConditions.altcoinIndex.value) {
+		const indexValue = marketConditions.altcoinIndex.value;
+		if (indexValue > 75)
+			score += 25; // Potwierdzony Altcoin Season
+		else if (indexValue > 50) score += 10;
+		else if (indexValue < 25) score -= 25; // Sezon Bitcoina
+	}
+
+	// Trend ETH/BTC
+	if (marketConditions.ethBtcTrend) {
+		const trend = marketConditions.ethBtcTrend.trend;
+		if (trend === 'STRONG_UP') score += 20;
+		else if (trend === 'UP') score += 10;
+		else if (trend === 'STRONG_DOWN') score -= 20;
+		else if (trend === 'DOWN') score -= 10;
+	}
+
 	return Math.max(0, Math.min(100, score));
 }
 
@@ -149,48 +162,51 @@ function calculateCoinTiming(coin) {
 }
 
 /**
- * 3. SECTOR TIMING - czy sektor ma momentum?
+ * 3. SECTOR TIMING - czy sektor ma momentum? (z analizą trendu)
  */
 function calculateSectorTiming(coin, allCoins) {
 	if (!coin.sector || coin.sector === 'Unknown' || !allCoins.length) {
 		return 50; // Neutral jeśli nie ma danych
 	}
 
-	// Znajdź inne coiny z tego sektora
 	const sectorCoins = allCoins.filter((c) => c.sector === coin.sector);
+	if (sectorCoins.length < 3) return 50;
 
-	if (sectorCoins.length < 3) {
-		return 50; // Za mało danych
-	}
-
-	// Policz średnią performance sektora
 	const sectorPerformance7d =
-		sectorCoins.reduce((sum, c) => {
-			return sum + (c.priceChange7d || 0);
-		}, 0) / sectorCoins.length;
+		sectorCoins.reduce((sum, c) => sum + (c.priceChange7d || 0), 0) /
+		sectorCoins.length;
+	const sectorPerformance24h =
+		sectorCoins.reduce((sum, c) => sum + (c.priceChange24h || 0), 0) /
+		sectorCoins.length;
 
 	let score = 50;
 
-	// Sektor performance
-	if (sectorPerformance7d > 20) {
-		score += 25; // Hot sector
-	} else if (sectorPerformance7d > 10) {
-		score += 15; // Good sector
-	} else if (sectorPerformance7d < -15) {
-		score -= 20; // Weak sector
-	} else if (sectorPerformance7d < -5) {
-		score -= 10; // Declining sector
+	// Istniejąca logika dla 7d performance
+	if (sectorPerformance7d > 20) score += 25;
+	else if (sectorPerformance7d > 10) score += 15;
+	else if (sectorPerformance7d < -15) score -= 20;
+	else if (sectorPerformance7d < -5) score -= 10;
+
+	// Bonus za przyspieszający trend
+	// Sprawdzamy, czy średni dzienny wzrost z ostatniej doby jest lepszy niż średni dzienny z całego tygodnia
+	if (
+		sectorPerformance24h > sectorPerformance7d / 7 &&
+		sectorPerformance7d > 5
+	) {
+		score += 15;
 	}
 
-	// Sprawdź czy coin jest liderem czy laggardem w sektorze
+	//  Kara za zwalniający trend
+	// Jeśli sektor był na plusie w skali tygodnia, ale ostatnia doba jest na minusie
+	if (sectorPerformance24h < 0 && sectorPerformance7d > 10) {
+		score -= 15;
+	}
+
+	// Lider vs maruder (bez zmian)
 	const coinPerformance = coin.priceChange7d || 0;
 	const relativePerfromance = coinPerformance - sectorPerformance7d;
-
-	if (relativePerfromance < -10) {
-		score += 10; // Lagging = catch up potential
-	} else if (relativePerfromance > 15) {
-		score -= 10; // Leading too much = may cool off
-	}
+	if (relativePerfromance < -10) score += 10;
+	else if (relativePerfromance > 15) score -= 10;
 
 	return Math.max(0, Math.min(100, score));
 }
