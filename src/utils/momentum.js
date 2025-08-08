@@ -1,13 +1,25 @@
-/**
- * Advanced Momentum Calculator for Alt Season Scanner
- * Calculates comprehensive scores based on multiple factors
- */
 const { calculateMomentumScoreWithDEX } = require('./accumulation');
 const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
 const { calculateTimingScore, getTimingMultiplier } = require('./timing');
 const { generateActionSignal } = require('./actionSignals');
 const { calculateRiskReward } = require('./riskReward');
-const { calculateFlowScore, generateFlowSignals } = require('./flowAnalysis'); // DODAJ TEN IMPORT
+const { calculateFlowScore, generateFlowSignals } = require('./flowAnalysis');
+
+/**
+ * Helper function to calculate a score based on a smooth, continuous scale instead of discrete steps.
+ * @param {number} value - The actual value of the metric (e.g., price change).
+ * @param {number} maxExpectedValue - The value at which the maximum score is achieved.
+ * @param {number} maxPoints - The maximum points this metric can award.
+ * @returns {number} A smoothly calculated score.
+ */
+function calculateSmoothedScore(value, maxExpectedValue, maxPoints) {
+	// We don't penalize for negative values here, just cap at 0
+	const clampedValue = Math.max(0, value);
+	// Calculate the performance ratio, capping at 1 (100% of expected performance)
+	const performanceRatio = Math.min(clampedValue / maxExpectedValue, 1);
+	// Return the final score
+	return performanceRatio * maxPoints;
+}
 
 /**
  * Zwraca dynamiczne wagi dla oceny momentum na podstawie warunków rynkowych.
@@ -64,30 +76,35 @@ function getDynamicWeights(marketConditions) {
 }
 
 /**
- * Calculate momentum score based on price performance
+ * Calculate momentum score based on price performance using a smooth scale.
  * @param {Object} coin - Coin data
  * @returns {number} Momentum score (0-100)
  */
 function calculatePriceMomentum(coin) {
 	let score = 0;
+	const priceChange7d = coin.priceChange7d || 0;
+	const priceChange24h = coin.priceChange24h || 0;
 
-	// 7-day performance (weight: 40%)
-	if (coin.priceChange7d > 50) score += 40;
-	else if (coin.priceChange7d > 30) score += 35;
-	else if (coin.priceChange7d > 20) score += 30;
-	else if (coin.priceChange7d > 10) score += 20;
-	else if (coin.priceChange7d > 0) score += 10;
-	else if (coin.priceChange7d > -10) score += 5;
+	// 7-day performance (max 40 points)
+	// Max points are awarded for a 70% or higher gain over 7 days.
+	score += calculateSmoothedScore(priceChange7d, 70, 40);
 
-	// 24h performance (weight: 20%)
-	if (coin.priceChange24h > 20) score += 20;
-	else if (coin.priceChange24h > 10) score += 15;
-	else if (coin.priceChange24h > 5) score += 10;
-	else if (coin.priceChange24h > 0) score += 5;
+	// 24h performance (max 20 points)
+	// Max points are awarded for a 25% or higher gain over 24 hours.
+	score += calculateSmoothedScore(priceChange24h, 25, 20);
 
-	// Consistency bonus (both positive)
-	if (coin.priceChange24h > 0 && coin.priceChange7d > 0) {
-		score += 10;
+	// Consistency bonus (10 points) - smoothly applied
+	// The bonus is proportional to the weaker of the two trends.
+	if (priceChange24h > 0 && priceChange7d > 0) {
+		// We use the 24h performance as a proxy for recent strength, capped at 15%
+		const consistencyStrength = Math.min(priceChange24h / 15, 1);
+		score += consistencyStrength * 10;
+	}
+
+	// Dip opportunity bonus (5 points)
+	// Small bonus if the 7-day trend is positive but the 24h trend is slightly negative.
+	if (priceChange7d > 10 && priceChange24h < 0 && priceChange24h > -5) {
+		score += 5;
 	}
 
 	return Math.min(score, 70); // Cap at 70 for price momentum
