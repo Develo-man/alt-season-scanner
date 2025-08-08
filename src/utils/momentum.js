@@ -408,9 +408,30 @@ function calculateMomentumScore(
 
 	const structureScore = analyzeMarketStructure(additionalData.klines);
 
+	// Dynamiczne wagi w zależności od strategii**
+	const strategyKey = coin.strategy;
+	let priceWeight = 0.5,
+		volumeWeight = 0.35,
+		dexWeight = 0.15; // Domyślne wagi (dla Balanced)
+
+	if (strategyKey === 'MOMENTUM') {
+		// W strategii MOMENTUM, siła trendu cenowego jest najważniejsza
+		priceWeight = 0.6;
+		volumeWeight = 0.3;
+		dexWeight = 0.1;
+	} else if (strategyKey === 'VALUE') {
+		// W strategii VALUE, szukamy "cichej akumulacji", więc wolumen i aktywność DEX są ważniejsze
+		priceWeight = 0.3;
+		volumeWeight = 0.4;
+		dexWeight = 0.3;
+	}
+
 	// Step 1: Calculate "Raw Market Strength" (max ~100)
 	// Combines price action, volume, and DEX activity.
-	const rawStrength = priceScore * 0.5 + volumeScore * 0.35 + dexScore * 0.15;
+	const rawStrength =
+		priceScore * priceWeight +
+		volumeScore * volumeWeight +
+		dexScore * dexWeight;
 
 	// Step 2: Calculate "Quality & Safety Multiplier" (ranges approx. 0.5 to 1.5)
 	// A score of 50 in each category results in a multiplier of 1.0.
