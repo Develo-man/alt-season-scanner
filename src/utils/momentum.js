@@ -5,6 +5,35 @@ const { generateActionSignal } = require('./actionSignals');
 const { calculateRiskReward } = require('./riskReward');
 const { calculateFlowScore, generateFlowSignals } = require('./flowAnalysis');
 
+// Helper do obliczania stabilności trendu
+function calculateTrendStability(klines) {
+	if (!klines || klines.length < 7) return 0;
+	// Bierzemy ostatnie 7 świec (dni)
+	const dailyChanges = klines
+		.slice(-7)
+		.map((kline, i, arr) => {
+			if (i === 0) return 0;
+			// Obliczamy dzienną zmianę procentową
+			return ((kline.close - arr[i - 1].close) / arr[i - 1].close) * 100;
+		})
+		.slice(1); // Pomijamy pierwszy element, który jest 0
+
+	if (dailyChanges.length === 0) return 0;
+
+	const mean = dailyChanges.reduce((a, b) => a + b, 0) / dailyChanges.length;
+	// Obliczamy odchylenie standardowe - miarę zmienności
+	const stdDev = Math.sqrt(
+		dailyChanges.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) /
+			dailyChanges.length
+	);
+
+	// Niższe odchylenie = stabilniejszy trend = wyższy bonus
+	if (stdDev < 5) return 15; // Bardzo stabilny, zdrowy wzrost
+	if (stdDev < 10) return 10; // Stabilny wzrost
+	if (stdDev < 15) return 5; // Umiarkowana stabilność
+	return 0; // Bardzo zmienny, chaotyczny ruch
+}
+
 // Helper do obliczania prostej średniej kroczącej z cen zamknięcia
 function calculateSMA(klines, period) {
 	if (!klines || klines.length < period) return null;
@@ -127,32 +156,35 @@ function getDynamicWeights(marketConditions) {
  * @param {Object} coin - Coin data
  * @returns {number} Momentum score (0-100)
  */
-function calculatePriceMomentum(coin) {
+function calculatePriceMomentum(coin, klines = []) {
 	let score = 0;
 	const priceChange7d = coin.priceChange7d || 0;
 	const priceChange24h = coin.priceChange24h || 0;
 
 	// 7-day performance (max 40 points)
-	// Max points are awarded for a 70% or higher gain over 7 days.
 	score += calculateSmoothedScore(priceChange7d, 70, 40);
 
 	// 24h performance (max 20 points)
-	// Max points are awarded for a 25% or higher gain over 24 hours.
 	score += calculateSmoothedScore(priceChange24h, 25, 20);
 
 	// Consistency bonus (10 points) - smoothly applied
-	// The bonus is proportional to the weaker of the two trends.
 	if (priceChange24h > 0 && priceChange7d > 0) {
 		const consistencyStrength = Math.min(priceChange24h / 15, 1);
 		score += consistencyStrength * 10;
 	}
 
-	// Dip opportunity bonus (5 points)
-	// Small bonus if the 7-day trend is positive but the 24h trend is slightly negative.
+	// Dip opportunity bonus (15 points)
 	if (priceChange7d > 20 && priceChange24h < 0 && priceChange24h > -10) {
 		score += 15;
 	}
-	return Math.min(score, 70);
+
+	// Bonus za jakość i stabilność trendu (max 15 punktów)
+	if (priceChange7d > 10) {
+		// Dodajemy bonus tylko dla monet w trendzie wzrostowym
+		score += calculateTrendStability(klines);
+	}
+
+	return Math.min(score, 70); // Maksymalna liczba punktów za cenę to 70
 }
 
 /**
@@ -360,7 +392,7 @@ function calculateMomentumScore(
 	}
 
 	// Calculate individual scores
-	const priceScore = calculatePriceMomentum(coin);
+	const priceScore = calculatePriceMomentum(coin, additionalData.klines);
 	const volumeScore = calculateVolumeScore(coin);
 	const positionScore = calculatePositionScore(coin);
 	const riskScore = calculateRiskScore(coin);
@@ -683,4 +715,5 @@ module.exports = {
 	calculateMomentumScore,
 	generateSignals,
 	rankByMomentum,
+	calculateSMA,
 };

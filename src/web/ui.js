@@ -666,7 +666,7 @@ function renderMarketOverview(marketStatus, elements) {
 					statusElement.textContent = data[interpretationKey];
 				}
 			} else {
-				element.textContent = 'B/D';
+				element.textContent = 'Brak Danych :( ';
 				element.className = 'big-number fear';
 				if (statusElement) {
 					statusElement.textContent = 'Błąd pobierania';

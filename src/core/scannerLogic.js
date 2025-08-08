@@ -328,7 +328,7 @@ async function runScanner() {
 
 		if (coin.binance && coin.binance.mainPair) {
 			const mainPair = coin.binance.mainPair;
-			promises.klines = getKlines(mainPair, '1d', 14);
+			promises.klines = getKlines(mainPair, '1d', 30);
 			promises.pressureData = getBuySellPressure(mainPair, 60);
 			promises.smartVolume = getSmartVolumeAnalysis(mainPair, 24);
 			promises.volumeProfile = getVolumeProfile(mainPair, '1h', 24);

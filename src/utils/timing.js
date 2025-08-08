@@ -1,6 +1,10 @@
 /**
  * GŁÓWNA FUNKCJA - sprawdza timing dla konkretnego coina
  */
+
+const { calculateATR } = require('./accumulation');
+const { calculateSMA } = require('./momentum');
+
 function calculateTimingScore(coin, marketConditions, allCoins = []) {
 	console.log(`⏰ Sprawdzam timing dla ${coin.symbol}...`);
 
@@ -23,17 +27,22 @@ function calculateTimingScore(coin, marketConditions, allCoins = []) {
 		sectorScore * 0.15 + // Kondycja sektora
 		technicalScore * 0.35; // Technika
 
-	// Breakout Booster
-	if (technicalScore > 85) {
-		finalScore += 10; // Dodaj 10 punktów bonusu za idealny setup techniczny
-	}
-
 	const signals = generateTimingSignals(
 		macroScore,
 		coinScore,
 		sectorScore,
 		technicalScore
 	);
+
+	//  BREAKOUT BOOSTER
+	const isHighVolume = coin.volumeToMcap > 0.15;
+	if (technicalScore > 85 && isHighVolume) {
+		finalScore += 15; // Większy bonus za potwierdzone wybicie
+		signals.push('📈 Wybicie techniczne potwierdzone wolumenem!');
+	} else if (technicalScore > 85) {
+		finalScore += 5; // Mniejszy bonus bez wolumenu
+	}
+
 	const recommendation = getTimingRecommendation(finalScore);
 
 	return {
@@ -190,8 +199,8 @@ function calculateCoinTiming(coin) {
 		const klines7d = coin.klines.slice(-7);
 		const klines24h_equivalent = coin.klines.slice(-2); // Używamy 2 dni do przybliżenia ATR z 24h
 
-		const atr7d = require('./accumulation').calculateATR(klines7d);
-		const atr24h = require('./accumulation').calculateATR(klines24h_equivalent);
+		const atr7d = calculateATR(klines7d);
+		const atr24h = calculateATR(klines24h_equivalent);
 
 		if (atr7d > 0) {
 			const volatilityRatio = atr24h / atr7d;
@@ -199,6 +208,22 @@ function calculateCoinTiming(coin) {
 			// a moneta jest w trendzie wzrostowym (7d > 0), to jest to świetny sygnał.
 			if (volatilityRatio < 0.6 && coin.priceChange7d > 10) {
 				score += 20;
+			}
+		}
+	}
+
+	// Bonus/kara za odległość od średniej kroczącej (MA)
+	if (coin.klines && coin.klines.length >= 30) {
+		// Użyjemy MA30 jako kompromisu
+		const sma30 = calculateSMA(coin.klines, 30);
+		if (sma30) {
+			const distanceFromSMA = ((coin.price - sma30) / sma30) * 100;
+			if (distanceFromSMA > 60) {
+				score -= 20; // Mocno przegrzany, ryzyko korekty
+			} else if (distanceFromSMA > 40) {
+				score -= 10; // Lekko przegrzany
+			} else if (distanceFromSMA < -20) {
+				score += 10; // Potencjalnie wyprzedany, możliwa okazja
 			}
 		}
 	}

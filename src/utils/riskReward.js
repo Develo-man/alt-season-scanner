@@ -40,7 +40,8 @@ function calculateRiskReward(coin, marketConditions, timeframe = '30d') {
 	return {
 		upside: upside,
 		downside: downside,
-		riskRewardRatio: upside.percent / downside.percent,
+		riskRewardRatio:
+			downside.percent > 0 ? upside.percent / downside.percent : 0,
 		successProbability: successProbability,
 		expectedValue: expectedValue,
 		recommendation: recommendation,
@@ -50,7 +51,7 @@ function calculateRiskReward(coin, marketConditions, timeframe = '30d') {
 }
 
 /**
- * OSZACUJ POTENCJALNY ZYSK (UPSIDE)
+ * OSZACUJ POTENCJALNY ZYSK (UPSIDE) - ZMODYFIKOWANA
  */
 function estimateUpside(coin, marketConditions, timeframe) {
 	let baseUpside = 0;
@@ -61,20 +62,33 @@ function estimateUpside(coin, marketConditions, timeframe) {
 
 	// Base upside na podstawie momentum score
 	if (momentumScore > 80) {
-		baseUpside = 40; // Bardzo silny momentum
+		baseUpside = 40;
 		reasons.push('Ekstremalnie wysoki momentum score');
 	} else if (momentumScore > 70) {
-		baseUpside = 30; // Silny momentum
+		baseUpside = 30;
 		reasons.push('Wysoki momentum score');
 	} else if (momentumScore > 60) {
-		baseUpside = 22; // Dobry momentum
+		baseUpside = 22;
 		reasons.push('Dobry momentum score');
 	} else if (momentumScore > 50) {
-		baseUpside = 15; // OK momentum
+		baseUpside = 15;
 		reasons.push('Średni momentum');
 	} else {
-		baseUpside = 8; // Słaby momentum
+		baseUpside = 8;
 		reasons.push('Słaby momentum');
+	}
+
+	// **NOWOŚĆ: Dynamiczny cel oparty o Volume Profile**
+	if (coin.volumeProfile && isNearSupport(coin)) {
+		const potentialTarget = coin.volumeProfile.valueArea.high;
+		if (potentialTarget > coin.price) {
+			const upsidePercent = ((potentialTarget - coin.price) / coin.price) * 100;
+			// Użyj wartości technicznej, jeśli jest bardziej optymistyczna, ale ogranicz ją
+			baseUpside = Math.max(baseUpside, Math.min(upsidePercent * 0.9, 150)); // Ograniczenie do 150%
+			reasons.push(
+				`Cel techniczny (opór) w okolicach $${potentialTarget.toFixed(4)}`
+			);
+		}
 	}
 
 	// Timing multiplier
@@ -108,12 +122,6 @@ function estimateUpside(coin, marketConditions, timeframe) {
 		}
 	}
 
-	// Technical factors
-	if (coin.volumeProfile && isNearSupport(coin)) {
-		baseUpside *= 1.2;
-		reasons.push('Bounce od support level');
-	}
-
 	// Volume confirmation
 	const volumeRatio = coin.volumeToMcap || 0;
 	if (volumeRatio > 0.2) {
@@ -135,7 +143,7 @@ function estimateUpside(coin, marketConditions, timeframe) {
 }
 
 /**
- * OSZACUJ POTENCJALNĄ STRATĘ (DOWNSIDE)
+ * OSZACUJ POTENCJALNĄ STRATĘ (DOWNSIDE) - ZMODYFIKOWANA
  */
 function estimateDownside(coin, marketConditions) {
 	let baseDownside = 15; // Standardowe -15% dla altcoina
@@ -155,6 +163,19 @@ function estimateDownside(coin, marketConditions) {
 	} else if (riskScore < 30) {
 		baseDownside = 10;
 		reasons.push('Stosunkowo bezpieczny projekt');
+	}
+
+	// **NOWOŚĆ: Dynamiczny poziom wsparcia oparty o Volume Profile**
+	if (coin.volumeProfile) {
+		const supportLevel = coin.volumeProfile.valueArea.low;
+		if (supportLevel < coin.price) {
+			const downsidePercent = ((coin.price - supportLevel) / coin.price) * 100;
+			// Użyj wartości technicznej, jeśli jest bardziej ryzykowna
+			baseDownside = Math.max(baseDownside, downsidePercent + 2); // Dodajemy 2% marginesu na poślizg
+			reasons.push(
+				`Wsparcie techniczne w okolicach $${supportLevel.toFixed(4)}`
+			);
+		}
 	}
 
 	// Market cap rank risk
@@ -206,12 +227,6 @@ function estimateDownside(coin, marketConditions) {
 	if (btcDominance > 70) {
 		baseDownside += 5;
 		reasons.push('BTC dominance - ryzyko dla altów');
-	}
-
-	// Technical risk
-	if (coin.volumeProfile && isNearResistance(coin)) {
-		baseDownside += 5;
-		reasons.push('Blisko resistance level');
 	}
 
 	// Cap values
@@ -291,7 +306,8 @@ function generateRiskRewardRecommendation(
 	successProbability,
 	expectedValue
 ) {
-	const riskRewardRatio = upside.percent / downside.percent;
+	const riskRewardRatio =
+		downside.percent > 0 ? upside.percent / downside.percent : 0;
 	const ev = parseFloat(expectedValue.netExpectedValue);
 
 	// Doskonały risk-reward
@@ -392,11 +408,15 @@ function getDownsideConfidence(riskScore, volumeRatio, rank) {
 }
 
 function generateReasoning(upside, downside, successProbability, coin) {
+	const riskRewardRatio =
+		downside.percent > 0
+			? (upside.percent / downside.percent).toFixed(1)
+			: 'N/A';
 	return {
 		upsideFactors: upside.reasons,
 		downsideFactors: downside.reasons,
 		probabilityNote: `${(successProbability * 100).toFixed(0)}% szans na zysk na podstawie historycznych wzorców`,
-		summary: `Risk-reward ratio 1:${(upside.percent / downside.percent).toFixed(1)} z ${(successProbability * 100).toFixed(0)}% prawdopodobieństwem sukcesu`,
+		summary: `Risk-reward ratio 1:${riskRewardRatio} z ${(successProbability * 100).toFixed(0)}% prawdopodobieństwem sukcesu`,
 	};
 }
 
