@@ -8,6 +8,7 @@ const {
 	getCoinDeveloperData,
 	getEthBtcChartData,
 	getGlobalMarketHistory,
+	getSSRData,
 } = require('../apis/coingecko');
 const {
 	checkMultipleCoins,
@@ -129,30 +130,45 @@ async function runScanner() {
 	let fearAndGreed = cache.get('fearAndGreed');
 	let top100Data = cache.get('top100Data');
 	let stablecoinActivity = cache.get('stablecoinActivity');
+	let ssrData = cache.get('ssrData');
 
-	if (globalMarketData && fearAndGreed && top100Data && stablecoinActivity) {
+	if (
+		globalMarketData &&
+		fearAndGreed &&
+		top100Data &&
+		stablecoinActivity &&
+		ssrData
+	) {
 		console.log(
-			'✅ Pobrano podstawowe dane rynkowe i aktywność stablecoinów z CACHE.'
+			'✅ Pobrano podstawowe dane rynkowe, aktywność stablecoinów i SSR z CACHE.'
 		);
 	} else {
 		console.log('📊 Pobieram świeże dane rynkowe z API...');
-		const [fetchedDominance, fetchedFnG, fetchedTop100, fetchedActivity] =
-			await Promise.all([
-				getGlobalMarketData(),
-				getFearAndGreedIndex(),
-				getTop100(),
-				getStablecoinActivity(),
-			]);
+		const [
+			fetchedDominance,
+			fetchedFnG,
+			fetchedTop100,
+			fetchedActivity,
+			fetchedSsrData,
+		] = await Promise.all([
+			getGlobalMarketData(),
+			getFearAndGreedIndex(),
+			getTop100(),
+			getStablecoinActivity(),
+			getSSRData(),
+		]);
 
 		cache.set('globalMarketData', fetchedDominance, MARKET_DATA_CACHE_TTL);
 		cache.set('fearAndGreed', fetchedFnG, MARKET_DATA_CACHE_TTL);
 		cache.set('top100Data', fetchedTop100.coins, MARKET_DATA_CACHE_TTL);
 		cache.set('stablecoinActivity', fetchedActivity, MARKET_DATA_CACHE_TTL);
+		cache.set('ssrData', fetchedSsrData, MARKET_DATA_CACHE_TTL);
 
 		globalMarketData = fetchedDominance;
 		fearAndGreed = fetchedFnG;
 		top100Data = fetchedTop100.coins;
 		stablecoinActivity = fetchedActivity;
+		ssrData = fetchedSsrData;
 	}
 
 	console.log('📈 Pobieram dane makroekonomiczne...');
@@ -381,6 +397,7 @@ async function runScanner() {
 			total2Trend: total2Trend,
 			interestRate: interestRate,
 			dxyIndex: dxyIndex,
+			ssrData: ssrData,
 		},
 		strategies: Object.entries(strategyResults).map(([key, strategy]) => ({
 			key,

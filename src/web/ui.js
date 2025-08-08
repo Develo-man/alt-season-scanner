@@ -656,109 +656,98 @@ function renderMarketOverview(marketStatus, elements) {
 	if (elements.btcDominance) {
 		elements.btcDominance.textContent = `${dominance.toFixed(1)}%`;
 	}
-
 	if (elements.marketPhase) {
-		elements.marketPhase.innerHTML = `
-			<span class="phase-emoji">${phaseInfo.emoji}</span>
-			${phaseInfo.phase}
-		`;
+		elements.marketPhase.innerHTML = `<span class="phase-emoji">${phaseInfo.emoji}</span> ${phaseInfo.phase}`;
 		elements.marketPhase.className = `status-text phase-${phaseInfo.color}`;
 	}
 
-	// Fear & Greed Index
+	// --- Fear & Greed Index ---
 	if (marketStatus.fearAndGreed && elements.fngValue) {
 		const fng = marketStatus.fearAndGreed;
 		elements.fngValue.textContent = fng.value || '--';
 		elements.fngClassification.textContent =
 			fng.classification || 'Sprawdzam...';
-
-		// Add color based on value
 		if (fng.value) {
-			if (fng.value < 25) {
-				elements.fngValue.className = 'big-number fear';
-			} else if (fng.value > 75) {
-				elements.fngValue.className = 'big-number greed';
-			} else {
-				elements.fngValue.className = 'big-number neutral';
-			}
+			if (fng.value < 25) elements.fngValue.className = 'big-number fear';
+			else if (fng.value > 75) elements.fngValue.className = 'big-number greed';
+			else elements.fngValue.className = 'big-number neutral';
 		}
 	}
 
-	// --- Aktywność Stablecoinów  ---
-	if (
-		marketStatus.stablecoinActivity &&
-		elements.activityScore &&
-		elements.activityPressure
-	) {
+	// --- Aktywność Stablecoinów ---
+	if (marketStatus.stablecoinActivity && elements.activityScore) {
 		const activity = marketStatus.stablecoinActivity;
 		elements.activityScore.textContent =
 			activity.score !== null ? `${activity.score}` : '--';
-		elements.activityPressure.textContent = `Presja Kupna: ${activity.buyPressure}%`;
-		if (activity.buyPressure > 55) {
-			elements.activityScore.className = 'big-number greed';
-		} else if (activity.buyPressure < 45) {
-			elements.activityScore.className = 'big-number fear';
-		} else {
-			elements.activityScore.className = 'big-number neutral';
+		if (elements.activityPressure) {
+			elements.activityPressure.textContent = `Presja Kupna: ${activity.buyPressure}%`;
 		}
+		if (activity.buyPressure > 55)
+			elements.activityScore.className = 'big-number greed';
+		else if (activity.buyPressure < 45)
+			elements.activityScore.className = 'big-number fear';
+		else elements.activityScore.className = 'big-number neutral';
 	}
 
 	// --- Siła ETH vs BTC ---
 	if (marketStatus.ethBtcTrend && elements.ethBtcValue) {
 		const trendInfo = marketStatus.ethBtcTrend;
 		elements.ethBtcValue.textContent = trendInfo.currentValue || '--';
-		elements.ethBtcTrend.textContent = trendInfo.description || 'Brak danych';
-
-		if (trendInfo.trend.includes('UP')) {
-			elements.ethBtcValue.className = 'big-number greed'; // Zielony
-		} else if (trendInfo.trend.includes('DOWN')) {
-			elements.ethBtcValue.className = 'big-number fear'; // Czerwony
-		} else {
-			elements.ethBtcValue.className = 'big-number neutral'; // Żółty
-		}
+		if (elements.ethBtcTrend)
+			elements.ethBtcTrend.textContent = trendInfo.description || 'Brak danych';
+		if (trendInfo.trend.includes('UP'))
+			elements.ethBtcValue.className = 'big-number greed';
+		else if (trendInfo.trend.includes('DOWN'))
+			elements.ethBtcValue.className = 'big-number fear';
+		else elements.ethBtcValue.className = 'big-number neutral';
 	}
 
 	// --- Kapitalizacja Altcoinów (TOTAL2) ---
 	if (marketStatus.total2MarketCap && elements.total2MarketCap) {
 		const formattedCap = formatNumber(marketStatus.total2MarketCap, 'currency');
 		elements.total2MarketCap.textContent = `$${formattedCap}`;
-
-		if (marketStatus.total2Trend && elements.total2MarketCapStatus) {
+		if (elements.total2MarketCapStatus) {
 			elements.total2MarketCapStatus.textContent =
 				marketStatus.total2Trend.description;
 		}
 	}
 
-	// Stopy Procentowe
-	const interestRateEl = document.getElementById('interest-rate');
-	const interestRateTrendEl = document.getElementById('interest-rate-trend');
-	if (marketStatus.interestRate && interestRateEl && interestRateTrendEl) {
-		interestRateEl.textContent = `${marketStatus.interestRate.value}%`;
-		interestRateTrendEl.textContent = marketStatus.interestRate.interpretation;
-		if (marketStatus.interestRate.interpretation.includes('Luźna')) {
-			interestRateEl.className = 'big-number greed';
-		} else if (
-			marketStatus.interestRate.interpretation.includes('Restrykcyjna')
-		) {
-			interestRateEl.className = 'big-number fear';
-		} else {
-			interestRateEl.className = 'big-number neutral';
-		}
+	// --- Stopy Procentowe ---
+	if (marketStatus.interestRate && elements.interestRate) {
+		elements.interestRate.textContent = `${marketStatus.interestRate.value}%`;
+		if (elements.interestRateTrend)
+			elements.interestRateTrend.textContent =
+				marketStatus.interestRate.interpretation;
+		if (marketStatus.interestRate.interpretation.includes('Luźna'))
+			elements.interestRate.className = 'big-number greed';
+		else if (marketStatus.interestRate.interpretation.includes('Restrykcyjna'))
+			elements.interestRate.className = 'big-number fear';
+		else elements.interestRate.className = 'big-number neutral';
 	}
 
-	// Indeks Dolara (DXY)
-	const dxyIndexEl = document.getElementById('dxy-index');
-	const dxyTrendEl = document.getElementById('dxy-trend');
-	if (marketStatus.dxyIndex && dxyIndexEl && dxyTrendEl) {
-		dxyIndexEl.textContent = marketStatus.dxyIndex.value.toFixed(2);
-		dxyTrendEl.textContent = marketStatus.dxyIndex.interpretation;
-		if (marketStatus.dxyIndex.interpretation.includes('Słaby')) {
-			dxyIndexEl.className = 'big-number greed';
-		} else if (marketStatus.dxyIndex.interpretation.includes('Silny')) {
-			dxyIndexEl.className = 'big-number fear';
-		} else {
-			dxyIndexEl.className = 'big-number neutral';
-		}
+	// --- Indeks Dolara (DXY) ---
+	if (marketStatus.dxyIndex && elements.dxyIndex) {
+		elements.dxyIndex.textContent = marketStatus.dxyIndex.value.toFixed(2);
+		if (elements.dxyTrend)
+			elements.dxyTrend.textContent = marketStatus.dxyIndex.interpretation;
+		if (marketStatus.dxyIndex.interpretation.includes('Słaby'))
+			elements.dxyIndex.className = 'big-number greed';
+		else if (marketStatus.dxyIndex.interpretation.includes('Silny'))
+			elements.dxyIndex.className = 'big-number fear';
+		else elements.dxyIndex.className = 'big-number neutral';
+	}
+
+	// --- Siła Nabywcza (SSR) ---
+	if (marketStatus.ssrData && elements.ssrValue) {
+		const ssr = marketStatus.ssrData.ssr;
+		elements.ssrValue.textContent = ssr.toFixed(2);
+		if (elements.ssrInterpretation)
+			elements.ssrInterpretation.textContent =
+				marketStatus.ssrData.interpretation;
+		if (ssr < 5) elements.ssrValue.className = 'big-number greed';
+		else if (ssr < 10) elements.ssrValue.className = 'big-number primary';
+		else if (ssr > 20) elements.ssrValue.className = 'big-number fear';
+		else elements.ssrValue.className = 'big-number neutral';
 	}
 
 	// --- Rekomendacja rynkowa ---

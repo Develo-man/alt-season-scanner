@@ -47,6 +47,15 @@ class AppState {
 				'#total2-market-cap + .status-text'
 			),
 
+			activityScore: document.getElementById('stablecoin-activity-score'),
+			activityPressure: document.getElementById('stablecoin-activity-pressure'),
+			interestRate: document.getElementById('interest-rate'),
+			interestRateTrend: document.getElementById('interest-rate-trend'),
+			dxyIndex: document.getElementById('dxy-index'),
+			dxyTrend: document.getElementById('dxy-trend'),
+			ssrValue: document.getElementById('ssr-value'),
+			ssrInterpretation: document.getElementById('ssr-interpretation'),
+
 			// Market recommendation
 			marketAdvice: document.getElementById('market-advice'),
 			recommendedStrategy: document.getElementById('recommended-strategy'),

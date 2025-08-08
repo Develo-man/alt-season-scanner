@@ -250,6 +250,75 @@ async function getEthBtcChartData(days = 90) {
 }
 
 /**
+ * Pobiera kapitalizację rynkową dla określonych monet.
+ * @param {Array<string>} coinIds - Tablica ID monet z CoinGecko (np. ['bitcoin', 'tether']).
+ * @returns {Promise<Object>} Obiekt, gdzie kluczem jest ID monety, a wartością jej kapitalizacja.
+ */
+async function getMarketCaps(coinIds) {
+	try {
+		const response = await api.get('/coins/markets', {
+			params: {
+				vs_currency: 'usd',
+				ids: coinIds.join(','),
+				sparkline: false,
+			},
+		});
+
+		const marketCaps = {};
+		for (const coin of response.data) {
+			marketCaps[coin.id] = coin.market_cap;
+		}
+		return marketCaps;
+	} catch (error) {
+		console.error(
+			`❌ Błąd podczas pobierania kapitalizacji rynkowej:`,
+			error.message
+		);
+		return null;
+	}
+}
+
+/**
+ * Pobiera dane do obliczenia Stablecoin Supply Ratio (SSR).
+ * @returns {Promise<Object|null>} Obiekt z danymi SSR lub null w przypadku błędu.
+ */
+async function getSSRData() {
+	console.log('💰 Obliczam wskaźniki Stablecoin Supply...');
+	const stablecoinIds = ['tether', 'usd-coin', 'dai', 'first-digital-usd']; // USDT, USDC, DAI, FDUSD
+
+	try {
+		const marketCaps = await getMarketCaps(['bitcoin', ...stablecoinIds]);
+		if (!marketCaps) return null;
+
+		const btcMarketCap = marketCaps['bitcoin'];
+		const stablecoinMarketCap = stablecoinIds.reduce(
+			(sum, id) => sum + (marketCaps[id] || 0),
+			0
+		);
+
+		if (btcMarketCap === 0 || stablecoinMarketCap === 0) return null;
+
+		// Obliczamy SSR
+		const ssr = btcMarketCap / stablecoinMarketCap;
+
+		let interpretation = 'Neutralna siła nabywcza.';
+		if (ssr < 5) interpretation = '🔥 Bardzo duża siła nabywcza (byczo).';
+		else if (ssr < 10) interpretation = '📈 Duża siła nabywcza.';
+		else if (ssr > 20) interpretation = '⚠️ Mała siła nabywcza (niedźwiedzio).';
+
+		return {
+			btcMarketCap: btcMarketCap,
+			stablecoinMarketCap: stablecoinMarketCap,
+			ssr: ssr,
+			interpretation: interpretation,
+		};
+	} catch (error) {
+		console.error('❌ Błąd podczas obliczania danych SSR:', error.message);
+		return null;
+	}
+}
+
+/**
  * Pobiera dane historyczne dla globalnej kapitalizacji rynkowej.
  * @param {number} days - Liczba dni do pobrania.
  * @returns {Promise<Array|null>} Tablica z danymi [timestamp, market_cap].
@@ -299,6 +368,7 @@ module.exports = {
 	getCoinDeveloperData,
 	getEthBtcChartData,
 	getGlobalMarketHistory,
+	getSSRData,
 };
 
 // Run test if this file is executed directly
