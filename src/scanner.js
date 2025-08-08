@@ -28,6 +28,19 @@ function displayEnhancedMarketConditions(marketStatus) {
 	console.log(`   Faza rynku: ${marketStatus.condition}`);
 	console.log(`   Strategia: ${marketStatus.advice}`);
 
+	if (marketStatus.interestRate || marketStatus.dxyIndex) {
+		console.log('---');
+		if (marketStatus.interestRate) {
+			console.log(
+				`   Stopy procentowe: ${marketStatus.interestRate.value}% (${marketStatus.interestRate.interpretation})`
+			);
+		}
+		if (marketStatus.dxyIndex) {
+			console.log(
+				`   Indeks Dolara (DXY): ${marketStatus.dxyIndex.value.toFixed(2)} (${marketStatus.dxyIndex.interpretation})`
+			);
+		}
+	}
 	if (marketStatus.recommendedStrategy) {
 		const strategy = TRADING_STRATEGIES[marketStatus.recommendedStrategy];
 		console.log(`   💡 Rekomendowana: ${strategy.emoji} ${strategy.name}`);

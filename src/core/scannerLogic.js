@@ -31,6 +31,7 @@ const {
 const config = require('../config');
 const { getOnChainData } = require('../apis/santiment');
 const { analyzeStablecoinActivity } = require('../utils/stablecoinActivity');
+const { getInterestRate, getDXYIndex } = require('../apis/macro');
 
 const MARKET_DATA_CACHE_TTL = 15 * 60 * 1000; // 15 minut
 
@@ -153,6 +154,12 @@ async function runScanner() {
 		top100Data = fetchedTop100.coins;
 		stablecoinActivity = fetchedActivity;
 	}
+
+	console.log('📈 Pobieram dane makroekonomiczne...');
+	const [interestRate, dxyIndex] = await Promise.all([
+		getInterestRate(),
+		getDXYIndex(),
+	]);
 
 	const btcDominance = globalMarketData.market_cap_percentage.btc;
 	const totalMarketCap = globalMarketData.total_market_cap.usd;
@@ -372,6 +379,8 @@ async function runScanner() {
 				: null,
 			stablecoinActivity: marketActivity,
 			total2Trend: total2Trend,
+			interestRate: interestRate,
+			dxyIndex: dxyIndex,
 		},
 		strategies: Object.entries(strategyResults).map(([key, strategy]) => ({
 			key,

@@ -729,6 +729,38 @@ function renderMarketOverview(marketStatus, elements) {
 		}
 	}
 
+	// Stopy Procentowe
+	const interestRateEl = document.getElementById('interest-rate');
+	const interestRateTrendEl = document.getElementById('interest-rate-trend');
+	if (marketStatus.interestRate && interestRateEl && interestRateTrendEl) {
+		interestRateEl.textContent = `${marketStatus.interestRate.value}%`;
+		interestRateTrendEl.textContent = marketStatus.interestRate.interpretation;
+		if (marketStatus.interestRate.interpretation.includes('Luźna')) {
+			interestRateEl.className = 'big-number greed';
+		} else if (
+			marketStatus.interestRate.interpretation.includes('Restrykcyjna')
+		) {
+			interestRateEl.className = 'big-number fear';
+		} else {
+			interestRateEl.className = 'big-number neutral';
+		}
+	}
+
+	// Indeks Dolara (DXY)
+	const dxyIndexEl = document.getElementById('dxy-index');
+	const dxyTrendEl = document.getElementById('dxy-trend');
+	if (marketStatus.dxyIndex && dxyIndexEl && dxyTrendEl) {
+		dxyIndexEl.textContent = marketStatus.dxyIndex.value.toFixed(2);
+		dxyTrendEl.textContent = marketStatus.dxyIndex.interpretation;
+		if (marketStatus.dxyIndex.interpretation.includes('Słaby')) {
+			dxyIndexEl.className = 'big-number greed';
+		} else if (marketStatus.dxyIndex.interpretation.includes('Silny')) {
+			dxyIndexEl.className = 'big-number fear';
+		} else {
+			dxyIndexEl.className = 'big-number neutral';
+		}
+	}
+
 	// --- Rekomendacja rynkowa ---
 	updateMarketRecommendation(marketStatus, phaseInfo);
 }
