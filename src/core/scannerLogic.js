@@ -360,6 +360,28 @@ async function runScanner() {
 		});
 	});
 
+	// --- Krok 7.5: Obliczenia bazowego momentum i Analiza Sektorów ---
+	console.log('📈 Obliczam bazowe wyniki i analizuję siłę sektorów...');
+
+	// Najpierw obliczamy bazowe wyniki dla WSZYSTKICH unikalnych monet
+	const allCoinsWithBaseMomentum = Array.from(fullyEnrichedCoinsMap.values())
+		.map((coin) => {
+			return {
+				...coin,
+				momentum: require('../utils/momentum').calculateMomentumScore(
+					coin,
+					{ btcDominance, fearAndGreed },
+					{ allCoins: allEnrichedCoins }
+				),
+			};
+		})
+		.filter((coin) => coin.momentum && !coin.momentum.notListed);
+
+	// Teraz, mając bazowe wyniki, możemy przeprowadzić analizę sektorów
+	const sectorAnalysis = require('../utils/analysis').analyzeSectors(
+		allCoinsWithBaseMomentum
+	);
+
 	// --- Krok 8: Obliczenia momentum i ranking ---
 	const marketConditions = {
 		btcDominance,
@@ -371,7 +393,8 @@ async function runScanner() {
 		const rankedCoins = rankByMomentum(
 			strategy.enrichedCandidates,
 			marketConditions,
-			{ allCoins: getAllCoinsFromStrategies(strategyResults) }
+			{ allCoins: getAllCoinsFromStrategies(strategyResults) },
+			sectorAnalysis
 		);
 		strategyResults[key].rankedCoins = rankedCoins;
 		strategyResults[key].topCoin = rankedCoins[0] || null;
@@ -418,11 +441,7 @@ async function runScanner() {
 			isRecommended: key === recommendedStrategy,
 		})),
 		crossStrategy: crossStrategyAnalysis,
-		sectorAnalysis: analyzeSectors(
-			Object.values(strategyResults)
-				.flatMap((s) => s.rankedCoins || [])
-				.slice(0, 50)
-		),
+		sectorAnalysis: sectorAnalysis,
 		stats: {
 			totalAnalyzed: top100Data.length,
 			totalUniqueCandidates: allCandidates.size,

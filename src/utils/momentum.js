@@ -297,7 +297,8 @@ function calculateDeveloperScore(coin) {
 function calculateMomentumScore(
 	coin,
 	marketConditions = {},
-	additionalData = {}
+	additionalData = {},
+	sectorAnalysis = []
 ) {
 	const signals = [];
 
@@ -381,6 +382,30 @@ function calculateMomentumScore(
 			devScore * 0.05 -
 			finalRiskScore * weights.risk
 	);
+
+	let sectorMultiplier = 1.0;
+	let finalScore = totalScore;
+
+	if (coin.sector && coin.sector !== 'Unknown' && sectorAnalysis.length > 0) {
+		const sectorData = sectorAnalysis.find((s) => s.name === coin.sector);
+		if (sectorData) {
+			const sectorAvgScore = sectorData.averageScore;
+			// Jeśli sektor jest "gorący" (średnia ocena > 60), daj bonus
+			if (sectorAvgScore > 65) {
+				sectorMultiplier = 1.15; // +15% bonus
+				signals.push(`🔥 Gorący sektor: ${coin.sector} (+15%)`);
+			} else if (sectorAvgScore > 58) {
+				sectorMultiplier = 1.07; // +7% bonus
+				signals.push(`📈 Sektor w trendzie: ${coin.sector} (+7%)`);
+			}
+			// Jeśli sektor jest "zimny" (średnia ocena < 45), daj karę
+			else if (sectorAvgScore < 45) {
+				sectorMultiplier = 0.9; // -10% kara
+				signals.push(`❄️ Zimny sektor: ${coin.sector} (-10%)`);
+			}
+			finalScore *= sectorMultiplier;
+		}
+	}
 	// Determine category (enhanced with DEX consideration)
 	let category = 'NEUTRAL';
 	let emoji = '😐';
@@ -510,7 +535,9 @@ function calculateMomentumScore(
 	}
 
 	return {
-		totalScore: totalScore.toFixed(2),
+		totalScore: finalScore.toFixed(2),
+		originalScore: totalScore.toFixed(2),
+		sectorMultiplier: sectorMultiplier,
 		priceScore,
 		volumeScore,
 		positionScore,
@@ -592,18 +619,30 @@ function generateSignals(coin, scores) {
 }
 
 /**
- * Rank coins by momentum score
- * @param {Array} coins - Array of coins with scores
- * @param {Object} marketConditions - Object with market data
- * @returns {Array} Sorted array
+ * Rank coins by momentum score, correctly accepting and passing all necessary data.
+ * @param {Array} coins - Array of coins to be ranked.
+ * @param {Object} marketConditions - Object with market data.
+ * @param {Object} additionalData - Contains allCoins for timing analysis.
+ * @param {Array} sectorAnalysis - Pre-calculated sector analysis data.
+ * @returns {Array} A sorted array of coins with their momentum scores.
  */
-function rankByMomentum(coins, marketConditions) {
+function rankByMomentum(
+	coins,
+	marketConditions,
+	additionalData = {}, // Poprawnie przyjmujemy trzeci argument
+	sectorAnalysis = [] // Poprawnie przyjmujemy czwarty argument
+) {
 	return coins
 		.map((coin) => ({
 			...coin,
-			momentum: calculateMomentumScore(coin, marketConditions),
+			momentum: calculateMomentumScore(
+				coin,
+				marketConditions,
+				additionalData,
+				sectorAnalysis
+			),
 		}))
-		.filter((coin) => !coin.momentum.notListed)
+		.filter((coin) => coin.momentum && !coin.momentum.notListed)
 		.sort(
 			(a, b) =>
 				parseFloat(b.momentum.totalScore) - parseFloat(a.momentum.totalScore)
