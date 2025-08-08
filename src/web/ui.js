@@ -242,6 +242,7 @@ function createCoinTableRow(coin, strategy) {
 	const timing = momentum.timing || {};
 	const actionSignal = momentum.actionSignal || {};
 	const riskReward = momentum.riskReward || null;
+	const accumulationScore = coin.momentum?.accumulation?.score || 0;
 
 	return `
         <tr class="coin-row" data-symbol="${coin.symbol}">
@@ -289,6 +290,14 @@ function createCoinTableRow(coin, strategy) {
             <td>
                 ${renderActionButtons(coin)}
             </td>
+			<td class="hide-mobile">
+        <span class="score-badge score-${accumulationScore > 60 ? 'excellent' : accumulationScore > 40 ? 'good' : 'average'}">
+            🎯 ${Math.round(accumulationScore)}
+        </span>
+    </td>
+    <td>
+        ${renderActionButtons(coin)}
+    </td>
         </tr>
     `;
 }
@@ -845,7 +854,9 @@ function renderStrategyTable(strategy) {
                     </div>
                 </div>
             </div>
-
+       <div class="top-scrollbar-container">
+                <div class="top-scrollbar-content"></div>
+            </div>
             <div class="table-wrapper">
                 <table class="crypto-table">
                     <thead>
@@ -877,7 +888,11 @@ function renderStrategyTable(strategy) {
                             </th>
                             <th class="hide-mobile">Timing</th>
                             <th class="hide-mobile">Risk/Reward</th> 
-                            <th>Akcje</th>
+                            <th class="hide-mobile sortable" data-sort="accumulation">
+    Akumulacja
+    <span class="sort-icon">↕️</span>
+</th>
+<th>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -974,6 +989,9 @@ function switchToStrategy(strategyKey) {
 
 		// Re-setup table interactions for the newly shown table
 		setupTableInteractions();
+
+		// Ponownie wywołaj synchronizację, aby upewnić się, że działa po zmianie taba
+		syncScrollbars();
 	} else {
 		console.warn(`❌ Nie znaleziono panelu dla: ${strategyKey}`);
 	}
@@ -1652,6 +1670,42 @@ function setupTableInteractions() {
 			row.style.transform = '';
 		});
 	});
+
+	syncScrollbars();
+}
+
+/**
+ * Synchronizuje górny i dolny pasek przewijania dla aktywnej tabeli.
+ */
+function syncScrollbars() {
+	const activePanel = document.querySelector('.strategy-panel.active');
+	if (!activePanel) return;
+
+	const topScroll = activePanel.querySelector('.top-scrollbar-container');
+	const bottomScroll = activePanel.querySelector('.table-wrapper');
+	const topScrollContent = activePanel.querySelector('.top-scrollbar-content');
+	const table = activePanel.querySelector('.crypto-table');
+
+	if (!topScroll || !bottomScroll || !table || !topScrollContent) return;
+
+	// Ustaw szerokość wypełnienia górnego paska na szerokość tabeli
+	topScrollContent.style.width = `${table.scrollWidth}px`;
+
+	let isSyncing = false; // Flaga zapobiegająca pętli zdarzeń
+
+	topScroll.addEventListener('scroll', () => {
+		if (isSyncing) return;
+		isSyncing = true;
+		bottomScroll.scrollLeft = topScroll.scrollLeft;
+		isSyncing = false;
+	});
+
+	bottomScroll.addEventListener('scroll', () => {
+		if (isSyncing) return;
+		isSyncing = true;
+		topScroll.scrollLeft = bottomScroll.scrollLeft;
+		isSyncing = false;
+	});
 }
 
 /**
@@ -1701,6 +1755,10 @@ function sortTable(table, sortBy) {
 			case 'risk':
 				aVal = parseFloat(a.children[6].textContent.match(/\d+/)[0]);
 				bVal = parseFloat(b.children[6].textContent.match(/\d+/)[0]);
+				break;
+			case 'accumulation':
+				aVal = parseFloat(a.children[9].textContent.match(/\d+/)[0]);
+				bVal = parseFloat(b.children[9].textContent.match(/\d+/)[0]);
 				break;
 			default:
 				return 0;

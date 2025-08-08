@@ -3114,7 +3114,7 @@ button.nav-link {
 /* Main Table */
 .crypto-table {
 	width: 100%;
-	min-width: 1000px;
+	min-width: 1200px;
 	border-collapse: collapse;
 	font-size: 0.925rem;
 	table-layout: auto;
@@ -4826,4 +4826,39 @@ button.nav-link {
 
 .flow-value.negative {
 	color: var(--accent-red);
+}
+/* ========================================
+   TOP SCROLLBAR STYLES
+   ======================================== */
+
+.top-scrollbar-container {
+	overflow-x: auto;
+	overflow-y: hidden;
+	height: 20px; /* Wysokość paska przewijania */
+}
+
+.top-scrollbar-content {
+	height: 1px; /* Wypełnienie, aby pasek był widoczny */
+}
+
+/* Ukryj pasek przewijania w Firefox */
+.top-scrollbar-container {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border) var(--surface);
+}
+
+/* Ukryj pasek przewijania w Chrome, Safari, Edge */
+.top-scrollbar-container::-webkit-scrollbar {
+	height: 12px;
+}
+
+.top-scrollbar-container::-webkit-scrollbar-track {
+	background: var(--surface);
+	border-radius: 6px;
+}
+
+.top-scrollbar-container::-webkit-scrollbar-thumb {
+	background-color: var(--border-light);
+	border-radius: 6px;
+	border: 3px solid var(--surface);
 }
