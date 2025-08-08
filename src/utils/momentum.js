@@ -1,6 +1,5 @@
 const { calculateMomentumScoreWithDEX } = require('./accumulation');
 const { calculateDEXScore, generateDEXSignals } = require('./dexScoring');
-const { calculateTimingScore, getTimingMultiplier } = require('./timing');
 const { generateActionSignal } = require('./actionSignals');
 const { calculateRiskReward } = require('./riskReward');
 const { calculateFlowScore, generateFlowSignals } = require('./flowAnalysis');
@@ -381,6 +380,8 @@ function calculateMomentumScore(
 	additionalData = {},
 	sectorAnalysis = []
 ) {
+	const { calculateTimingScore, getTimingMultiplier } = require('./timing');
+
 	const signals = [];
 
 	// Skip if not on Binance
