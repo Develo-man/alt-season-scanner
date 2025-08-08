@@ -16,12 +16,17 @@ function calculateTimingScore(coin, marketConditions, allCoins = []) {
 	// 4. TECHNICAL TIMING - poziomy techniczne
 	const technicalScore = calculateTechnicalTiming(coin);
 
-	// Średnia ważona
-	const finalScore =
-		macroScore * 0.3 + // Warunki ogólne (waga bez zmian)
-		coinScore * 0.2 + // Kondycja monety (mniejsza waga)
-		sectorScore * 0.15 + // Kondycja sektora (mniejsza waga)
-		technicalScore * 0.35; // Technika (większa waga)
+	// Średnia ważona - ZMIANA z const na let
+	let finalScore =
+		macroScore * 0.3 + // Warunki ogólne
+		coinScore * 0.2 + // Kondycja monety
+		sectorScore * 0.15 + // Kondycja sektora
+		technicalScore * 0.35; // Technika
+
+	// Breakout Booster
+	if (technicalScore > 85) {
+		finalScore += 10; // Dodaj 10 punktów bonusu za idealny setup techniczny
+	}
 
 	const signals = generateTimingSignals(
 		macroScore,
@@ -32,7 +37,7 @@ function calculateTimingScore(coin, marketConditions, allCoins = []) {
 	const recommendation = getTimingRecommendation(finalScore);
 
 	return {
-		timingScore: Math.round(finalScore),
+		timingScore: Math.min(100, Math.round(finalScore)), // Upewnij się, że nie przekracza 100
 		recommendation: recommendation,
 		signals: signals,
 		breakdown: {
@@ -156,6 +161,24 @@ function calculateCoinTiming(coin) {
 		score += 15; // Duży volume = interest
 	} else if (volumeRatio < 0.02) {
 		score -= 10; // Mały volume = brak zainteresowania
+	}
+
+	// Bonus za kompresję zmienności
+	if (coin.klines && coin.klines.length >= 7) {
+		const klines7d = coin.klines.slice(-7);
+		const klines24h_equivalent = coin.klines.slice(-2); // Używamy 2 dni do przybliżenia ATR z 24h
+
+		const atr7d = require('./accumulation').calculateATR(klines7d);
+		const atr24h = require('./accumulation').calculateATR(klines24h_equivalent);
+
+		if (atr7d > 0) {
+			const volatilityRatio = atr24h / atr7d;
+			// Jeśli zmienność w ostatniej dobie jest znacznie niższa niż średnia z tygodnia,
+			// a moneta jest w trendzie wzrostowym (7d > 0), to jest to świetny sygnał.
+			if (volatilityRatio < 0.6 && coin.priceChange7d > 10) {
+				score += 20;
+			}
+		}
 	}
 
 	return Math.max(0, Math.min(100, score));

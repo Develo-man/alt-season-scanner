@@ -5,6 +5,14 @@ const { generateActionSignal } = require('./actionSignals');
 const { calculateRiskReward } = require('./riskReward');
 const { calculateFlowScore, generateFlowSignals } = require('./flowAnalysis');
 
+// Helper do obliczania prostej średniej kroczącej z cen zamknięcia
+function calculateSMA(klines, period) {
+	if (!klines || klines.length < period) return null;
+	const relevantKlines = klines.slice(-period);
+	const sum = relevantKlines.reduce((acc, kline) => acc + kline.close, 0);
+	return sum / period;
+}
+
 /**
  * Helper function to calculate a score based on a smooth, continuous scale instead of discrete steps.
  * @param {number} value - The actual value of the metric (e.g., price change).
@@ -19,6 +27,45 @@ function calculateSmoothedScore(value, maxExpectedValue, maxPoints) {
 	const performanceRatio = Math.min(clampedValue / maxExpectedValue, 1);
 	// Return the final score
 	return performanceRatio * maxPoints;
+}
+
+/**
+ * Analizuje strukturę rynku (wyższe szczyty/dołki) na podstawie danych świecowych.
+ * @param {Array} klines - Tablica danych świecowych (wymagane co najmniej 30).
+ * @returns {number} Wynik od -20 do +30.
+ */
+function analyzeMarketStructure(klines) {
+	if (!klines || klines.length < 30) return 0;
+
+	const closes = klines.map((k) => k.close);
+	const recentCloses = closes.slice(-14); // Analiza ostatnich 14 dni
+
+	let score = 0;
+	const lastPrice = recentCloses[recentCloses.length - 1];
+	const high14d = Math.max(...recentCloses);
+	const low14d = Math.min(...recentCloses);
+
+	// Sprawdź, czy cena jest blisko ostatniego szczytu (siła)
+	if (lastPrice / high14d > 0.95) {
+		score += 15; // Jesteśmy w górnych 5% zakresu - silny sygnał
+	}
+
+	// Sprawdź, czy ostatni dołek był wyższy niż poprzedni (potwierdzenie trendu)
+	const midPoint = Math.floor(recentCloses.length / 2);
+	const firstHalfLow = Math.min(...recentCloses.slice(0, midPoint));
+	const secondHalfLow = Math.min(...recentCloses.slice(midPoint));
+
+	if (secondHalfLow > firstHalfLow) {
+		score += 15; // Tworzenie wyższego dołka - bardzo byczy sygnał
+	}
+
+	// Kara za przełamanie ostatniego dołka
+	if (lastPrice < low14d * 1.02) {
+		// Cena jest w dolnych 2% zakresu
+		score -= 20;
+	}
+
+	return score;
 }
 
 /**
@@ -96,18 +143,16 @@ function calculatePriceMomentum(coin) {
 	// Consistency bonus (10 points) - smoothly applied
 	// The bonus is proportional to the weaker of the two trends.
 	if (priceChange24h > 0 && priceChange7d > 0) {
-		// We use the 24h performance as a proxy for recent strength, capped at 15%
 		const consistencyStrength = Math.min(priceChange24h / 15, 1);
 		score += consistencyStrength * 10;
 	}
 
 	// Dip opportunity bonus (5 points)
 	// Small bonus if the 7-day trend is positive but the 24h trend is slightly negative.
-	if (priceChange7d > 10 && priceChange24h < 0 && priceChange24h > -5) {
-		score += 5;
+	if (priceChange7d > 20 && priceChange24h < 0 && priceChange24h > -10) {
+		score += 15;
 	}
-
-	return Math.min(score, 70); // Cap at 70 for price momentum
+	return Math.min(score, 70);
 }
 
 /**
@@ -241,6 +286,17 @@ function calculateRiskScore(coin, marketConditions = {}, klines = []) {
 		risk += Math.min(15, (coin.rank - 75) / 2); // Kara skalowana, max 15 pkt
 	}
 
+	//  Ryzyko oddalenia od średniej (Mean Reversion Risk)
+	const sma14 = calculateSMA(klines, 14);
+	if (sma14 && coin.price > sma14) {
+		const distanceFromSMA = ((coin.price - sma14) / sma14) * 100;
+		if (distanceFromSMA > 40) {
+			risk += 25; // Cena jest >40% powyżej 14-dniowej średniej - bardzo duże ryzyko korekty
+		} else if (distanceFromSMA > 25) {
+			risk += 15; // Cena jest >25% powyżej średniej
+		}
+	}
+
 	return Math.min(Math.round(risk), 100); // Zwracamy zaokrągloną wartość, max 100
 }
 
@@ -317,6 +373,8 @@ function calculateMomentumScore(
 	const dexScore = coin.dexData ? calculateDEXScore(coin.dexData) : 0;
 	const vpScore = calculateVolumeProfileScore(coin.volumeProfile, coin.price);
 
+	const structureScore = analyzeMarketStructure(additionalData.klines);
+
 	// Step 1: Calculate "Raw Market Strength" (max ~100)
 	// Combines price action, volume, and DEX activity.
 	const rawStrength = priceScore * 0.5 + volumeScore * 0.35 + dexScore * 0.15;
@@ -331,7 +389,7 @@ function calculateMomentumScore(
 		devScore / 200;
 
 	// Step 3: Calculate the base score by applying the quality multiplier
-	let baseScore = rawStrength * Math.max(0.5, Math.min(1.5, qualityMultiplier));
+	let baseScore = rawStrength * qualityMultiplier + structureScore * 0.3;
 
 	// Then, perform timing analysis
 	const timingAnalysis = calculateTimingScore(
