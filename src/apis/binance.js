@@ -62,6 +62,7 @@ async function checkIfListed(symbol, exchangeInfo) {
 				s.baseAsset === symbol.toUpperCase() &&
 				s.status === 'TRADING' &&
 				(s.quoteAsset === 'USDT' ||
+					s.quoteAsset === 'USDC' ||
 					s.quoteAsset === 'BUSD' ||
 					s.quoteAsset === 'BTC')
 		);
@@ -72,7 +73,8 @@ async function checkIfListed(symbol, exchangeInfo) {
 
 		// Prefer USDT pair
 		const usdtPair = pairs.find((p) => p.quoteAsset === 'USDT');
-		const mainPair = usdtPair || pairs[0];
+		const usdcPair = pairs.find((p) => p.quoteAsset === 'USDC');
+		const mainPair = usdtPair || usdcPair || pairs[0];
 
 		return {
 			isListed: true,
@@ -603,15 +605,18 @@ function verifyListingStatus(symbols, exchangeInfo) {
 				s.baseAsset === upperSymbol &&
 				s.status === 'TRADING' &&
 				(s.quoteAsset === 'USDT' ||
+					s.quoteAsset === 'USDC' ||
 					s.quoteAsset === 'BUSD' ||
 					s.quoteAsset === 'BTC')
 		);
 
 		if (pairs.length > 0) {
 			const usdtPair = pairs.find((p) => p.quoteAsset === 'USDT');
+			const usdcPair = pairs.find((p) => p.quoteAsset === 'USDC');
+
 			results[upperSymbol] = {
 				isListed: true,
-				mainPair: (usdtPair || pairs[0]).symbol,
+				mainPair: (usdtPair || usdcPair || pairs[0]).symbol,
 			};
 		} else {
 			results[upperSymbol] = { isListed: false };

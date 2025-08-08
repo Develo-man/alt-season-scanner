@@ -23,7 +23,6 @@ const { batchAnalyzeDEX } = require('../apis/dexAnalytics');
 const { filterAndSort } = require('../utils/filters');
 const { rankByMomentum } = require('../utils/momentum');
 const { getSector } = require('../utils/sectors');
-const { analyzeSectors } = require('../utils/analysis');
 const {
 	loadHistory,
 	analyzeTrend,
@@ -174,10 +173,11 @@ async function runScanner() {
 		altcoinIndex = fetchedAltcoinIndex;
 	}
 
-	console.log('📈 Pobieram dane makroekonomiczne...');
-	const [interestRate, dxyIndex] = await Promise.all([
+	console.log('📈 Pobieram dane makroekonomiczne i technicznę dla BTC......');
+	const [interestRate, dxyIndex, btcKlines] = await Promise.all([
 		getInterestRate(),
 		getDXYIndex(),
+		getKlines('BTCUSDT', '1d', 30),
 	]);
 
 	const btcDominance = globalMarketData.market_cap_percentage.btc;
@@ -387,6 +387,10 @@ async function runScanner() {
 		btcDominance,
 		fearAndGreed,
 		dominanceChange: dominanceChange24h,
+		ethBtcTrend: ethBtcTrend,
+		ssrData: ssrData,
+		altcoinIndex: altcoinIndex,
+		btcKlines: btcKlines,
 	};
 
 	for (const [key, strategy] of Object.entries(strategyResults)) {

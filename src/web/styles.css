@@ -2397,7 +2397,6 @@ button.nav-link {
 	grid-column: 1 / -1; /* Ten element zajmie całą szerokość siatki */
 }
 
-/* Domyślnie elementy zajmują jedną kolumnę, więc half-width nie jest konieczne, ale dodaję dla jasności */
 .chart-container.half-width {
 	grid-column: span 1;
 }

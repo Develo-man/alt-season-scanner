@@ -262,7 +262,7 @@ function calculateRiskScore(coin, marketConditions = {}, klines = []) {
 		risk += Math.min(30, (priceChange7d - 50) / 2); // max 30 pkt
 	}
 
-	// 3. Ryzyko sentymentu rynkowego (Market Sentiment Risk) - NOWOŚĆ
+	// 3. Ryzyko sentymentu rynkowego (Market Sentiment Risk) 
 	if (marketConditions.fearAndGreed) {
 		const fngValue = marketConditions.fearAndGreed.value;
 		if (fngValue > 80)
@@ -270,7 +270,7 @@ function calculateRiskScore(coin, marketConditions = {}, klines = []) {
 		else if (fngValue > 65) risk += 15; // Greed
 	}
 
-	// 4. Ryzyko projektu (Project Risk) - NOWOŚĆ
+	// 4. Ryzyko projektu (Project Risk) 
 	if (coin.developerData) {
 		// Kara za brak aktywności deweloperskiej w ostatnim miesiącu
 		if (coin.developerData.commit_count_4_weeks === 0) {

@@ -57,7 +57,7 @@ function calculateMacroTiming(marketConditions) {
 
 	const btcDominance = parseFloat(marketConditions.btcDominance || 60);
 
-	const ssrValue = marketConditions.ssrValue || 20; // Domyślna neutralna/niedźwiedzia wartość
+	const ssrValue = marketConditions.ssrData?.ssr || 20;
 
 	// BTC Dominance - kluczowy wskaźnik
 	if (btcDominance < 45) {
@@ -91,6 +91,28 @@ function calculateMacroTiming(marketConditions) {
 		score += 10; // Dobra siła nabywcza (byczo)
 	} else if (ssrValue > 25) {
 		score -= 15; // Niska siła nabywcza (niedźwiedzio)
+	}
+	//  Reżim Zmienności (Volatility Regime)
+
+	if (marketConditions.btcKlines && marketConditions.btcKlines.length >= 30) {
+		const btcKlines = marketConditions.btcKlines;
+		const recentKlines = btcKlines.slice(-10); // Analiza ostatnich 10 dni
+		const historicalKlines = btcKlines; // Analiza ostatnich 30 dni
+
+		const atr10 = calculateATR(recentKlines);
+		const atr30 = calculateATR(historicalKlines);
+
+		if (atr30 > 0) {
+			const volatilityRatio = atr10 / atr30; // Stosunek krótkoterminowej do długoterminowej zmienności
+
+			if (volatilityRatio < 0.6) {
+				score += 20; // Silna kompresja, rynek gotowy na "wybuch"
+			} else if (volatilityRatio < 0.8) {
+				score += 10; // Umiarkowana kompresja, rośnie napięcie
+			} else if (volatilityRatio > 1.5) {
+				score -= 15; // Wysoka zmienność, rynek jest już po dużym ruchu
+			}
+		}
 	}
 
 	// Trend dominacji BTC

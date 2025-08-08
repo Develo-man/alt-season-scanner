@@ -43,7 +43,7 @@ function set(key, value, ttl) {
 	setInCache(marketDataCache, key, value, ttl);
 }
 
-// DODAJ NOWE FUNKCJE DLA DŁUGOTERMINOWEGO CACHE'U
+// DLA DŁUGOTERMINOWEGO CACHE'U
 const DEV_DATA_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 godziny
 
 function getDevData(coinId) {
