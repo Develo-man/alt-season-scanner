@@ -414,13 +414,14 @@ function processMarketStatus(marketStatus) {
 			condition: 'UNKNOWN',
 			advice: 'Sprawdzam dane rynkowe...',
 			recommendedStrategy: null,
+			fearAndGreed: null,
 			ethBtcTrend: null,
 			stablecoinActivity: null,
 			total2MarketCap: null,
 			total2Trend: null,
-			total2Trend: null,
 			interestRate: null,
 			dxyIndex: null,
+			ssrData: null,
 			altcoinSeasonIndex: null,
 		};
 	}
@@ -436,6 +437,9 @@ function processMarketStatus(marketStatus) {
 		stablecoinActivity: marketStatus.stablecoinActivity || null,
 		total2MarketCap: marketStatus.total2MarketCap || null,
 		total2Trend: marketStatus.total2Trend || null,
+		interestRate: marketStatus.interestRate || null,
+		dxyIndex: marketStatus.dxyIndex || null,
+		ssrData: marketStatus.ssrData || null,
 		altcoinSeasonIndex: marketStatus.altcoinSeasonIndex || null,
 	};
 }
