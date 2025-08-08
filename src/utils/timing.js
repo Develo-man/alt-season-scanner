@@ -57,15 +57,17 @@ function calculateMacroTiming(marketConditions) {
 
 	const btcDominance = parseFloat(marketConditions.btcDominance || 60);
 
+	const ssrValue = marketConditions.ssrValue || 20; // Domyślna neutralna/niedźwiedzia wartość
+
 	// BTC Dominance - kluczowy wskaźnik
 	if (btcDominance < 45) {
-		score += 30; // Peak alt season
+		score += 25; // Peak alt season
 	} else if (btcDominance < 52) {
-		score += 20; // Alt season
+		score += 15; // Alt season
 	} else if (btcDominance < 58) {
 		score += 10; // OK dla altów
 	} else if (btcDominance > 68) {
-		score -= 25; // BTC dominuje
+		score -= 20; // BTC dominuje
 	} else if (btcDominance > 62) {
 		score -= 10; // Trudno dla altów
 	}
@@ -73,27 +75,31 @@ function calculateMacroTiming(marketConditions) {
 	// Fear & Greed - contrarian approach
 	if (marketConditions.fearAndGreed) {
 		const fng = marketConditions.fearAndGreed.value;
-
-		if (fng < 20) {
-			score += 20; // Extreme fear = opportunity
-		} else if (fng < 35) {
+		if (fng < 20)
+			score += 15; // Extreme fear = opportunity
+		else if (fng < 35)
 			score += 10; // Fear = good
-		} else if (fng > 80) {
+		else if (fng > 80)
 			score -= 20; // Extreme greed = danger
-		} else if (fng > 70) {
-			score -= 10; // Greed = caution
-		}
+		else if (fng > 70) score -= 10; // Greed = caution
 	}
 
-	// Trend dominacji BTC (jeśli masz historię)
+	//  Analiza Siły Nabywczej (SSR)
+	if (ssrValue < 10) {
+		score += 20; // Bardzo duża siła nabywcza (bardzo byczo)
+	} else if (ssrValue < 15) {
+		score += 10; // Dobra siła nabywcza (byczo)
+	} else if (ssrValue > 25) {
+		score -= 15; // Niska siła nabywcza (niedźwiedzio)
+	}
+
+	// Trend dominacji BTC
 	const dominanceChange = marketConditions.dominanceChange;
 	if (dominanceChange) {
 		const change = parseFloat(dominanceChange.replace('%', ''));
-		if (change < -1) {
-			score += 15; // Dominacja spada = good for alts
-		} else if (change > 1) {
-			score -= 15; // Dominacja rośnie = bad for alts
-		}
+		if (change < -1)
+			score += 10; // Dominacja spada = good for alts
+		else if (change > 1) score -= 10; // Dominacja rośnie = bad for alts
 	}
 
 	return Math.max(0, Math.min(100, score));

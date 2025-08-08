@@ -415,9 +415,13 @@ function processMarketStatus(marketStatus) {
 			stablecoinActivity: null,
 			total2MarketCap: null,
 			total2Trend: null,
+			total2Trend: null,
+			interestRate: null,
+			dxyIndex: null,
 		};
 	}
 	return {
+		...marketStatus,
 		btcDominance: marketStatus.btcDominance || '0',
 		dominanceChange: marketStatus.dominanceChange || '0%',
 		condition: marketStatus.condition || 'UNKNOWN',
