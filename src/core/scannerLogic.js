@@ -33,6 +33,7 @@ const config = require('../config');
 const { getOnChainData } = require('../apis/santiment');
 const { analyzeStablecoinActivity } = require('../utils/stablecoinActivity');
 const { getInterestRate, getDXYIndex } = require('../apis/macro');
+const { getAltcoinSeasonIndex } = require('../apis/blockchaincenter');
 
 const MARKET_DATA_CACHE_TTL = 15 * 60 * 1000; // 15 minut
 
@@ -150,12 +151,14 @@ async function runScanner() {
 			fetchedTop100,
 			fetchedActivity,
 			fetchedSsrData,
+			altcoinIndex,
 		] = await Promise.all([
 			getGlobalMarketData(),
 			getFearAndGreedIndex(),
 			getTop100(),
 			getStablecoinActivity(),
 			getSSRData(),
+			getAltcoinSeasonIndex(),
 		]);
 
 		cache.set('globalMarketData', fetchedDominance, MARKET_DATA_CACHE_TTL);
@@ -398,6 +401,7 @@ async function runScanner() {
 			interestRate: interestRate,
 			dxyIndex: dxyIndex,
 			ssrData: ssrData,
+			altcoinSeasonIndex: altcoinIndex,
 		},
 		strategies: Object.entries(strategyResults).map(([key, strategy]) => ({
 			key,

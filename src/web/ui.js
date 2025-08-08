@@ -750,6 +750,21 @@ function renderMarketOverview(marketStatus, elements) {
 		else elements.ssrValue.className = 'big-number neutral';
 	}
 
+	// --- Altcoin Season Index ---
+	if (marketStatus.altcoinSeasonIndex && elements.altcoinSeasonIndex) {
+		const index = marketStatus.altcoinSeasonIndex;
+		elements.altcoinSeasonIndex.textContent = index.value;
+		elements.altcoinSeasonStatus.textContent = index.interpretation;
+
+		if (index.value > 75) {
+			elements.altcoinSeasonIndex.className = 'big-number greed';
+		} else if (index.value < 25) {
+			elements.altcoinSeasonIndex.className = 'big-number fear';
+		} else {
+			elements.altcoinSeasonIndex.className = 'big-number neutral';
+		}
+	}
+
 	// --- Rekomendacja rynkowa ---
 	updateMarketRecommendation(marketStatus, phaseInfo);
 }

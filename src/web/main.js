@@ -56,6 +56,9 @@ class AppState {
 			ssrValue: document.getElementById('ssr-value'),
 			ssrInterpretation: document.getElementById('ssr-interpretation'),
 
+			altcoinSeasonIndex: document.getElementById('altcoin-season-index'),
+			altcoinSeasonStatus: document.getElementById('altcoin-season-status'),
+
 			// Market recommendation
 			marketAdvice: document.getElementById('market-advice'),
 			recommendedStrategy: document.getElementById('recommended-strategy'),
