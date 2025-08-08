@@ -119,10 +119,6 @@ function analyzeTotal2Trend(globalMarketHistory, btcDominanceHistory) {
  * Uruchamia pełny proces skanowania kryptowalut i zwraca ustrukturyzowane wyniki.
  * @returns {Promise<Object>} Obiekt zawierający pełne wyniki skanowania.
  */
-/**
- * Uruchamia pełny proces skanowania kryptowalut i zwraca ustrukturyzowane wyniki.
- * @returns {Promise<Object>} Obiekt zawierający pełne wyniki skanowania.
- */
 async function runScanner() {
 	console.log('🔄 Uruchamiam rozszerzony skaner z DEX Analytics...');
 
@@ -132,13 +128,15 @@ async function runScanner() {
 	let top100Data = cache.get('top100Data');
 	let stablecoinActivity = cache.get('stablecoinActivity');
 	let ssrData = cache.get('ssrData');
+	let altcoinIndex = cache.get('altcoinIndex');
 
 	if (
 		globalMarketData &&
 		fearAndGreed &&
 		top100Data &&
 		stablecoinActivity &&
-		ssrData
+		ssrData &&
+		altcoinIndex
 	) {
 		console.log(
 			'✅ Pobrano podstawowe dane rynkowe, aktywność stablecoinów i SSR z CACHE.'
@@ -151,7 +149,7 @@ async function runScanner() {
 			fetchedTop100,
 			fetchedActivity,
 			fetchedSsrData,
-			altcoinIndex,
+			fetchedAltcoinIndex,
 		] = await Promise.all([
 			getGlobalMarketData(),
 			getFearAndGreedIndex(),
@@ -166,12 +164,14 @@ async function runScanner() {
 		cache.set('top100Data', fetchedTop100.coins, MARKET_DATA_CACHE_TTL);
 		cache.set('stablecoinActivity', fetchedActivity, MARKET_DATA_CACHE_TTL);
 		cache.set('ssrData', fetchedSsrData, MARKET_DATA_CACHE_TTL);
+		cache.set('altcoinIndex', fetchedAltcoinIndex, MARKET_DATA_CACHE_TTL);
 
 		globalMarketData = fetchedDominance;
 		fearAndGreed = fetchedFnG;
 		top100Data = fetchedTop100.coins;
 		stablecoinActivity = fetchedActivity;
 		ssrData = fetchedSsrData;
+		altcoinIndex = fetchedAltcoinIndex;
 	}
 
 	console.log('📈 Pobieram dane makroekonomiczne...');

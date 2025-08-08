@@ -421,6 +421,7 @@ function processMarketStatus(marketStatus) {
 			total2Trend: null,
 			interestRate: null,
 			dxyIndex: null,
+			altcoinSeasonIndex: null,
 		};
 	}
 	return {
@@ -435,6 +436,7 @@ function processMarketStatus(marketStatus) {
 		stablecoinActivity: marketStatus.stablecoinActivity || null,
 		total2MarketCap: marketStatus.total2MarketCap || null,
 		total2Trend: marketStatus.total2Trend || null,
+		altcoinSeasonIndex: marketStatus.altcoinSeasonIndex || null,
 	};
 }
 
