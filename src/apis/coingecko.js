@@ -75,11 +75,12 @@ async function getGlobalMarketData() {
 		console.log(
 			`📈 Current BTC Dominance: ${globalData.market_cap_percentage.btc.toFixed(2)}%`
 		);
+
 		console.log(
-			`💰 Total Market Cap: $${globalData.total_market_cap.usd.toLocaleString()}`
+			`💰 Total Market Cap: $${globalData.total_market_cap.usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 		);
 
-		return globalData; // Zwracamy cały obiekt
+		return globalData;
 	} catch (error) {
 		console.error('❌ Error fetching global market data:', error.message);
 		throw error;
